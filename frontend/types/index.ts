@@ -213,3 +213,78 @@ export interface EvaluationReportSummary {
   misclassifications: EvaluationCaseResponse[];
   critical_safety_violations: string[];
 }
+
+// ─── Live Digital-Twin Injection Types ──────────────────────────────────────
+
+export interface SupportedFamily {
+  family: string;
+  description: string;
+  category: string;
+  severity: string;
+  is_legitimate: boolean;
+}
+
+export interface InjectionStageEvent {
+  stage: string;
+  timestamp: string;
+  message: string;
+  injection_id?: string;
+  exception_family?: string;
+  exception_id?: string;
+  exception_type?: string;
+  severity?: string;
+  exposure?: number;
+  state?: string;
+  generated_identifiers?: Record<string, any>;
+  counts?: Record<string, number>;
+  audit_event_id?: string;
+  decision?: string;
+  action_type?: string;
+  priority?: string;
+  risk_score?: number;
+  data?: InjectionResponse;
+  [key: string]: any;
+}
+
+export interface InjectionResponse {
+  injection_id: string;
+  exception_family: string;
+  source_flag: string;
+  triggered_at: string;
+  generated_record_identifiers: Record<string, string[]>;
+  processing_status: string;
+  linked_exception_id?: string | null;
+  exception_state?: string | null;
+  exception_type?: string | null;
+  exposure?: number | null;
+  message: string;
+  stages: InjectionStageEvent[];
+}
+
+export interface InjectedCaseSummary {
+  injection_id: string;
+  exception_family: string;
+  triggered_by: string;
+  triggered_at: string;
+  source_flag: string;
+  linked_exception_id?: string | null;
+  status: string;
+  generated_identifiers?: Record<string, string[]> | null;
+  details?: Record<string, any> | null;
+}
+
+export interface ExceptionSummary {
+  exception_id: string;
+  exception_type: string;
+  severity: string;
+  state: string;
+  exposure: number;
+  confidence: number;
+  source_flag: string;
+  description?: string | null;
+  primary_payment_id?: string | null;
+  primary_order_id?: string | null;
+  detected_at: string;
+  created_at: string;
+  updated_at: string;
+}

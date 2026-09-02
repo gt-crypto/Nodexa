@@ -97,7 +97,13 @@ def calculate_actual_nodal_balance(
     - (actual_balance, is_internally_consistent)
     """
     account_entries = [e for e in ledger_entries if e.account_id == account_id]
-    account_entries.sort(key=lambda x: (x.timestamp, x.id or 0))
+    # Normalise to naive UTC for SQLite compatibility: seeded rows may lack tzinfo.
+    def _ts_key(e):
+        ts = e.timestamp
+        if ts is None:
+            return datetime.min
+        return ts.replace(tzinfo=None) if ts.tzinfo else ts
+    account_entries.sort(key=lambda x: (_ts_key(x), x.id or 0))
 
     if not account_entries:
         return 0, True

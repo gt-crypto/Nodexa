@@ -156,3 +156,92 @@ export async function getEvaluationCases(runId: string): Promise<any[]> {
   }
   return await response.json();
 }
+
+// ─── Live Digital-Twin Injection API ──────────────────────────────────────
+
+/**
+ * Fetches the list of supported anomaly families for live injection.
+ */
+export async function fetchSupportedFamilies(): Promise<any[]> {
+  const url = `${BACKEND_URL}/demo/supported-families`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  return await response.json();
+}
+
+/**
+ * Injects a live synthetic anomaly via the synchronous API.
+ */
+export async function injectAnomaly(
+  exceptionFamily: string,
+  triggeredBy: string = "demo-operator",
+  idempotencyKey?: string,
+  accountId: string = "nodal_escrow_main"
+): Promise<any> {
+  const url = `${BACKEND_URL}/demo/inject`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      exception_family: exceptionFamily,
+      triggered_by: triggeredBy,
+      idempotency_key: idempotencyKey,
+      account_id: accountId,
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Injection failed" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Fetches the list of past live-injected cases.
+ */
+export async function fetchInjectedCases(limit: number = 20): Promise<any[]> {
+  const url = `${BACKEND_URL}/demo/injected-cases?limit=${limit}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  return await response.json();
+}
+
+/**
+ * Fetches the exceptions list with optional source_flag filter.
+ */
+export async function fetchExceptions(
+  sourceFlag?: string,
+  limit: number = 100
+): Promise<any[]> {
+  let url = `${BACKEND_URL}/exceptions?limit=${limit}`;
+  if (sourceFlag) url += `&source_flag=${encodeURIComponent(sourceFlag)}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  return await response.json();
+}
+
+/**
+ * Opens an SSE stream for live injection progress.
+ * Returns an EventSource instance.
+ */
+export function createInjectionStream(
+  family: string,
+  triggeredBy: string = "demo-operator",
+  idempotencyKey?: string
+): EventSource {
+  let url = `${BACKEND_URL}/demo/inject/stream?family=${encodeURIComponent(family)}&triggered_by=${encodeURIComponent(triggeredBy)}`;
+  if (idempotencyKey) url += `&idempotency_key=${encodeURIComponent(idempotencyKey)}`;
+  return new EventSource(url);
+}

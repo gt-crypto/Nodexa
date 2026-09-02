@@ -48,9 +48,34 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db(custom_engine=None) -> None:
-    """Create all registered database tables."""
+    """Create all registered database tables and apply incremental schema migrations."""
+    from sqlalchemy import inspect, text
     target_engine = custom_engine or engine
+    # Create any completely new tables
     Base.metadata.create_all(bind=target_engine)
+
+    # Incremental column migrations for SQLite (ALTER TABLE ADD COLUMN is safe and idempotent)
+    if str(target_engine.url).startswith("sqlite"):
+        inspector = inspect(target_engine)
+        with target_engine.connect() as conn:
+            for table_name, columns in _COLUMN_MIGRATIONS.items():
+                try:
+                    existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
+                except Exception:
+                    continue  # table doesn't exist yet; create_all will handle it
+                for col_name, col_ddl in columns:
+                    if col_name not in existing_cols:
+                        conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_ddl}"))
+            conn.commit()
+
+
+# Incremental migrations: list of (column_name, full_DDL_fragment) per table.
+# Add new entries here whenever a column is added to an existing ORM model.
+_COLUMN_MIGRATIONS: dict = {
+    "exceptions": [
+        ("source_flag", "source_flag TEXT NOT NULL DEFAULT 'seeded'"),
+    ],
+}
 
 
 def reset_db(custom_engine=None) -> None:

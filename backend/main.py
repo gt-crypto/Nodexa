@@ -23,6 +23,7 @@ from backend.api.policy import router as policy_router
 from backend.api.remediation import router as remediation_router
 from backend.api.verification import router as verification_router
 from backend.api.evaluation import evaluation_router
+from backend.api.demo import router as demo_router
 
 load_dotenv()
 
@@ -79,6 +80,7 @@ app.include_router(policy_router)
 app.include_router(remediation_router)
 app.include_router(verification_router)
 app.include_router(evaluation_router)
+app.include_router(demo_router)
 
 
 if __name__ == "__main__":

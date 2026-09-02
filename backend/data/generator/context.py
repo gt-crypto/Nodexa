@@ -37,11 +37,11 @@ ACQUIRER_POOL = [
 class GenerationContext:
     """Encapsulates deterministic state and accumulators for dataset generation."""
 
-    def __init__(self, seed: int, config: GeneratorConfig):
+    def __init__(self, seed: int, config: GeneratorConfig, id_prefix: str = ""):
         self.seed = seed
         self.config = config
         self.rng = random.Random(seed)
-        self.ids = IdGenerator()
+        self.ids = IdGenerator(prefix=id_prefix)
         
         # Cumulative running ledger balance in integer minor units (starting with synthetic ₹10,000,000 baseline)
         self.current_ledger_balance = 1_000_000_000  # ₹10,000,000.00

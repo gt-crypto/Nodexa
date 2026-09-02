@@ -28,6 +28,7 @@ class ExceptionSummaryResponse(BaseModel):
     state: str
     exposure: int
     confidence: float
+    source_flag: str = "seeded"
     description: Optional[str]
     primary_payment_id: Optional[str]
     primary_order_id: Optional[str]
@@ -84,6 +85,7 @@ class ExceptionDetailResponse(BaseModel):
     state: str
     exposure: int
     confidence: float
+    source_flag: str = "seeded"
     description: Optional[str]
     primary_payment_id: Optional[str]
     primary_order_id: Optional[str]
@@ -131,6 +133,7 @@ def get_exceptions(
     exception_type: Optional[str] = Query(default=None, description="Filter by exception type"),
     severity: Optional[str] = Query(default=None, description="Filter by severity (LOW, MEDIUM, HIGH, CRITICAL)"),
     min_exposure: Optional[int] = Query(default=None, description="Filter by minimum exposure minor units"),
+    source_flag: Optional[str] = Query(default=None, description="Filter by source flag (seeded, live-injected)"),
     dataset_id: Optional[str] = Query(default=None, description="Filter by dataset ID"),
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
@@ -152,6 +155,8 @@ def get_exceptions(
         stmt = stmt.where(ExceptionRecord.severity == severity)
     if min_exposure is not None:
         stmt = stmt.where(ExceptionRecord.exposure >= min_exposure)
+    if source_flag:
+        stmt = stmt.where(ExceptionRecord.source_flag == source_flag)
 
     stmt = stmt.order_by(ExceptionRecord.detected_at.desc()).limit(limit).offset(offset)
     records = list(db.scalars(stmt).all())
@@ -164,6 +169,7 @@ def get_exceptions(
             state=r.state,
             exposure=r.exposure,
             confidence=float(r.confidence),
+            source_flag=r.source_flag or "seeded",
             description=r.description,
             primary_payment_id=r.primary_payment_id,
             primary_order_id=r.primary_order_id,
@@ -199,6 +205,7 @@ def get_exception_detail(
         state=exc.state,
         exposure=exc.exposure,
         confidence=float(exc.confidence),
+        source_flag=exc.source_flag or "seeded",
         description=exc.description,
         primary_payment_id=exc.primary_payment_id,
         primary_order_id=exc.primary_order_id,

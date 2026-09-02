@@ -40,6 +40,7 @@ class ExceptionRecord(Base):
     primary_order_id = Column(String(64), nullable=True, index=True)
     
     detected_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
+    source_flag = Column(String(32), nullable=False, default="seeded", index=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
@@ -93,10 +94,15 @@ class ExceptionRecord(Base):
         "AuditEvent",
         back_populates="exception_record",
     )
+    injected_cases = relationship(
+        "InjectedCase",
+        back_populates="exception_record",
+    )
 
     __table_args__ = (
         Index("idx_exc_state_severity", "state", "severity"),
         Index("idx_exc_type_detected", "exception_type", "detected_at"),
+        Index("idx_exc_source_flag", "source_flag"),
     )
 
 

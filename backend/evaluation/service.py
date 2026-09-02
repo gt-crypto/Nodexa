@@ -100,14 +100,14 @@ class BenchmarkEvaluationService:
             # 2. Read Ground Truth (Isolated access)
             gt_cases = GroundTruthReader.list_ground_truth_cases(session)
 
-            # 3. Read Operational State (Read-only queries)
-            exceptions = list(session.scalars(select(ExceptionRecord)).all())
+            # 3. Read Operational State (Read-only queries, strictly excluding live-injected cases)
+            exceptions = list(session.scalars(select(ExceptionRecord).where(ExceptionRecord.source_flag != "live-injected")).all())
             inv_runs = {i.exception_id: i for i in session.scalars(select(InvestigationRun)).all()}
             risk_assessments = {r.exception_id: r for r in session.scalars(select(RiskAssessment)).all()}
             policy_decisions = {p.exception_id: p for p in session.scalars(select(PolicyDecisionRecord)).all()}
             remediations = {rem.exception_id: rem for rem in session.scalars(select(RemediationAction)).all()}
             verifications = {v.remediation_id: v for v in session.scalars(select(VerificationRecord)).all()}
-            total_gateway_txs = len(list(session.scalars(select(GatewayTransaction)).all()))
+            total_gateway_txs = len(list(session.scalars(select(GatewayTransaction).where(~GatewayTransaction.payment_id.like("PAY-INJ%"))).all()))
 
             # 4. Deterministic Hierarchical Matching
             match_results = DeterministicMatcher.match_all(gt_cases, exceptions)

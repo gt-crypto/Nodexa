@@ -42,6 +42,7 @@ from backend.models.exceptions import (
     ExceptionStateTransition,
     ExceptionAffectedRecord,
 )
+from backend.models.injected_cases import InjectedCase
 from backend.models.investigation import InvestigationRun
 from backend.models.risk import RiskAssessment
 from backend.models.policy import PolicyDecisionRecord
@@ -95,6 +96,7 @@ __all__ = [
     "ExceptionRecord",
     "ExceptionStateTransition",
     "ExceptionAffectedRecord",
+    "InjectedCase",
     "InvestigationRun",
     "RiskAssessment",
     "PolicyDecisionRecord",

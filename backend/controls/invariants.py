@@ -24,7 +24,13 @@ def validate_ledger_balance_progression(
     
     # Filter entries for the target account and ensure chronological ordering
     account_entries = [e for e in ledger_entries if e.account_id == account_id]
-    account_entries.sort(key=lambda x: (x.id if (x.id is not None and x.id > 0) else 0, x.timestamp))
+    # Normalise to naive UTC for SQLite compatibility: seeded rows may lack tzinfo.
+    def _ts_key(e):
+        ts = e.timestamp
+        if ts is None:
+            return datetime.min
+        return ts.replace(tzinfo=None) if ts.tzinfo else ts
+    account_entries.sort(key=lambda x: (x.id if (x.id is not None and x.id > 0) else 0, _ts_key(x)))
     
     if not account_entries:
         results.append(
