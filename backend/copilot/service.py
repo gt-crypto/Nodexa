@@ -163,6 +163,14 @@ class AskSentinelService:
                 if pol_res.get("status") == "success" and pol_res.get("data", {}).get("found"):
                     retrieved_data["policy"] = pol_res["data"]
 
+                # Fetch verifier opinion if available or if queried
+                ver_res = self.tool_registry.execute_tool("get_verifier_opinion", session=session, exception_id=target_exc_id)
+                tools_used.append("get_verifier_opinion")
+                if ver_res.get("status") == "success" and ver_res.get("data", {}).get("found"):
+                    retrieved_data["verifier_opinion"] = ver_res["data"]
+                    if ver_res["data"].get("opinion_id"):
+                        evidence_refs.append(ver_res["data"]["opinion_id"])
+
         # Payment lookup question
         elif pay_ids:
             target_pay_id = pay_ids[0]
@@ -186,12 +194,24 @@ class AskSentinelService:
                 if led_res.get("status") == "success":
                     retrieved_data["ledger"] = led_res["data"]
 
+        # Pattern Miner / Recurring cluster questions
+        elif any(k in q_lower for k in ["pattern", "cluster", "recurring", "repeated", "clustering", "largest pattern"]):
+            cl_res = self.tool_registry.execute_tool("get_clusters", session=session)
+            tools_used.append("get_clusters")
+            if cl_res.get("status") == "success":
+                retrieved_data["clusters"] = cl_res.get("data", {}).get("clusters", [])
+                for cl in retrieved_data["clusters"]:
+                    evidence_refs.append(cl["cluster_id"])
+                    for exc_id in cl.get("exception_ids", [])[:2]:
+                        evidence_refs.append(exc_id)
+
         # Aggregate / Overview questions
         elif any(k in q_lower for k in ["exposure", "how much", "summary", "overview", "total", "open exceptions", "unresolved", "families"]):
             agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
             tools_used.append("get_aggregate_summary")
             if agg_res.get("status") == "success":
                 retrieved_data["aggregate"] = agg_res["data"]
+
 
         # 3. Formulate Answer & Check Abstention
         if not retrieved_data:
@@ -265,6 +285,13 @@ class AskSentinelService:
                 if finding_msgs:
                     answer_parts.append(f"Fired Controls: {'; '.join(finding_msgs[:3])}.")
 
+            if "verifier_opinion" in data:
+                vop = data["verifier_opinion"]
+                answer_parts.append(
+                    f"Adversarial Verifier Opinion: **{vop.get('verdict')}** (Confidence: {vop.get('confidence')}, "
+                    f"Final Policy: {vop.get('final_policy_decision')}). Rationale: {vop.get('reasoning_summary')}."
+                )
+
             if src == "live-injected":
                 answer_parts.append("Note: This case was generated via Live Digital-Twin synthetic injection.")
 
@@ -315,12 +342,49 @@ class AskSentinelService:
                 b_lines = [f"- **{b['family']}**: {b['open_count']} open ({self._format_minor_units(b['exposure_minor_units'])})" for b in breakdown]
                 answer += "\n\n**Breakdown by Exception Family**:\n" + "\n".join(b_lines)
 
-            reasoning = "Deterministic query aggregate calculated from active exception records."
+        elif "clusters" in data:
+            clusters = data["clusters"]
+            if not clusters:
+                return (
+                    "No recurring exception patterns currently meet the minimum cluster threshold.",
+                    "Pattern Miner discovered 0 multi-case clusters.",
+                    "HIGH",
+                    None,
+                )
+
+            total_cases = sum(c.get("exception_count", 0) for c in clusters)
+            total_exp = sum(c.get("total_exposure", 0) for c in clusters)
+            exp_str = self._format_minor_units(total_exp)
+
+            answer_lines = [
+                f"Pattern Miner has identified **{len(clusters)} recurring exception pattern(s)** "
+                f"representing **{total_cases} total cases** and **{exp_str}** in cumulative exposure.\n"
+            ]
+
+            for i, cl in enumerate(clusters[:4], 1):
+                c_label = cl.get("pattern_label", "Pattern")
+                c_count = cl.get("exception_count", 0)
+                c_exp = self._format_minor_units(cl.get("total_exposure", 0))
+                c_desc = cl.get("description", "")
+                c_members = ", ".join(cl.get("exception_ids", [])[:3])
+                if len(cl.get("exception_ids", [])) > 3:
+                    c_members += f" (+{len(cl.get('exception_ids', [])) - 3} more)"
+
+                answer_lines.append(
+                    f"**{i}. {c_label}** ({cl.get('cluster_id')})\n"
+                    f"- **Cases**: {c_count} | **Exposure**: {c_exp}\n"
+                    f"- **Signature**: {c_desc}\n"
+                    f"- **Members**: `{c_members}`"
+                )
+
+            answer = "\n\n".join(answer_lines)
+            reasoning = f"Direct cluster synthesis from {len(clusters)} deterministic Pattern Miner clusters."
             confidence = "HIGH"
             limitations = None
             return answer, reasoning, confidence, limitations
 
         return (
+
             "Operational evidence retrieved, but insufficient to formulate a direct answer.",
             "Ambiguous query results.",
             "MEDIUM",

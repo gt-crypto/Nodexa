@@ -308,3 +308,60 @@ export interface CopilotAskResponse {
   tools_used: string[];
   request_id?: string | null;
 }
+
+// ─── Adversarial Verifier Types ──────────────────────────────────────────────
+
+export interface VerifierOpinion {
+  opinion_id: string;
+  exception_id: string;
+  verdict: "AGREE" | "TIGHTEN" | "DISPUTE" | "ABSTAIN";
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  reasoning_summary: string;
+  evidence_refs: string[];
+  recommended_action: string;
+  original_policy_decision: string;
+  final_policy_decision: string;
+  verifier_version: string;
+  created_at: string;
+}
+
+// ─── Pattern Miner Types ─────────────────────────────────────────────────────
+
+export interface ClusterEvidence {
+  matched_fields: string[];
+  signature: Record<string, any>;
+  reason: string;
+  member_count: number;
+  exposure_minor_units: number;
+}
+
+export interface ExceptionCluster {
+  cluster_id: string;
+  cluster_key: string;
+  pattern_type: string;
+  pattern_label: string;
+  description: string;
+  exception_count: number;
+  exception_ids: string[];
+  merchants: string[];
+  families: string[];
+  first_seen: string;
+  last_seen: string;
+  total_exposure: number;
+  live_injected_count: number;
+  seeded_count: number;
+  evidence: ClusterEvidence;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClustersResponse {
+  clusters: ExceptionCluster[];
+  total_clusters: number;
+  total_clustered_exceptions: number;
+  total_clustered_exposure: number;
+  min_cluster_size: number;
+  retrieved_at: string;
+}
+
+

@@ -53,6 +53,8 @@ from backend.models.dataset import DatasetMetadata
 from backend.models.ground_truth import EvaluationGroundTruth
 from backend.models.evaluation import EvaluationRun, EvaluationCase
 from backend.models.copilot import CopilotQuery
+from backend.models.verifier import VerifierOpinion
+from backend.models.cluster import ExceptionCluster
 
 __all__ = [
     "Base",
@@ -111,4 +113,7 @@ __all__ = [
     "EvaluationRun",
     "EvaluationCase",
     "CopilotQuery",
+    "VerifierOpinion",
+    "ExceptionCluster",
 ]
+

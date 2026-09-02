@@ -49,6 +49,12 @@ class Settings(BaseModel):
         ge=0,
         description="Exposure threshold classifying an exception as CRITICAL materiality",
     )
+    pattern_miner_min_cluster_size: int = Field(
+        default=2,
+        ge=2,
+        description="Minimum exception count required to form a recurring pattern cluster",
+    )
+
 
     @field_validator("environment")
     @classmethod
@@ -119,7 +125,9 @@ def load_settings() -> Settings:
         max_retries=int(os.getenv("MAX_RETRIES", "3")),
         max_automated_remediation_paise=int(os.getenv("MAX_AUTOMATED_REMEDIATION_PAISE", "5000000")),
         critical_exposure_threshold_paise=int(os.getenv("CRITICAL_EXPOSURE_THRESHOLD_PAISE", "10000000")),
+        pattern_miner_min_cluster_size=int(os.getenv("PATTERN_MINER_MIN_CLUSTER_SIZE", "2")),
     )
+
 
 
 # Singleton instance

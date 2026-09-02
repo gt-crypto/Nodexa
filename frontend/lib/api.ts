@@ -2,6 +2,9 @@ import {
   HealthCheckResponse,
   VerificationRecord,
   VerificationDryRunResponse,
+  VerifierOpinion,
+  ClustersResponse,
+  ExceptionCluster,
 } from "../types";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
@@ -245,3 +248,96 @@ export function createInjectionStream(
   if (idempotencyKey) url += `&idempotency_key=${encodeURIComponent(idempotencyKey)}`;
   return new EventSource(url);
 }
+
+/**
+ * Fetches the independent adversarial verifier opinion for an exception.
+ * Calls PRD endpoint: GET /exceptions/{exception_id}/verifier-opinion
+ */
+export async function fetchVerifierOpinion(
+  exceptionId: string
+): Promise<VerifierOpinion> {
+  const url = `${BACKEND_URL}/exceptions/${encodeURIComponent(exceptionId)}/verifier-opinion`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Failed to fetch verifier opinion" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Executes a fresh independent adversarial verifier evaluation for an exception.
+ * Calls PRD endpoint: POST /exceptions/{exception_id}/verifier-opinion
+ */
+export async function evaluateVerifierOpinion(
+  exceptionId: string
+): Promise<VerifierOpinion> {
+  const url = `${BACKEND_URL}/exceptions/${encodeURIComponent(exceptionId)}/verifier-opinion`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Failed to evaluate verifier opinion" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Fetches recurring pattern clusters from the Pattern Miner.
+ * Calls PRD endpoint: GET /clusters
+ */
+export async function fetchClusters(params?: {
+  pattern_type?: string;
+  exception_family?: string;
+  merchant_id?: string;
+  source?: string;
+  min_count?: number;
+  limit?: number;
+}): Promise<ClustersResponse> {
+  const query = new URLSearchParams();
+  if (params?.pattern_type) query.set("pattern_type", params.pattern_type);
+  if (params?.exception_family) query.set("exception_family", params.exception_family);
+  if (params?.merchant_id) query.set("merchant_id", params.merchant_id);
+  if (params?.source) query.set("source", params.source);
+  if (params?.min_count) query.set("min_count", params.min_count.toString());
+  if (params?.limit) query.set("limit", params.limit.toString());
+
+  const url = `${BACKEND_URL}/clusters${query.toString() ? `?${query.toString()}` : ""}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Failed to fetch clusters" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Forces recomputation of pattern clusters.
+ * Calls POST /clusters/refresh
+ */
+export async function refreshClusters(minClusterSize?: number): Promise<ClustersResponse> {
+  let url = `${BACKEND_URL}/clusters/refresh`;
+  if (minClusterSize) url += `?min_cluster_size=${minClusterSize}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Failed to refresh clusters" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+

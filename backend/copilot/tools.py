@@ -37,6 +37,8 @@ class AskSentinelToolRegistry:
         "get_control_findings",
         "get_risk_assessment",
         "get_policy_decision",
+        "get_verifier_opinion",
+        "get_clusters",
         "get_audit_events",
         "get_aggregate_summary",
     ]
@@ -55,6 +57,8 @@ class AskSentinelToolRegistry:
             "get_control_findings": self.get_control_findings,
             "get_risk_assessment": self.get_risk_assessment,
             "get_policy_decision": self.get_policy_decision,
+            "get_verifier_opinion": self.get_verifier_opinion,
+            "get_clusters": self.get_clusters,
             "get_audit_events": self.get_audit_events,
             "get_aggregate_summary": self.get_aggregate_summary,
         }
@@ -112,8 +116,8 @@ class AskSentinelToolRegistry:
         """Retrieves detailed operational exception record."""
         stmt = select(ExceptionRecord).where(
             or_(
-                ExceptionRecord.exception_id == exception_id,
-                ExceptionRecord.primary_payment_id == exception_id,
+                func.upper(ExceptionRecord.exception_id) == func.upper(exception_id),
+                func.upper(ExceptionRecord.primary_payment_id) == func.upper(exception_id),
             )
         )
         rec = session.scalars(stmt).first()
@@ -346,6 +350,56 @@ class AskSentinelToolRegistry:
                 }
                 for d in decisions
             ],
+        }
+
+    def get_verifier_opinion(self, session: Session, exception_id: str) -> Dict[str, Any]:
+        """Retrieves independent adversarial verifier opinion for an exception."""
+        from backend.models.verifier import VerifierOpinion
+        stmt = (
+            select(VerifierOpinion)
+            .where(func.upper(VerifierOpinion.exception_id) == func.upper(exception_id))
+            .order_by(VerifierOpinion.created_at.desc())
+        )
+        opinion = session.scalars(stmt).first()
+        if not opinion:
+            return {"found": False, "message": f"No verifier opinion recorded for exception '{exception_id}'."}
+
+        return {
+            "found": True,
+            "opinion_id": opinion.opinion_id,
+            "exception_id": opinion.exception_id,
+            "verdict": opinion.verdict,
+            "confidence": opinion.confidence,
+            "reasoning_summary": opinion.reasoning_summary,
+            "evidence_refs": json.loads(opinion.evidence_refs) if opinion.evidence_refs else [],
+            "recommended_action": opinion.recommended_action,
+            "original_policy_decision": opinion.original_policy_decision,
+            "final_policy_decision": opinion.final_policy_decision,
+            "verifier_version": opinion.verifier_version,
+            "created_at": opinion.created_at.isoformat() if opinion.created_at else None,
+        }
+
+    def get_clusters(
+        self,
+        session: Session,
+        pattern_type: Optional[str] = None,
+        exception_family: Optional[str] = None,
+        merchant_id: Optional[str] = None,
+        limit: int = 10,
+    ) -> Dict[str, Any]:
+        """Retrieves structured recurring pattern clusters from the Pattern Miner."""
+        from backend.patterns.miner import PatternMinerService
+        service = PatternMinerService()
+        clusters = service.get_clusters(
+            session=session,
+            pattern_type=pattern_type,
+            exception_family=exception_family,
+            merchant_id=merchant_id,
+            limit=limit,
+        )
+        return {
+            "total_clusters": len(clusters),
+            "clusters": clusters,
         }
 
     def get_audit_events(self, session: Session, entity_id: Optional[str] = None, limit: int = 10) -> Dict[str, Any]:

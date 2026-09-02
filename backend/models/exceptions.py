@@ -98,6 +98,12 @@ class ExceptionRecord(Base):
         "InjectedCase",
         back_populates="exception_record",
     )
+    verifier_opinions = relationship(
+        "VerifierOpinion",
+        back_populates="exception_record",
+        cascade="all, delete-orphan",
+        order_by="VerifierOpinion.created_at.desc()",
+    )
 
     __table_args__ = (
         Index("idx_exc_state_severity", "state", "severity"),

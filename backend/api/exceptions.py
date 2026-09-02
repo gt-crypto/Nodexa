@@ -266,3 +266,50 @@ def run_database_integrity_diagnostics(
     """Executes read-only relational and financial integrity diagnostic checks."""
     from backend.services.integrity_service import DatabaseIntegrityDiagnosticService
     return DatabaseIntegrityDiagnosticService.run_integrity_diagnostics(session=db)
+
+
+class VerifierOpinionResponse(BaseModel):
+    opinion_id: str
+    exception_id: str
+    verdict: str
+    confidence: str
+    reasoning_summary: str
+    evidence_refs: List[str]
+    recommended_action: str
+    original_policy_decision: str
+    final_policy_decision: str
+    verifier_version: str
+    created_at: str
+
+
+@router.get("/{exception_id}/verifier-opinion", response_model=VerifierOpinionResponse)
+def get_verifier_opinion_for_exception(
+    exception_id: str,
+    db: Session = Depends(get_db),
+) -> VerifierOpinionResponse:
+    """Retrieves or executes the independent adversarial second-opinion for an exception."""
+    from backend.verifier.service import AdversarialVerifierService
+    verifier = AdversarialVerifierService()
+    opinion = verifier.get_opinion(db, exception_id)
+    if not opinion:
+        opinion = verifier.evaluate_exception(db, exception_id)
+        db.commit()
+
+    if not opinion:
+        raise HTTPException(status_code=404, detail=f"Could not generate verifier opinion for exception '{exception_id}'.")
+
+    return VerifierOpinionResponse(**opinion)
+
+
+@router.post("/{exception_id}/verifier-opinion", response_model=VerifierOpinionResponse)
+def evaluate_verifier_opinion_for_exception(
+    exception_id: str,
+    db: Session = Depends(get_db),
+) -> VerifierOpinionResponse:
+    """Executes a fresh independent adversarial second-opinion evaluation for an exception."""
+    from backend.verifier.service import AdversarialVerifierService
+    verifier = AdversarialVerifierService()
+    opinion = verifier.evaluate_exception(db, exception_id)
+    db.commit()
+    return VerifierOpinionResponse(**opinion)
+
