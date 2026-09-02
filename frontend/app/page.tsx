@@ -1,6 +1,7 @@
 import React from "react";
 import { Navbar } from "../components/Navbar";
 import { SystemStatus } from "../components/SystemStatus";
+import { AskSentinelPanel } from "../components/AskSentinelPanel";
 import { LiveInjectionConsole } from "../components/LiveInjectionConsole";
 import { ControlLoop } from "../components/ControlLoop";
 import { LayerArchitecture } from "../components/LayerArchitecture";
@@ -51,6 +52,9 @@ export default function Home() {
 
         {/* Live Controller Status */}
         <SystemStatus />
+
+        {/* v2.0: Ask Sentinel Grounded Operational Copilot */}
+        <AskSentinelPanel />
 
         {/* v2.0: Live Digital-Twin Injection Console */}
         <LiveInjectionConsole />

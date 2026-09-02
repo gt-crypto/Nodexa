@@ -52,6 +52,7 @@ from backend.models.verification import VerificationRecord, VerificationResult
 from backend.models.dataset import DatasetMetadata
 from backend.models.ground_truth import EvaluationGroundTruth
 from backend.models.evaluation import EvaluationRun, EvaluationCase
+from backend.models.copilot import CopilotQuery
 
 __all__ = [
     "Base",
@@ -109,4 +110,5 @@ __all__ = [
     "EvaluationGroundTruth",
     "EvaluationRun",
     "EvaluationCase",
+    "CopilotQuery",
 ]

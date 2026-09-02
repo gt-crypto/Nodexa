@@ -288,3 +288,23 @@ export interface ExceptionSummary {
   created_at: string;
   updated_at: string;
 }
+
+// ─── Ask Sentinel Copilot Types ──────────────────────────────────────────────
+
+export interface CopilotAskRequest {
+  question: string;
+  exception_id?: string;
+}
+
+export interface CopilotAskResponse {
+  query_id: string;
+  question: string;
+  answer: string;
+  evidence_refs: string[];
+  reasoning: string;
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  abstained: boolean;
+  limitations?: string | null;
+  tools_used: string[];
+  request_id?: string | null;
+}

@@ -24,6 +24,7 @@ from backend.api.remediation import router as remediation_router
 from backend.api.verification import router as verification_router
 from backend.api.evaluation import evaluation_router
 from backend.api.demo import router as demo_router
+from backend.api.copilot import router as copilot_router
 
 load_dotenv()
 
@@ -81,6 +82,7 @@ app.include_router(remediation_router)
 app.include_router(verification_router)
 app.include_router(evaluation_router)
 app.include_router(demo_router)
+app.include_router(copilot_router)
 
 
 if __name__ == "__main__":
