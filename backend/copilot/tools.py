@@ -39,6 +39,7 @@ class AskSentinelToolRegistry:
         "get_policy_decision",
         "get_verifier_opinion",
         "get_clusters",
+        "get_merchant_trust_score",
         "get_audit_events",
         "get_aggregate_summary",
     ]
@@ -59,6 +60,7 @@ class AskSentinelToolRegistry:
             "get_policy_decision": self.get_policy_decision,
             "get_verifier_opinion": self.get_verifier_opinion,
             "get_clusters": self.get_clusters,
+            "get_merchant_trust_score": self.get_merchant_trust_score,
             "get_audit_events": self.get_audit_events,
             "get_aggregate_summary": self.get_aggregate_summary,
         }
@@ -401,6 +403,23 @@ class AskSentinelToolRegistry:
             "total_clusters": len(clusters),
             "clusters": clusters,
         }
+
+    def get_merchant_trust_score(self, session: Session, merchant_id: str) -> Dict[str, Any]:
+        """Retrieves deterministic Merchant Trust & Impact Score."""
+        from backend.api.merchants import _format_merchant_response
+        from backend.models.merchant_score import MerchantScore
+        from backend.merchants.scoring import MerchantScoringService
+        
+        score = session.query(MerchantScore).filter(MerchantScore.merchant_id == merchant_id).first()
+        if not score:
+            scoring_service = MerchantScoringService()
+            scoring_service.calculate_all_scores(session)
+            score = session.query(MerchantScore).filter(MerchantScore.merchant_id == merchant_id).first()
+            
+        if not score:
+            return {"found": False, "message": f"Merchant score for '{merchant_id}' not found."}
+            
+        return {"found": True, "score": _format_merchant_response(score)}
 
     def get_audit_events(self, session: Session, entity_id: Optional[str] = None, limit: int = 10) -> Dict[str, Any]:
         """Retrieves append-only audit event trail."""

@@ -340,4 +340,52 @@ export async function refreshClusters(minClusterSize?: number): Promise<Clusters
   return await response.json();
 }
 
+/**
+ * Deterministic Risk Analytics: Merchant Trust Score Interface
+ */
+export interface MerchantScore {
+  merchant_id: string;
+  trust_score: number;
+  impact_score: number;
+  score_band: string;
+  metrics: {
+    exception_count: number;
+    actionable_exception_count: number;
+    legitimate_exception_count: number;
+    high_risk_exception_count: number;
+    total_exposure: number;
+    recurring_pattern_count: number;
+    seeded_case_count: number;
+    live_injected_case_count: number;
+    total_transaction_count: number;
+    total_transaction_volume: number;
+  };
+  factors: Array<{
+    factor: string;
+    direction: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
+    value: number;
+    contribution: number;
+    explanation: string;
+  }>;
+  scoring_version: string;
+  first_seen: string | null;
+  last_seen: string | null;
+}
 
+/**
+ * Fetches all calculated merchant trust and impact scores.
+ * Calls PRD endpoint: GET /merchants/scores
+ */
+export async function fetchMerchantScores(): Promise<MerchantScore[]> {
+  const url = `${BACKEND_URL}/merchants/scores`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Failed to fetch merchant scores" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}

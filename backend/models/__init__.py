@@ -55,6 +55,7 @@ from backend.models.evaluation import EvaluationRun, EvaluationCase
 from backend.models.copilot import CopilotQuery
 from backend.models.verifier import VerifierOpinion
 from backend.models.cluster import ExceptionCluster
+from backend.models.merchant_score import MerchantScore
 
 __all__ = [
     "Base",
@@ -115,5 +116,6 @@ __all__ = [
     "CopilotQuery",
     "VerifierOpinion",
     "ExceptionCluster",
+    "MerchantScore",
 ]
 

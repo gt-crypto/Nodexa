@@ -44,17 +44,24 @@ class AskSentinelService:
     def __init__(self, max_tool_calls: int = 15):
         self.tool_registry = AskSentinelToolRegistry(max_tool_calls=max_tool_calls)
 
-    def _extract_identifiers(self, text: str) -> Tuple[List[str], List[str], List[str], List[str]]:
-        """Extracts exception_id, payment_id, settlement_id, order_id patterns from user input."""
+    def _extract_identifiers(self, text: str) -> Tuple[List[str], List[str], List[str], List[str], List[str]]:
+        """Extracts exception_id, payment_id, settlement_id, order_id, merchant_id patterns from user input."""
         exceptions = re.findall(r"EXC-[A-Z0-9_-]+", text, re.IGNORECASE)
         payments = re.findall(r"PAY-[A-Z0-9_-]+", text, re.IGNORECASE)
         settlements = re.findall(r"SET-[A-Z0-9_-]+", text, re.IGNORECASE)
         orders = re.findall(r"ORD-[A-Z0-9_-]+", text, re.IGNORECASE)
+        
+        # Look for "merchant <ID>" or "merchant M123"
+        merchants = []
+        merch_matches = re.findall(r"merchant\s+([A-Z0-9_-]+)", text, re.IGNORECASE)
+        merchants.extend(merch_matches)
+        
         return (
             [e.upper() for e in set(exceptions)],
             [p.upper() for p in set(payments)],
             [s.upper() for s in set(settlements)],
             [o.upper() for o in set(orders)],
+            [m.upper() for m in set(merchants)],
         )
 
     def _format_minor_units(self, paise: int) -> str:
@@ -121,7 +128,7 @@ class AskSentinelService:
                 )
 
         # 2. Extract identifiers and select read-only tools
-        exc_ids, pay_ids, set_ids, ord_ids = self._extract_identifiers(question)
+        exc_ids, pay_ids, set_ids, ord_ids, merch_ids = self._extract_identifiers(question)
 
         if exception_id_context and exception_id_context.upper() not in exc_ids:
             exc_ids.append(exception_id_context.upper())
@@ -193,6 +200,16 @@ class AskSentinelService:
                 tools_used.append("get_ledger_entries")
                 if led_res.get("status") == "success":
                     retrieved_data["ledger"] = led_res["data"]
+
+        # Merchant Trust Score questions
+        elif merch_ids:
+            target_merch_id = merch_ids[0]
+            m_res = self.tool_registry.execute_tool("get_merchant_trust_score", session=session, merchant_id=target_merch_id)
+            tools_used.append("get_merchant_trust_score")
+            if m_res.get("status") == "success" and m_res.get("data", {}).get("found"):
+                m_data = m_res["data"]["score"]
+                retrieved_data["merchant_score"] = m_data
+                evidence_refs.append(f"MERCHANT_SCORE_{target_merch_id}")
 
         # Pattern Miner / Recurring cluster questions
         elif any(k in q_lower for k in ["pattern", "cluster", "recurring", "repeated", "clustering", "largest pattern"]):
@@ -325,6 +342,37 @@ class AskSentinelService:
             confidence = "HIGH"
             limitations = None
             return answer, reasoning, confidence, limitations
+
+        elif "merchant_score" in data:
+            ms = data["merchant_score"]
+            m_id = ms["merchant_id"]
+            trust = ms["trust_score"]
+            impact = ms["impact_score"]
+            band = ms["score_band"]
+            metrics = ms["metrics"]
+            
+            exp_str = self._format_minor_units(metrics.get("total_exposure", 0))
+            
+            answer_parts = [
+                f"Merchant **{m_id}** is currently in the **{band}** band.",
+                f"**Trust Score**: {trust}/100 | **Impact Score**: {impact}/100",
+                f"**Total Exceptions**: {metrics.get('exception_count', 0)} "
+                f"({metrics.get('high_risk_exception_count', 0)} high risk)",
+                f"**Total Exposure**: {exp_str}",
+            ]
+            
+            if ms.get("factors"):
+                answer_parts.append("\n**Key Drivers**:")
+                for f in ms["factors"]:
+                    icon = "🟢" if f["direction"] == "POSITIVE" else "🔴"
+                    answer_parts.append(f"{icon} {f['explanation']}")
+                    
+            if metrics.get("live_injected_case_count", 0) > 0:
+                answer_parts.append("\n*Note: This score incorporates live-injected synthetic cases.*")
+                
+            answer = "\n".join(answer_parts)
+            reasoning = f"Deterministic Merchant Trust Score retrieved for {m_id}."
+            return answer, reasoning, "HIGH", None
 
         elif "aggregate" in data:
             agg = data["aggregate"]

@@ -4,6 +4,7 @@ import { SystemStatus } from "../components/SystemStatus";
 import { AskSentinelPanel } from "../components/AskSentinelPanel";
 import { VerifierPanel } from "../components/VerifierPanel";
 import { PatternMinerPanel } from "../components/PatternMinerPanel";
+import { MerchantTrustScorePanel } from "../components/MerchantTrustScorePanel";
 import { LiveInjectionConsole } from "../components/LiveInjectionConsole";
 import { ControlLoop } from "../components/ControlLoop";
 import { LayerArchitecture } from "../components/LayerArchitecture";
@@ -63,6 +64,9 @@ export default function Home() {
 
         {/* v2.0: Deterministic Exception Pattern Miner */}
         <PatternMinerPanel />
+        
+        {/* v2.0: Merchant Trust & Impact Score */}
+        <MerchantTrustScorePanel />
 
         {/* v2.0: Live Digital-Twin Injection Console */}
         <LiveInjectionConsole />

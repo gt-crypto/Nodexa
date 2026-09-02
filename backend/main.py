@@ -27,6 +27,7 @@ from backend.api.demo import router as demo_router
 from backend.api.copilot import router as copilot_router
 from backend.api.verifier import router as verifier_router
 from backend.api.patterns import router as patterns_router
+from backend.api.merchants import router as merchants_router
 
 load_dotenv()
 
@@ -87,6 +88,7 @@ app.include_router(demo_router)
 app.include_router(copilot_router)
 app.include_router(verifier_router)
 app.include_router(patterns_router)
+app.include_router(merchants_router)
 
 
 if __name__ == "__main__":
