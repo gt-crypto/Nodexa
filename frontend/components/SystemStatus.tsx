@@ -44,7 +44,7 @@ export const SystemStatus: React.FC = () => {
             <div>
               {/* Issue 14: H2 Semantic Heading */}
               <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
-                FastAPI Controller Engine Status
+                Controller Engine Status
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 Live monitoring of backend API endpoint: <code className="font-mono text-slate-300">GET /health</code>
@@ -57,9 +57,10 @@ export const SystemStatus: React.FC = () => {
             disabled={loading}
             variant="secondary"
             size="sm"
+            aria-label="Refresh controller engine status"
             icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
           >
-            {loading ? "Checking..." : "Re-check"}
+            {loading ? "Checking..." : "Refresh"}
           </Button>
         </div>
 

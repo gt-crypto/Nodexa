@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Shield,
   Activity,
@@ -8,56 +10,56 @@ import {
   Scale,
   Network,
   TrendingUp,
-  Gauge,
   Send,
   Zap,
   Award,
   Menu,
   X,
-  Radio,
   Lock,
+  Layers,
 } from "lucide-react";
 
-interface NavItem {
+export interface NavItem {
   id: string;
+  href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
-interface NavGroup {
+export interface NavGroup {
   name: string;
   items: NavItem[];
 }
 
-const NAV_GROUPS: NavGroup[] = [
+export const NAV_GROUPS: NavGroup[] = [
   {
-    name: "OVERVIEW",
+    name: "Overview",
     items: [
-      { id: "impact", label: "Business ROI", icon: TrendingUp },
-      { id: "copilot", label: "Copilot", icon: Sparkles },
+      { id: "impact", href: "/", label: "Business ROI", icon: TrendingUp },
+      { id: "copilot", href: "/copilot", label: "Copilot", icon: Sparkles },
     ],
   },
   {
-    name: "INTELLIGENCE",
+    name: "Intelligence",
     items: [
-      { id: "patterns", label: "Patterns", icon: Network },
-      { id: "merchants", label: "Trust Score", icon: Shield },
-      { id: "drift", label: "Drift Radar", icon: Activity },
+      { id: "patterns", href: "/patterns", label: "Patterns", icon: Network },
+      { id: "trust-score", href: "/trust-score", label: "Trust Score", icon: Shield },
+      { id: "drift-radar", href: "/drift-radar", label: "Drift Radar", icon: Activity },
     ],
   },
   {
-    name: "OPERATIONS",
+    name: "Operations",
     items: [
-      { id: "verifier", label: "Verifier", icon: Scale },
-      { id: "escalations", label: "Escalations", icon: Send },
-      { id: "injection", label: "Injection", icon: Zap },
+      { id: "verifier", href: "/verifier", label: "Verifier", icon: Scale },
+      { id: "escalations", href: "/escalations", label: "Escalations", icon: Send },
+      { id: "injection", href: "/injection", label: "Data Injection", icon: Zap },
     ],
   },
   {
-    name: "EVALUATION",
+    name: "Evaluation & Specs",
     items: [
-      { id: "benchmark", label: "Benchmark", icon: Award },
-      { id: "calibration", label: "Calibration", icon: Gauge },
+      { id: "benchmark", href: "/benchmark", label: "Benchmark", icon: Award },
+      { id: "architecture", href: "/architecture", label: "Architecture", icon: Layers },
     ],
   },
 ];
@@ -65,40 +67,8 @@ const NAV_GROUPS: NavGroup[] = [
 const ALL_NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 export const Sidebar: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<string>("impact");
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
-
-  // Viewport-relative Scroll-Spy
-  useEffect(() => {
-    const handleScroll = () => {
-      const threshold = 180;
-      let currentSection = ALL_NAV_ITEMS[0].id;
-
-      for (const item of ALL_NAV_ITEMS) {
-        const el = document.getElementById(item.id);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= threshold) {
-            currentSection = item.id;
-          }
-        }
-      }
-
-      // Check if user has scrolled near bottom of page
-      if (
-        typeof window !== "undefined" &&
-        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 120
-      ) {
-        currentSection = ALL_NAV_ITEMS[ALL_NAV_ITEMS.length - 1].id;
-      }
-
-      setActiveSection(currentSection);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Handle ESC key to close mobile drawer
   useEffect(() => {
@@ -111,38 +81,42 @@ export const Sidebar: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileOpen]);
 
-  const scrollTo = (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      setActiveSection(id);
+  // Determine active item based strictly on current URL pathname
+  const isItemActive = (itemHref: string) => {
+    if (itemHref === "/") {
+      return pathname === "/";
     }
-    setMobileOpen(false);
+    return pathname === itemHref || pathname.startsWith(itemHref + "/");
   };
+
+  const activeItem = ALL_NAV_ITEMS.find((i) => isItemActive(i.href)) || ALL_NAV_ITEMS[0];
 
   const navContent = (
     <div className="flex flex-col h-full">
       {/* Brand Header */}
       <div className="p-5 border-b border-slate-800/80 bg-slate-950/60 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400">
+        <Link
+          href="/"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center space-x-3 group cursor-pointer"
+        >
+          <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 group-hover:border-teal-400/50 transition">
             <Shield className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-base tracking-tight text-white">
+              <span className="font-bold text-base tracking-tight text-white group-hover:text-teal-200 transition">
                 Nodal<span className="text-teal-400">Sentinel</span>
               </span>
               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/60 font-mono">
                 v2.0
               </span>
             </div>
-            <p className="text-[11px] font-mono text-slate-400 tracking-tight mt-0.5">
+            <p className="text-xs font-mono text-slate-400 tracking-tight mt-0.5">
               AI Finance Controller
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* Mobile close button */}
         <button
@@ -154,25 +128,25 @@ export const Sidebar: React.FC = () => {
         </button>
       </div>
 
-      {/* Navigation Links (Scrollable) */}
+      {/* Navigation Links (Real Next.js Routes) */}
       <nav
         aria-label="Dashboard sections"
         className="flex-1 overflow-y-auto p-3.5 space-y-5 sidebar-scrollbar"
       >
-        {NAV_GROUPS.map((group) => (
-          <div key={group.name} className="space-y-1">
-            <h2 className="px-2.5 text-[10px] font-bold font-mono text-slate-400 uppercase tracking-wider mb-1.5">
+        {NAV_GROUPS.map((group, groupIdx) => (
+          <div key={group.name} className={`space-y-1 ${groupIdx > 0 ? "mt-4 pt-1" : ""}`}>
+            <h2 className="px-2.5 text-xs font-semibold font-mono text-slate-400 tracking-wide mb-2.5">
               {group.name}
             </h2>
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = activeSection === item.id;
+                const isActive = isItemActive(item.href);
                 return (
-                  <a
+                  <Link
                     key={item.id}
-                    href={`#${item.id}`}
-                    onClick={(e) => scrollTo(item.id, e)}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
                     aria-current={isActive ? "page" : undefined}
                     className={`relative group flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
                       isActive
@@ -193,7 +167,7 @@ export const Sidebar: React.FC = () => {
                       }`}
                     />
                     <span className="truncate">{item.label}</span>
-                  </a>
+                  </Link>
                 );
               })}
             </div>
@@ -213,7 +187,7 @@ export const Sidebar: React.FC = () => {
               <span>System Status</span>
               <span className="text-[10px] text-emerald-400 font-bold">200 OK</span>
             </div>
-            <p className="text-[11px] text-slate-400 truncate">Deterministic controller active</p>
+            <p className="text-xs text-slate-400 truncate mt-0.5">Deterministic controller active</p>
           </div>
         </div>
 
@@ -232,7 +206,7 @@ export const Sidebar: React.FC = () => {
     <>
       {/* Mobile Sticky Top Header (Only on screens < 1024px) */}
       <header className="lg:hidden sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center space-x-2.5">
+        <Link href="/" className="flex items-center space-x-2.5">
           <div className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-400">
             <Shield className="w-4 h-4" />
           </div>
@@ -242,12 +216,12 @@ export const Sidebar: React.FC = () => {
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/60 font-mono">
             v2.0
           </span>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-2">
-          {/* Active section indicator pill */}
+          {/* Active route indicator pill */}
           <span className="text-xs font-mono text-slate-400 hidden sm:inline-block px-2 py-0.5 rounded bg-slate-900 border border-slate-800 truncate max-w-[120px]">
-            {ALL_NAV_ITEMS.find((i) => i.id === activeSection)?.label}
+            {activeItem.label}
           </span>
 
           <button

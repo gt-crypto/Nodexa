@@ -20,6 +20,7 @@ import { StatusBadge } from "./ui/StatusBadge";
 export function MerchantTrustScorePanel() {
   const [scores, setScores] = useState<MerchantScore[]>([]);
   const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,12 +62,12 @@ export function MerchantTrustScorePanel() {
       <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl relative overflow-hidden">
         {/* Section Header (Issue 3 & 14) */}
         <SectionHeading
-          icon={<Building2 className="w-6 h-6 text-purple-400" />}
+          icon={<Building2 className="w-6 h-6 text-teal-400" />}
           title="Merchant Trust & Impact Scorecards"
           badge={{
-            text: "Tier-2 Merchant Intelligence (v2.0)",
-            icon: <Shield className="w-3.5 h-3.5 text-purple-400" />,
-            color: "bg-purple-500/10 border-purple-500/30 text-purple-300",
+            text: "Tier-2 Merchant Intelligence",
+            icon: <Shield className="w-3.5 h-3.5 text-teal-400" />,
+            color: "bg-teal-500/10 border-teal-500/30 text-teal-300",
           }}
           description="Deterministic risk & operational impact analytics for merchants participating in nodal transaction clearing."
           action={
@@ -91,11 +92,25 @@ export function MerchantTrustScorePanel() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Merchant List */}
           <div className="glass-panel border border-slate-800/80 rounded-xl overflow-hidden flex flex-col h-[520px]">
-            <div className="p-4 border-b border-slate-800/80 bg-slate-900/40">
-              <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2 font-mono">
-                <Search className="w-4 h-4 text-slate-400" />
-                <span>Analyzed merchants ({scores.length})</span>
-              </h3>
+            {/* Search and List Header (Finding C8) */}
+            <div className="p-3.5 border-b border-slate-800/80 bg-slate-900/40 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-2 font-mono uppercase tracking-wider">
+                  <Building2 className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Analyzed merchants ({scores.filter(s => s.merchant_id.toLowerCase().includes(searchQuery.toLowerCase())).length})</span>
+                </h3>
+              </div>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter merchants by ID..."
+                  aria-label="Filter analyzed merchants by ID"
+                  className="w-full h-8 pl-8 pr-3 text-xs font-mono bg-slate-950/70 border border-slate-800 rounded-lg text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500/40 focus:border-teal-500/50"
+                />
+              </div>
             </div>
             
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
@@ -104,37 +119,55 @@ export function MerchantTrustScorePanel() {
               ) : scores.length === 0 ? (
                 <div className="p-4 text-center text-sm text-slate-400">No merchant activity found.</div>
               ) : (
-                scores.map((score) => (
-                  <button
-                    key={score.merchant_id}
-                    onClick={() => setSelectedMerchantId(score.merchant_id)}
-                    className={`w-full text-left p-3 rounded-xl border transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
-                      selectedMerchantId === score.merchant_id
-                        ? "bg-teal-500/15 border-teal-500/50 shadow-sm ring-1 ring-teal-500/30"
-                        : "bg-slate-900/40 border-slate-800/60 hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-mono text-sm font-bold text-white tracking-tight">{score.merchant_id}</span>
-                      <StatusBadge status={score.score_band} size="sm" />
-                    </div>
-                    {/* Compact Grouped Metrics (Issue 23: Balance Card Spacing) */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 text-xs font-mono">
-                      <div className="flex items-center gap-1.5 bg-slate-900/60 px-2 py-1 rounded-md border border-slate-800/80">
-                        <ShieldAlert className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-                        <span className="text-slate-400">Trust:</span>
-                        <span className="text-white font-bold">{score.trust_score}</span>
-                        <span className="text-slate-500 text-[10px]">/100</span>
+                scores
+                  .filter((s) => s.merchant_id.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map((score) => (
+                    <button
+                      key={score.merchant_id}
+                      onClick={() => setSelectedMerchantId(score.merchant_id)}
+                      className={`w-full text-left p-3 rounded-xl border transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
+                        selectedMerchantId === score.merchant_id
+                          ? "bg-teal-500/15 border-teal-500/50 shadow-sm ring-1 ring-teal-500/30"
+                          : "bg-slate-900/40 border-slate-800/60 hover:bg-slate-800/60"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2 gap-2">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
+                            Merchant ID
+                          </span>
+                          <span
+                            className="font-mono text-xs font-bold text-white truncate block select-all"
+                            title={score.merchant_id}
+                          >
+                            {score.merchant_id}
+                          </span>
+                        </div>
+                        <StatusBadge status={score.score_band} size="sm" />
                       </div>
-                      <div className="flex items-center gap-1.5 bg-slate-900/60 px-2 py-1 rounded-md border border-slate-800/80">
-                        <TrendingUp className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className="text-slate-400">Impact:</span>
-                        <span className="text-white font-bold">{score.impact_score}</span>
-                        <span className="text-slate-500 text-[10px]">/100</span>
+                      {/* Compact Grouped Metrics with Prominent Scores (Finding C7) */}
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 font-mono">
+                        <div className="bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex flex-col justify-center">
+                          <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-0.5">
+                            <Shield className="w-3 h-3 text-teal-400 shrink-0" />
+                            <span>Trust</span>
+                          </div>
+                          <div className="text-sm font-bold text-white">
+                            {score.trust_score}<span className="text-[11px] text-slate-400 font-normal">/100</span>
+                          </div>
+                        </div>
+                        <div className="bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex flex-col justify-center">
+                          <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-0.5">
+                            <TrendingUp className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span>Impact</span>
+                          </div>
+                          <div className="text-sm font-bold text-white">
+                            {score.impact_score}<span className="text-[11px] text-slate-400 font-normal">/100</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))
+                    </button>
+                  ))
               )}
             </div>
           </div>
@@ -146,8 +179,16 @@ export function MerchantTrustScorePanel() {
                 {/* Header */}
                 <div className="p-6 border-b border-slate-800/80 bg-slate-900/40 flex flex-wrap justify-between items-center gap-4">
                   <div>
-                    <span className="text-xs font-mono text-purple-400 uppercase tracking-wider block mb-1">Merchant profile</span>
-                    <h3 className="text-xl font-bold text-white font-mono">{selectedScore.merchant_id}</h3>
+                    <span className="text-xs font-mono text-slate-400 block mb-0.5">Merchant profile</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Merchant ID:</span>
+                      <h3
+                        className="text-lg font-bold text-white font-mono select-all truncate max-w-md"
+                        title={selectedScore.merchant_id}
+                      >
+                        {selectedScore.merchant_id}
+                      </h3>
+                    </div>
                   </div>
 
                   <div className="flex gap-4">
@@ -200,7 +241,7 @@ export function MerchantTrustScorePanel() {
                     </div>
                     
                     {selectedScore.metrics.total_transaction_count > 0 && (
-                      <div className="mt-4 text-xs text-slate-300 bg-slate-900/30 p-3 rounded-lg border border-slate-800/40">
+                      <div className="mt-4 mb-2 text-xs text-slate-300 bg-slate-900/30 p-3.5 rounded-lg border border-slate-800/40">
                         <span className="font-semibold text-white">Base volume:</span> {selectedScore.metrics.total_transaction_count} transactions (₹{(selectedScore.metrics.total_transaction_volume / 100).toLocaleString(undefined, {minimumFractionDigits: 0})})
                       </div>
                     )}

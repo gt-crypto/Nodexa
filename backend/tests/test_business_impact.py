@@ -204,3 +204,16 @@ def test_ask_sentinel_business_impact_and_no_fake_savings(db_session: Session):
     ans2 = res2["answer"].lower()
     # Must explicitly state it should not be interpreted as money saved
     assert "not be interpreted as money saved" in ans2 or "not equivalent to recovered savings" in ans2
+
+
+def test_realized_savings_semantics(client: TestClient, db_session: Session):
+    """Validate that realized_savings contract enforces unmeasured state (None) vs fabricated values."""
+    response = client.get("/impact/roi")
+    assert response.status_code == 200
+    data = response.json()
+    # Explicitly None (null in JSON) - not fabricated
+    assert data["realized_savings"] is None
+    # Disclaimer explicitly explains why it is unmeasured
+    assert "not equivalent to recovered savings" in data["disclaimer"]
+    assert "No post-remediation realized savings are fabricated" in data["disclaimer"]
+

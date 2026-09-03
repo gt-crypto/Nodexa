@@ -102,6 +102,21 @@ export function PatternMinerPanel() {
     }
   };
 
+  const formatPatternType = (type: string) => {
+    switch (type) {
+      case "FAMILY_SIGNATURE":
+        return "Family Signature";
+      case "MERCHANT_REPEATED_FAMILY":
+        return "Merchant Repeated Family";
+      case "CONTROL_FINDING_SIGNATURE":
+        return "Control Finding Signature";
+      case "TIMING_SLA_SIGNATURE":
+        return "Timing SLA Signature";
+      default:
+        return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+  };
+
   const clusters = clustersData?.clusters || [];
   const visibleClusters = showAll ? clusters : clusters.slice(0, 6);
 
@@ -128,7 +143,7 @@ export function PatternMinerPanel() {
           <Button
             onClick={handleRefresh}
             disabled={refreshing || loading}
-            variant="secondary"
+            variant="primary"
             icon={<RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />}
           >
             {refreshing ? "Mining..." : "Recompute patterns"}
@@ -168,39 +183,39 @@ export function PatternMinerPanel() {
       </div>
 
       {/* Filters Bar (Issues 6 & 19: Unified Brand Active Filters & Prominent Group Labels) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/80">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 p-4 rounded-xl bg-slate-900/40 border border-slate-800/80">
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <span className="text-slate-200 mr-1 flex items-center gap-1 font-semibold text-xs">
+          <span className="text-slate-200 mr-1 flex items-center gap-1.5 font-semibold text-xs shrink-0">
             <Filter className="w-3.5 h-3.5 text-teal-400" /> Pattern type:
           </span>
           {["ALL", "FAMILY_SIGNATURE", "MERCHANT_REPEATED_FAMILY", "CONTROL_FINDING_SIGNATURE", "TIMING_SLA_SIGNATURE"].map((t) => (
             <button
               key={t}
               onClick={() => setSelectedType(t)}
-              className={`px-3 py-1 rounded-lg border transition-all duration-150 cursor-pointer ${
+              className={`h-9 min-h-[36px] px-3.5 rounded-lg border transition-all duration-150 cursor-pointer text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
                 selectedType === t
                   ? "bg-teal-500/20 border-teal-500/50 text-teal-300 font-semibold shadow-sm shadow-teal-500/10"
                   : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
               }`}
             >
-              {t === "ALL" ? "All types" : t.replace(/_/g, " ")}
+              {t === "ALL" ? "All types" : formatPatternType(t)}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono">
-          <span className="text-slate-200 font-semibold text-xs">Source:</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <span className="text-slate-200 font-semibold text-xs shrink-0">Source:</span>
           {["ALL", "seeded", "live-injected"].map((s) => (
             <button
               key={s}
               onClick={() => setSelectedSource(s)}
-              className={`px-2.5 py-1 rounded-lg border transition-all duration-150 cursor-pointer ${
+              className={`h-9 min-h-[36px] px-3.5 rounded-lg border transition-all duration-150 cursor-pointer text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
                 selectedSource === s
                   ? "bg-teal-500/20 border-teal-500/50 text-teal-300 font-semibold shadow-sm shadow-teal-500/10"
                   : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
               }`}
             >
-              {s === "ALL" ? "All" : s}
+              {s === "ALL" ? "All" : s === "seeded" ? "Synthetic" : "Live rails"}
             </button>
           ))}
         </div>
@@ -244,8 +259,8 @@ export function PatternMinerPanel() {
                         <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
                           {cluster.pattern_label}
                         </h3>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-mono border uppercase ${getTypeBadgeStyle(cluster.pattern_type)}`}>
-                          {cluster.pattern_type.replace(/_/g, " ")}
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono border font-medium ${getTypeBadgeStyle(cluster.pattern_type)}`}>
+                          {formatPatternType(cluster.pattern_type)}
                         </span>
                       </div>
 
@@ -254,17 +269,17 @@ export function PatternMinerPanel() {
                         {cluster.description}
                       </p>
 
-                      {/* METADATA: Unified Compact Line (Issue 18 & Major Issue 3: Subtle Metadata Treatment) */}
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-slate-400 mt-2">
+                      {/* METADATA: Unified Compact Line (Finding B7) */}
+                      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs font-mono text-slate-300 mt-2.5">
                         <span className="text-white font-medium">{cluster.exception_count} cases</span>
-                        <span>•</span>
-                        <span>{cluster.merchants.length} merchants</span>
-                        <span>•</span>
-                        <span className="text-emerald-300 font-bold">{formatRupees(cluster.total_exposure)} exposure</span>
+                        <span className="text-slate-600">·</span>
+                        <span className="text-slate-300">{cluster.merchants.length} merchants</span>
+                        <span className="text-slate-600">·</span>
+                        <span className="text-emerald-400 font-semibold">{formatRupees(cluster.total_exposure)} exposure</span>
                         {cluster.live_injected_count > 0 && (
                           <>
-                            <span>•</span>
-                            <span className="text-slate-400 font-medium">
+                            <span className="text-slate-600">·</span>
+                            <span className="text-cyan-300 font-medium">
                               {cluster.live_injected_count} live-injected
                             </span>
                           </>

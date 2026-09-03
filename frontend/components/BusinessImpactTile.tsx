@@ -13,6 +13,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { BusinessImpactData, fetchBusinessImpact } from "../lib/api";
+import { formatPaiseOrUnavailable } from "../lib/formatters";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 
@@ -40,8 +41,7 @@ export function BusinessImpactTile() {
   };
 
   const formatRupees = (paise: number) => {
-    const rupees = paise / 100.0;
-    return `₹${rupees.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return formatPaiseOrUnavailable(paise, "₹0.00");
   };
 
   return (
@@ -56,7 +56,7 @@ export function BusinessImpactTile() {
           icon={<TrendingUp className="w-6 h-6 text-teal-400" />}
           title="Business Impact & Value Surfaced"
           badge={{
-            text: "Tier-2 Business Impact (v2.0 ROI Tile)",
+            text: "Tier-2 Business Impact",
             icon: <DollarSign className="w-3.5 h-3.5 text-teal-400" />,
             color: "bg-teal-500/10 border-teal-500/30 text-teal-300",
           }}
@@ -111,7 +111,7 @@ export function BusinessImpactTile() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
+                  <span className="text-xs font-mono font-semibold text-slate-400">
                     Financial exposure identified
                   </span>
                   <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-teal-500/15 text-teal-300 border border-teal-500/30">
@@ -134,8 +134,8 @@ export function BusinessImpactTile() {
 
               <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
                 <span className="text-slate-400">Realized savings:</span>
-                <span className="text-slate-500 italic">
-                  {data?.realized_savings === null ? "null (honest governance)" : data?.realized_savings}
+                <span className="text-slate-300 font-medium">
+                  {formatPaiseOrUnavailable(data?.realized_savings, "N/A")}
                 </span>
               </div>
             </div>
@@ -193,12 +193,16 @@ export function BusinessImpactTile() {
           </div>
 
           {/* Transparent Classification Disclaimer */}
-          <div className="rounded-xl bg-slate-900/40 border border-slate-800/80 p-4 text-xs text-slate-300 flex items-start gap-3">
+          <div className="rounded-xl bg-slate-900/50 border border-slate-800 p-4 text-xs text-slate-300 flex items-start gap-3 not-italic">
             <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-            <div className="leading-relaxed">
-              <strong className="text-white">Classification guarantee: </strong>
-              {data?.disclaimer ||
-                "Exposure identified for review; not equivalent to recovered savings. No post-remediation realized savings are fabricated without concrete financial recovery evidence."}
+            <div className="leading-relaxed not-italic space-y-1">
+              <strong className="text-white font-semibold block text-xs not-italic">
+                Classification guarantee:
+              </strong>
+              <p className="text-xs text-slate-300 font-normal leading-relaxed not-italic">
+                {data?.disclaimer ||
+                  "Exposure identified for review; not equivalent to recovered savings. No post-remediation realized savings are fabricated without concrete financial recovery evidence."}
+              </p>
             </div>
           </div>
 
