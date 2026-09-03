@@ -17,10 +17,7 @@ from backend.data.generator.service import generate_dataset
 
 @pytest.fixture(scope="module")
 def setup_db():
-    init_db()
     session = SessionLocal()
-    generate_dataset(session=session, record_count=60, seed=42)
-    session.commit()
     yield session
     session.close()
 

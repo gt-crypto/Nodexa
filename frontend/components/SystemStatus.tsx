@@ -32,18 +32,18 @@ export const SystemStatus: React.FC = () => {
   }, []);
 
   return (
-    <section id="overview" className="w-full mb-12">
-      <div className="glass-panel rounded-2xl p-6 border border-slate-800/80 shadow-2xl relative overflow-hidden">
+    <section id="overview" className="w-full">
+      <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/60">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-teal-400">
+        {/* Standardized Main Card Header (Issues 1, 2, 6) */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/60 mb-6">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-teal-400 shrink-0">
               <Server className="w-5 h-5" />
             </div>
-            <div>
-              {/* Issue 14: H2 Semantic Heading */}
-              <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight">
                 Controller Engine Status
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -52,17 +52,19 @@ export const SystemStatus: React.FC = () => {
             </div>
           </div>
 
-          <Button
-            onClick={checkHealth}
-            disabled={loading}
-            variant="secondary"
-            size="sm"
-            aria-label="Refresh controller engine status"
-            icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
-          >
-            {loading ? "Checking..." : "Refresh"}
-          </Button>
-        </div>
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+            <Button
+              onClick={checkHealth}
+              disabled={loading}
+              variant="secondary"
+              size="sm"
+              aria-label="Refresh controller engine status"
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
+            >
+              {loading ? "Checking..." : "Refresh"}
+            </Button>
+          </div>
+        </header>
 
         <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
           <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">

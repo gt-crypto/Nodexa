@@ -1,10 +1,42 @@
-"""Pytest fixtures for database testing with isolated in-memory SQLite."""
+"""Pytest fixtures for database testing with isolated in-memory and temporary SQLite databases."""
+import os
+import tempfile
+
+# CRITICAL: Point DATABASE_URL to an isolated test database BEFORE any backend module is imported.
+_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "test_nodal_sentinel_isolated.db")
+os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB_PATH}"
+os.environ["ENVIRONMENT"] = "test"
+
 import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
 
+import backend.models.database as db_mod
 from backend.models.database import Base
+
+
+@pytest.fixture(scope="session", autouse=True)
+def isolate_test_database():
+    """Guarantees that tests never touch nodal_sentinel.db by isolating global engine and SessionLocal."""
+    from backend.data.generator.service import generate_dataset
+    from backend.exceptions.service import ExceptionDetectionService
+
+    Base.metadata.create_all(bind=db_mod.engine)
+    session = db_mod.SessionLocal()
+    generate_dataset(session=session, record_count=60, seed=42)
+    ExceptionDetectionService().detect_exceptions(session=session)
+    session.commit()
+    session.close()
+
+    yield db_mod.engine
+
+    db_mod.engine.dispose()
+    try:
+        if os.path.exists(_TEST_DB_PATH):
+            os.remove(_TEST_DB_PATH)
+    except Exception:
+        pass
 
 
 @pytest.fixture(scope="function")

@@ -51,47 +51,57 @@ export function BusinessImpactTile() {
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Section Header (Issue 3 & 14) */}
-        <SectionHeading
-          icon={<TrendingUp className="w-6 h-6 text-teal-400" />}
-          title="Business Impact & Value Surfaced"
-          badge={{
-            text: "Tier-2 Business Impact",
-            icon: <DollarSign className="w-3.5 h-3.5 text-teal-400" />,
-            color: "bg-teal-500/10 border-teal-500/30 text-teal-300",
-          }}
-          description="Auditable, transparent operational metrics measuring potential risk exposure identified and governance value delivered across nodal accounts."
-          action={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowMethodology(!showMethodology)}
-                icon={<Info className="w-3.5 h-3.5 text-cyan-400" />}
-                title="View deterministic calculation methodology"
-              >
-                <span>Methodology</span>
-                {showMethodology ? (
-                  <ChevronUp className="w-3.5 h-3.5 ml-1 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 ml-1 text-slate-400" />
-                )}
-              </Button>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={loadImpact}
-                disabled={loading}
-                title="Refresh business impact"
-                aria-label="Refresh business impact"
-                icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
-              >
-                Refresh
-              </Button>
+        {/* Standardized Main Card Header (Issues 1, 2, 6) */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/60 mb-6">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-teal-400 shrink-0">
+              <TrendingUp className="w-5 h-5" />
             </div>
-          }
-        />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight">
+                  Business Impact & Value Surfaced
+                </h2>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-teal-500/10 border border-teal-500/30 text-teal-300">
+                  <DollarSign className="w-3 h-3 text-teal-400" />
+                  <span>Tier-2 Business Impact</span>
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5 max-w-2xl leading-relaxed">
+                Auditable, transparent operational metrics measuring potential risk exposure identified and governance value delivered across nodal accounts.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowMethodology(!showMethodology)}
+              icon={<Info className="w-3.5 h-3.5 text-cyan-400" />}
+              title="View deterministic calculation methodology"
+            >
+              <span>Methodology</span>
+              {showMethodology ? (
+                <ChevronUp className="w-3.5 h-3.5 ml-1 text-slate-400" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 ml-1 text-slate-400" />
+              )}
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={loadImpact}
+              disabled={loading}
+              title="Refresh business impact"
+              aria-label="Refresh business impact"
+              icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
+            >
+              Refresh
+            </Button>
+          </div>
+        </header>
 
         {/* Main Content Area */}
         <div className="space-y-6">

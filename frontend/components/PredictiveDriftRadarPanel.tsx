@@ -19,6 +19,7 @@ import {
   Minus,
 } from "lucide-react";
 import { DriftPredictionData, fetchDriftPrediction } from "../lib/api";
+import { formatNumber, formatSignedNumber, toSentenceCase } from "../lib/formatters";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 
@@ -47,6 +48,24 @@ export function PredictiveDriftRadarPanel() {
 
   const formatRupees = (paise: number) => {
     return (paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 });
+  };
+
+  const formatRiskBandText = (band?: string) => {
+    switch (band) {
+      case "CRITICAL":
+        return "Critical Risk Drift";
+      case "HIGH":
+        return "High Risk Drift";
+      case "MODERATE":
+      case "ELEVATED":
+        return "Elevated Risk Drift";
+      case "WATCH":
+        return "Watch Risk Drift";
+      case "LOW":
+      case "STABLE":
+      default:
+        return "Stable Risk Drift";
+    }
   };
 
   const getRiskBandBadge = (band: string) => {
@@ -168,7 +187,7 @@ export function PredictiveDriftRadarPanel() {
                           data?.risk_band || "LOW"
                         )}`}
                       >
-                        {data?.risk_band || "LOW"} RISK DRIFT
+                        {formatRiskBandText(data?.risk_band)}
                       </span>
                     </div>
                   </div>
@@ -269,8 +288,9 @@ export function PredictiveDriftRadarPanel() {
                         <div className="flex items-center gap-4 shrink-0 text-xs font-mono">
                           <div className="text-right">
                             <span className="text-slate-400 block text-xs">Observed delta</span>
-                            <span className="font-bold text-white">
-                              {sig.delta > 0 ? `+${sig.delta}` : sig.delta}
+                            {/* Formatted large signed number (Issue 26) */}
+                            <span className="font-bold text-white font-mono">
+                              {formatSignedNumber(sig.delta)}
                             </span>
                           </div>
 
@@ -316,10 +336,10 @@ export function PredictiveDriftRadarPanel() {
                           : "—"}
                       </div>
                       <div className="mt-3 pt-3 border-t border-slate-800 space-y-1 text-slate-300">
-                        <div>Exceptions: {data.baseline_metrics.exception_count}</div>
+                        <div>Exceptions: {formatNumber(data.baseline_metrics.exception_count)}</div>
                         <div>Exposure: ₹{formatRupees(data.baseline_metrics.exposure_minor_units || 0)}</div>
-                        <div>High-risk cases: {data.baseline_metrics.high_risk_count}</div>
-                        <div>Control failures: {data.baseline_metrics.control_failures}</div>
+                        <div>High-risk cases: {formatNumber(data.baseline_metrics.high_risk_count)}</div>
+                        <div>Control failures: {formatNumber(data.baseline_metrics.control_failures)}</div>
                       </div>
                     </div>
 
@@ -335,10 +355,10 @@ export function PredictiveDriftRadarPanel() {
                           : "—"}
                       </div>
                       <div className="mt-3 pt-3 border-t border-slate-800 space-y-1 text-slate-300">
-                        <div>Exceptions: {data.current_metrics.exception_count}</div>
+                        <div>Exceptions: {formatNumber(data.current_metrics.exception_count)}</div>
                         <div>Exposure: ₹{formatRupees(data.current_metrics.exposure_minor_units || 0)}</div>
-                        <div>High-risk cases: {data.current_metrics.high_risk_count}</div>
-                        <div>Control failures: {data.current_metrics.control_failures}</div>
+                        <div>High-risk cases: {formatNumber(data.current_metrics.high_risk_count)}</div>
+                        <div>Control failures: {formatNumber(data.current_metrics.control_failures)}</div>
                       </div>
                     </div>
                   </div>

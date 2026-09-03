@@ -129,27 +129,40 @@ export function PatternMinerPanel() {
       <div className="absolute -top-24 -right-24 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Section Header (Issue 3 & 14) */}
-      <SectionHeading
-        icon={<Network className="w-6 h-6 text-purple-400" />}
-        title="Deterministic Exception Pattern Miner"
-        badge={{
-          text: "Tier-2 Pattern Miner Active (v2.0)",
-          icon: <Network className="w-3.5 h-3.5 text-purple-400" />,
-          color: "bg-purple-500/10 border-purple-500/30 text-purple-300",
-        }}
-        description="Uncovers recurring operational signatures, repeated merchant anomalies, and systemic SLA delays across seeded and live-injected cases with explainable evidence."
-        action={
+      {/* Subordinate Panel Header (Issue 11) */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/60 mb-6">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-purple-400 shrink-0">
+            <Network className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-lg sm:text-xl font-semibold text-slate-100 tracking-tight">
+                Deterministic Exception Pattern Miner
+              </h2>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-purple-500/10 border border-purple-500/30 text-purple-300">
+                <Network className="w-3 h-3 text-purple-400" />
+                <span>Tier-2 Pattern Miner Active (v2.0)</span>
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5 max-w-2xl leading-relaxed">
+              Uncovers recurring operational signatures, repeated merchant anomalies, and systemic SLA delays across seeded and live-injected cases with explainable evidence.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
           <Button
             onClick={handleRefresh}
             disabled={refreshing || loading}
             variant="primary"
-            icon={<RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />}
+            size="sm"
+            icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />}
           >
             {refreshing ? "Mining..." : "Recompute patterns"}
           </Button>
-        }
-      />
+        </div>
+      </header>
 
       {/* Top Metrics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -162,37 +175,37 @@ export function PatternMinerPanel() {
 
         <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
           <span className="text-xs font-mono text-slate-400 block mb-1">Clustered exceptions</span>
-          <span className="text-2xl font-extrabold text-cyan-300 font-mono">
+          <span className="text-2xl font-extrabold text-teal-300 font-mono">
             {clustersData?.total_clustered_exceptions ?? "—"}
           </span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
           <span className="text-xs font-mono text-slate-400 block mb-1">Total clustered exposure</span>
-          <span className="text-2xl font-extrabold text-emerald-300 font-mono">
+          <span className="text-2xl font-extrabold text-emerald-400 font-mono">
             {clustersData ? formatRupees(clustersData.total_clustered_exposure) : "—"}
           </span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
           <span className="text-xs font-mono text-slate-400 block mb-1">Min. cluster size</span>
-          <span className="text-2xl font-extrabold text-amber-300 font-mono">
+          <span className="text-2xl font-extrabold text-slate-200 font-mono">
             ≥ {clustersData?.min_cluster_size ?? 2}
           </span>
         </div>
       </div>
 
-      {/* Filters Bar (Issues 6 & 19: Unified Brand Active Filters & Prominent Group Labels) */}
+      {/* Filters Bar (Issues 7, 8, 9: Vertically centered labels & unified pill style) */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 p-4 rounded-xl bg-slate-900/40 border border-slate-800/80">
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <span className="text-slate-200 mr-1 flex items-center gap-1.5 font-semibold text-xs shrink-0">
+          <span className="h-9 min-h-[36px] flex items-center text-slate-300 mr-1 gap-1.5 font-semibold text-xs shrink-0">
             <Filter className="w-3.5 h-3.5 text-teal-400" /> Pattern type:
           </span>
           {["ALL", "FAMILY_SIGNATURE", "MERCHANT_REPEATED_FAMILY", "CONTROL_FINDING_SIGNATURE", "TIMING_SLA_SIGNATURE"].map((t) => (
             <button
               key={t}
               onClick={() => setSelectedType(t)}
-              className={`h-9 min-h-[36px] px-3.5 rounded-lg border transition-all duration-150 cursor-pointer text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
+              className={`h-9 min-h-[36px] px-3.5 rounded-lg border transition-all duration-150 cursor-pointer text-xs font-mono flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
                 selectedType === t
                   ? "bg-teal-500/20 border-teal-500/50 text-teal-300 font-semibold shadow-sm shadow-teal-500/10"
                   : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
@@ -204,12 +217,14 @@ export function PatternMinerPanel() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <span className="text-slate-200 font-semibold text-xs shrink-0">Source:</span>
+          <span className="h-9 min-h-[36px] flex items-center text-slate-300 font-semibold text-xs shrink-0">
+            Source:
+          </span>
           {["ALL", "seeded", "live-injected"].map((s) => (
             <button
               key={s}
               onClick={() => setSelectedSource(s)}
-              className={`h-9 min-h-[36px] px-3.5 rounded-lg border transition-all duration-150 cursor-pointer text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
+              className={`h-9 min-h-[36px] px-3.5 rounded-lg border transition-all duration-150 cursor-pointer text-xs font-mono flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
                 selectedSource === s
                   ? "bg-teal-500/20 border-teal-500/50 text-teal-300 font-semibold shadow-sm shadow-teal-500/10"
                   : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"

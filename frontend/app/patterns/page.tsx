@@ -9,12 +9,12 @@ export const metadata = {
 export default function PatternsPage() {
   return (
     <div className="space-y-6">
-      <div className="pb-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+      <div className="pb-1">
+        <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
           Pattern Miner
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          AI-driven anomaly family and pattern analysis
+          AI-driven anomaly family and pattern analysis for nodal reconciliation
         </p>
       </div>
 

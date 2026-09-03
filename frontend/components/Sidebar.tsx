@@ -17,7 +17,10 @@ import {
   X,
   Lock,
   Layers,
+  LogOut,
+  Target,
 } from "lucide-react";
+import { useAuth } from "../lib/auth";
 
 export interface NavItem {
   id: string;
@@ -68,6 +71,7 @@ const ALL_NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
   // Handle ESC key to close mobile drawer
@@ -142,6 +146,8 @@ export const Sidebar: React.FC = () => {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = isItemActive(item.href);
+                const isRoleFocus = Boolean(user?.highlightRoutes.includes(item.href));
+
                 return (
                   <Link
                     key={item.id}
@@ -166,7 +172,15 @@ export const Sidebar: React.FC = () => {
                           : "text-slate-400 group-hover:text-slate-300"
                       }`}
                     />
-                    <span className="truncate">{item.label}</span>
+                    <span className="min-w-0 truncate">{item.label}</span>
+
+                    {/* Contextual Role Focus indicator (subtle neutral dot, subordinate to active state) */}
+                    {isRoleFocus && !isActive && (
+                      <span className="ml-auto shrink-0 flex items-center gap-1.5 text-[10px] font-mono text-slate-400 group-hover:text-slate-300">
+                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500/70" />
+                        <span>Focus</span>
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -174,6 +188,25 @@ export const Sidebar: React.FC = () => {
           </div>
         ))}
       </nav>
+
+      {/* Authenticated User Profile Section (Single global Sign out is in top header) */}
+      {user && (
+        <div className="p-3 border-t border-slate-800/80 bg-slate-950/80 shrink-0">
+          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-900/90 border border-slate-800/90">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/15 border border-teal-500/30 text-teal-300 font-mono font-bold text-xs flex items-center justify-center shrink-0 shadow-inner">
+              {user.initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold text-slate-100 truncate leading-tight">
+                {user.role}
+              </div>
+              <div className="text-[11px] font-mono text-slate-400 truncate mt-0.5">
+                {user.email}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer / System Status Area */}
       <div className="p-3.5 border-t border-slate-800/80 bg-slate-950/90 space-y-2">
@@ -255,7 +288,7 @@ export const Sidebar: React.FC = () => {
 
       {/* Desktop Fixed Left Sidebar (≥ 1024px) */}
       <aside
-        className="hidden lg:flex flex-col fixed top-0 bottom-0 left-0 w-64 z-30 bg-slate-950/95 border-r border-slate-800/80 backdrop-blur-md"
+        className="hidden lg:flex flex-col fixed top-0 bottom-0 left-0 w-64 h-screen z-30 bg-slate-950/95 border-r border-slate-800/80 backdrop-blur-md"
         aria-label="Main Navigation"
       >
         {navContent}

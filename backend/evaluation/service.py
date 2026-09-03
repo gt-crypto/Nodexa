@@ -218,41 +218,46 @@ class BenchmarkEvaluationService:
             )
             eval_repo.create_evaluation_run(db_run)
 
-            # Persist Cases
-            db_cases = [
-                EvaluationCase(
-                    evaluation_case_id=c.evaluation_case_id,
-                    evaluation_run_id=eval_run_id,
-                    ground_truth_case_id=c.ground_truth_case_id,
-                    predicted_exception_id=c.predicted_exception_id,
-                    match_status=c.match_status,
-                    matched_by=c.matched_by,
-                    matched_identifier=c.matched_identifier,
-                    expected_exception_type=c.expected_exception_type,
-                    predicted_exception_type=c.predicted_exception_type,
-                    expected_root_cause=c.expected_root_cause,
-                    predicted_root_cause=c.predicted_root_cause,
-                    expected_exposure=c.expected_exposure,
-                    predicted_exposure=c.predicted_exposure,
-                    exposure_error=c.exposure_error,
-                    expected_severity=c.expected_severity,
-                    predicted_severity=c.predicted_severity,
-                    expected_priority=c.expected_priority,
-                    predicted_priority=c.predicted_priority,
-                    expected_resolution_class=c.expected_resolution_class,
-                    predicted_resolution_class=c.predicted_resolution_class,
-                    expected_policy_decision=c.expected_policy_decision,
-                    predicted_policy_decision=c.predicted_policy_decision,
-                    remediation_result=c.remediation_result,
-                    verification_result=c.verification_result,
-                    is_false_closure=c.is_false_closure,
-                    is_legitimate_case=c.is_legitimate_case,
-                    error_categories=json.dumps(c.error_categories),
-                    details=json.dumps(c.details),
-                    created_at=now,
+            # Persist Cases (deduplicated by evaluation_case_id)
+            seen_case_ids = set()
+            db_cases = []
+            for c in (report.false_positives + report.false_negatives + report.misclassifications):
+                if c.evaluation_case_id in seen_case_ids:
+                    continue
+                seen_case_ids.add(c.evaluation_case_id)
+                db_cases.append(
+                    EvaluationCase(
+                        evaluation_case_id=c.evaluation_case_id,
+                        evaluation_run_id=eval_run_id,
+                        ground_truth_case_id=c.ground_truth_case_id,
+                        predicted_exception_id=c.predicted_exception_id,
+                        match_status=c.match_status,
+                        matched_by=c.matched_by,
+                        matched_identifier=c.matched_identifier,
+                        expected_exception_type=c.expected_exception_type,
+                        predicted_exception_type=c.predicted_exception_type,
+                        expected_root_cause=c.expected_root_cause,
+                        predicted_root_cause=c.predicted_root_cause,
+                        expected_exposure=c.expected_exposure,
+                        predicted_exposure=c.predicted_exposure,
+                        exposure_error=c.exposure_error,
+                        expected_severity=c.expected_severity,
+                        predicted_severity=c.predicted_severity,
+                        expected_priority=c.expected_priority,
+                        predicted_priority=c.predicted_priority,
+                        expected_resolution_class=c.expected_resolution_class,
+                        predicted_resolution_class=c.predicted_resolution_class,
+                        expected_policy_decision=c.expected_policy_decision,
+                        predicted_policy_decision=c.predicted_policy_decision,
+                        remediation_result=c.remediation_result,
+                        verification_result=c.verification_result,
+                        is_false_closure=c.is_false_closure,
+                        is_legitimate_case=c.is_legitimate_case,
+                        error_categories=json.dumps(c.error_categories),
+                        details=json.dumps(c.details),
+                        created_at=now,
+                    )
                 )
-                for c in (report.false_positives + report.false_negatives + report.misclassifications)
-            ]
             eval_repo.save_cases(db_cases)
 
             # Audit: EVALUATION_COMPLETED

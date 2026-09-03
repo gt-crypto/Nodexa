@@ -36,7 +36,6 @@ from backend.demo.injection_service import LiveDigitalTwinInjectionService
 
 @pytest.fixture(autouse=True)
 def setup_db():
-    Base.metadata.create_all(bind=engine)
     yield
 
 

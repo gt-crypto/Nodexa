@@ -13,6 +13,7 @@ import {
   Search,
 } from "lucide-react";
 import { MerchantScore, fetchMerchantScores } from "../lib/api";
+import { toSentenceCase } from "../lib/formatters";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 import { StatusBadge } from "./ui/StatusBadge";
@@ -70,17 +71,6 @@ export function MerchantTrustScorePanel() {
             color: "bg-teal-500/10 border-teal-500/30 text-teal-300",
           }}
           description="Deterministic risk & operational impact analytics for merchants participating in nodal transaction clearing."
-          action={
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={loadScores}
-              disabled={loading}
-              icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
-            >
-              Refresh
-            </Button>
-          }
         />
 
         {error && (
@@ -92,13 +82,24 @@ export function MerchantTrustScorePanel() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Merchant List */}
           <div className="glass-panel border border-slate-800/80 rounded-xl overflow-hidden flex flex-col h-[520px]">
-            {/* Search and List Header (Finding C8) */}
+            {/* Search and List Header (Issues 15 & 20: Sentence-case & Adjacent Refresh Button) */}
             <div className="p-3.5 border-b border-slate-800/80 bg-slate-900/40 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-2 font-mono uppercase tracking-wider">
-                  <Building2 className="w-3.5 h-3.5 text-teal-400" />
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-2 font-mono">
+                  <Building2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                   <span>Analyzed merchants ({scores.filter(s => s.merchant_id.toLowerCase().includes(searchQuery.toLowerCase())).length})</span>
                 </h3>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={loadScores}
+                  disabled={loading}
+                  title="Refresh analyzed merchant scores"
+                  aria-label="Refresh analyzed merchant scores"
+                  icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
+                >
+                  Refresh
+                </Button>
               </div>
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -113,7 +114,12 @@ export function MerchantTrustScorePanel() {
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+            {/* Scrollable Merchant List Container (Issue 18: Visible scrollbar & discoverability) */}
+            <div
+              className="flex-1 overflow-y-auto p-2 space-y-2 sidebar-scrollbar"
+              tabIndex={0}
+              aria-label="Analyzed merchants scrollable list"
+            >
               {loading && scores.length === 0 ? (
                 <div className="p-4 text-center text-sm text-slate-400">Loading merchant scores...</div>
               ) : scores.length === 0 ? (
@@ -235,16 +241,28 @@ export function MerchantTrustScorePanel() {
                       <div className="bg-slate-900/50 rounded-xl p-3.5 border border-slate-800/60">
                         <div className="text-xs text-slate-400 mb-1 font-mono">Total exposure</div>
                         <div className="text-lg font-bold text-teal-400 font-mono">
-                          ₹{(selectedScore.metrics.total_exposure / 100).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                          ₹{(selectedScore.metrics.total_exposure / 100).toLocaleString("en-IN", {minimumFractionDigits: 2})}
                         </div>
                       </div>
+
+                      {/* Integrated Base Volume Metric Card (Issue 21) */}
+                      {selectedScore.metrics.total_transaction_count > 0 && (
+                        <div className="col-span-2 bg-slate-900/50 rounded-xl p-3.5 border border-slate-800/60 flex items-center justify-between">
+                          <div>
+                            <div className="text-xs text-slate-400 font-mono">Base volume</div>
+                            <div className="text-xs font-mono text-slate-200 mt-0.5">
+                              {selectedScore.metrics.total_transaction_count.toLocaleString("en-US")} transactions
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-slate-100 font-mono">
+                              ₹{(selectedScore.metrics.total_transaction_volume / 100).toLocaleString("en-IN", {minimumFractionDigits: 2})}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">Clearing volume</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    
-                    {selectedScore.metrics.total_transaction_count > 0 && (
-                      <div className="mt-4 mb-2 text-xs text-slate-300 bg-slate-900/30 p-3.5 rounded-lg border border-slate-800/40">
-                        <span className="font-semibold text-white">Base volume:</span> {selectedScore.metrics.total_transaction_count} transactions (₹{(selectedScore.metrics.total_transaction_volume / 100).toLocaleString(undefined, {minimumFractionDigits: 0})})
-                      </div>
-                    )}
                   </div>
 
                   {/* Factors (Issue 15: H3) */}
@@ -267,7 +285,8 @@ export function MerchantTrustScorePanel() {
                           )}
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-semibold text-slate-200">{factor.factor.replace(/_/g, ' ')}</span>
+                              {/* Sentence case determinant factors (Issue 19) */}
+                              <span className="text-xs font-semibold text-slate-200">{toSentenceCase(factor.factor)}</span>
                               <span className={`text-xs font-mono px-2 py-0.5 rounded ${
                                 factor.contribution < 0 ? 'bg-rose-500/10 text-rose-400' :
                                 factor.contribution > 0 ? 'bg-amber-500/10 text-amber-400' :
