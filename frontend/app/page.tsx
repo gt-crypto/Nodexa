@@ -1,5 +1,5 @@
 import React from "react";
-import { Navbar } from "../components/Navbar";
+import { Sidebar } from "../components/Sidebar";
 import { SystemStatus } from "../components/SystemStatus";
 import { BusinessImpactTile } from "../components/BusinessImpactTile";
 import { AskSentinelPanel } from "../components/AskSentinelPanel";
@@ -18,10 +18,11 @@ import { ShieldCheck, Cpu, Database, Terminal, ArrowUpRight, Lock, CheckCircle }
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col bg-grid-pattern">
-      <Navbar />
+    <div className="min-h-screen bg-grid-pattern">
+      <Sidebar />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+      <div className="lg:pl-64 flex flex-col min-h-screen">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
         {/* Hero Section */}
         <div className="text-center py-12 sm:py-16 relative">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-mono mb-6 sentinel-glow">
@@ -147,6 +148,7 @@ export default function Home() {
       <footer className="border-t border-slate-900 glass-panel py-6 text-center text-xs text-slate-500 font-mono">
         <p>Nodal Sentinel &copy; 2026 &mdash; Autonomous AI Finance Controller Architecture</p>
       </footer>
+      </div>
     </div>
   );
 }
