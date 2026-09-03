@@ -4,101 +4,88 @@ import React, { useState } from "react";
 import {
   Sparkles,
   Search,
-  ShieldAlert,
-  CheckCircle,
-  HelpCircle,
-  AlertTriangle,
-  FileText,
   Lock,
   ArrowRight,
-  RefreshCw,
+  CheckCircle2,
+  FileText,
   Cpu,
+  RefreshCw,
+  HelpCircle,
+  MessageSquare,
 } from "lucide-react";
 import { CopilotAskResponse } from "../types";
+import { askCopilot } from "../lib/api";
+import { Button } from "./ui/Button";
+import { SectionHeading } from "./ui/SectionHeading";
 
 const EXAMPLE_QUESTIONS = [
-  "Why is this exception high risk?",
-  "What happened to payment PAY-123?",
-  "How much open exposure currently exists?",
-  "Which exception families are currently unresolved?",
-  "Show evidence for the latest ghost settlement exception.",
+  "What is the status of EXC-GHOST-001?",
+  "What recurring patterns exist in the exceptions?",
+  "What financial exposure has Sentinel surfaced?",
+  "What is the trust score for merchant ACME_CORP?",
+  "Is nodal health deteriorating according to drift radar?",
 ];
 
 export function AskSentinelPanel() {
   const [question, setQuestion] = useState("");
   const [exceptionIdContext, setExceptionIdContext] = useState("");
   const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState<CopilotAskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [response, setResponse] = useState<CopilotAskResponse | null>(null);
 
-  const handleAsk = async (promptText?: string) => {
-    const qToSubmit = promptText || question;
-    if (!qToSubmit.trim()) return;
+  const handleAsk = async (customQ?: string) => {
+    const qToAsk = customQ || question;
+    if (!qToAsk.trim()) return;
 
     setLoading(true);
     setError(null);
-
     try {
-      const res = await fetch("http://127.0.0.1:8000/copilot/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: qToSubmit,
-          exception_id: exceptionIdContext.trim() || undefined,
-        }),
+      const data = await askCopilot({
+        question: qToAsk,
+        exception_id: exceptionIdContext.trim() || undefined,
+        actor_id: "operations-copilot-ui",
       });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || `Server error ${res.status}`);
-      }
-
-      const data: CopilotAskResponse = await res.json();
       setResponse(data);
-      if (promptText) setQuestion(promptText);
+      if (customQ) setQuestion(customQ);
     } catch (err: any) {
-      setError(err.message || "Failed to query Ask Sentinel copilot.");
+      setError(err.message || "Failed to query Ask Sentinel.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl relative overflow-hidden">
-      {/* Background Ambient Glow */}
+    <section
+      id="copilot"
+      className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl relative overflow-hidden"
+    >
+      {/* Background glow */}
       <div className="absolute -top-24 -right-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-slate-800/80 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/30 text-teal-300">
-            <Sparkles className="w-6 h-6 animate-pulse" />
+      {/* Header (Issue 3 & 14) */}
+      <SectionHeading
+        icon={<Sparkles className="w-6 h-6 text-teal-400" />}
+        title="Ask Sentinel Grounded Copilot"
+        badge={{
+          text: "Tier-1 Copilot Active (v2.0)",
+          icon: <MessageSquare className="w-3.5 h-3.5 text-teal-400" />,
+          color: "bg-teal-500/10 border-teal-500/30 text-teal-300",
+        }}
+        description="Read-only natural language intelligence grounded in live operational evidence. Equipped with deterministic tool citations and zero LLM mutation rights."
+        action={
+          <div className="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400">
+            <Lock className="w-3.5 h-3.5 text-teal-400" />
+            <span>Strict read-only boundary active</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-white tracking-tight">Ask Sentinel</h2>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-teal-500/10 text-teal-300 border border-teal-500/30">
-                v2.0 Grounded Copilot
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Read-only natural language intelligence grounded in live operational evidence.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400">
-          <Lock className="w-3.5 h-3.5 text-teal-400" />
-          <span>Strict Read-Only Boundary Active</span>
-        </div>
-      </div>
+        }
+      />
 
       {/* Quick Example Prompt Chips */}
       <div className="mb-4">
-        <label className="text-xs text-slate-400 font-mono mb-2 block flex items-center gap-1.5">
+        <label className="text-xs text-slate-400 font-mono mb-2 flex items-center gap-1.5 font-medium">
           <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-          Suggested Operator Questions:
+          <span>Suggested operator questions:</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {EXAMPLE_QUESTIONS.map((prompt, idx) => (
@@ -106,7 +93,7 @@ export function AskSentinelPanel() {
               key={idx}
               onClick={() => handleAsk(prompt)}
               disabled={loading}
-              className="text-xs px-3 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 text-slate-300 hover:text-white transition-all text-left flex items-center gap-1.5 disabled:opacity-50"
+              className="text-xs px-3 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 text-slate-300 hover:text-white transition-all text-left flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               <span>{prompt}</span>
               <ArrowRight className="w-3 h-3 text-slate-500 shrink-0" />
@@ -139,72 +126,51 @@ export function AskSentinelPanel() {
             type="text"
             value={exceptionIdContext}
             onChange={(e) => setExceptionIdContext(e.target.value)}
-            placeholder="Context Exception ID (Optional)"
-            className="sm:w-56 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-white placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-teal-500/50 transition-colors"
+            placeholder="Context ID (optional)"
+            className="sm:w-48 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-white placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-teal-500/50 transition-colors"
           />
 
-          <button
+          <Button
             type="submit"
             disabled={loading || !question.trim()}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-semibold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 shrink-0 shadow-lg shadow-teal-500/20"
+            variant="primary"
+            loading={loading}
+            icon={<Sparkles className="w-4 h-4" />}
+            className="shrink-0"
           >
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Retrieving Evidence...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>Ask Sentinel</span>
-              </>
-            )}
-          </button>
+            Ask Sentinel
+          </Button>
         </div>
       </form>
 
-      {/* Error Banner */}
+      {/* Error state */}
       {error && (
-        <div className="p-4 mb-6 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-          <span>{error}</span>
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono mb-6">
+          <p className="font-semibold mb-1">Copilot Query Error</p>
+          <p>{error}</p>
         </div>
       )}
 
-      {/* Copilot Response Panel */}
+      {/* Response Display */}
       {response && (
-        <div className="space-y-6 pt-4 border-t border-slate-800/80">
-          {/* Header Metadata */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* Status and Provenance Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono">
             <div className="flex items-center gap-2">
-              <span className="text-slate-400">Query ID:</span>
-              <code className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-teal-300 font-mono">
-                {response.query_id}
-              </code>
+              <CheckCircle2 className="w-4 h-4 text-teal-400" />
+              <span className="text-slate-300 font-semibold">Grounded synthesis</span>
+              <span className="text-slate-500">| Query: {response.query_id}</span>
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Abstention Status */}
-              {response.abstained ? (
-                <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold text-[11px] flex items-center gap-1">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  ABSTAINED (Insufficient / Out-of-Scope)
-                </span>
-              ) : (
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-[11px] flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  GROUNDED FACTUAL RESPONSE
-                </span>
-              )}
-
               {/* Confidence Indicator */}
               <span
-                className={`px-2.5 py-1 rounded-full font-mono text-[11px] border ${
+                className={`px-2.5 py-1 rounded-full font-mono text-xs font-medium border ${
                   response.confidence === "HIGH"
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
                     : response.confidence === "MEDIUM"
-                    ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
-                    : "bg-red-500/10 border-red-500/30 text-red-400"
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                    : "bg-rose-500/10 border-rose-500/30 text-rose-300"
                 }`}
               >
                 Confidence: {response.confidence}
@@ -212,24 +178,24 @@ export function AskSentinelPanel() {
             </div>
           </div>
 
-          {/* Answer Area */}
+          {/* Answer Area (Issue 15: H3) */}
           <div className="p-5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-3">
-            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
               <FileText className="w-3.5 h-3.5 text-teal-400" />
-              Answer
-            </h4>
+              <span>Grounded answer</span>
+            </h3>
             <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
               {response.answer}
             </div>
           </div>
 
-          {/* Evidence References */}
+          {/* Evidence References (Issue 15: H3) */}
           {response.evidence_refs && response.evidence_refs.length > 0 && (
             <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/60 space-y-2">
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
                 <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                Retrieved Factual Evidence Citations
-              </h4>
+                <span>Retrieved factual evidence citations</span>
+              </h3>
               <div className="flex flex-wrap gap-2">
                 {response.evidence_refs.map((ref, i) => (
                   <span
@@ -245,17 +211,17 @@ export function AskSentinelPanel() {
 
           {/* Reasoning & Limitations */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/60">
-              <span className="text-slate-400 block font-semibold mb-1">Evidence Reasoning:</span>
+            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
+              <span className="text-slate-300 block font-semibold mb-1 font-mono">Evidence reasoning:</span>
               <p className="text-slate-300 leading-relaxed">{response.reasoning}</p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/60">
-              <span className="text-slate-400 block font-semibold mb-1">Operational Tools Executed:</span>
-              <div className="flex flex-wrap gap-1.5 mt-1">
+            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
+              <span className="text-slate-300 block font-semibold mb-1 font-mono">Operational tools executed:</span>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
                 {response.tools_used.length > 0 ? (
                   response.tools_used.map((t, idx) => (
-                    <span key={idx} className="px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 font-mono text-[10px]">
+                    <span key={idx} className="px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 font-mono text-xs border border-slate-700/60">
                       {t}
                     </span>
                   ))

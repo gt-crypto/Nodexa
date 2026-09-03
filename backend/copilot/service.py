@@ -53,7 +53,7 @@ class AskSentinelService:
         
         # Look for "merchant <ID>" or "merchant M123"
         merchants = []
-        merch_matches = re.findall(r"merchant\s+([A-Z0-9_-]+)", text, re.IGNORECASE)
+        merch_matches = re.findall(r"merchant\s+([A-Za-z0-9_-]+)", text, re.IGNORECASE)
         merchants.extend(merch_matches)
         
         return (
@@ -61,7 +61,7 @@ class AskSentinelService:
             [p.upper() for p in set(payments)],
             [s.upper() for s in set(settlements)],
             [o.upper() for o in set(orders)],
-            [m.upper() for m in set(merchants)],
+            [m.strip() for m in set(merchants)],
         )
 
     def _format_minor_units(self, paise: int) -> str:
@@ -210,6 +210,81 @@ class AskSentinelService:
                 m_data = m_res["data"]["score"]
                 retrieved_data["merchant_score"] = m_data
                 evidence_refs.append(f"MERCHANT_SCORE_{target_merch_id}")
+
+        # Business Impact & ROI questions
+        elif any(k in q_lower for k in [
+            "roi",
+            "business impact",
+            "money saved",
+            "saved",
+            "how much money",
+            "save",
+            "recovered",
+            "recovery",
+            "financial exposure has sentinel",
+            "exposure has sentinel identified",
+            "exposure is associated with live-injected",
+            "how much financial exposure",
+            "actionable cases has sentinel",
+            "what business impact",
+        ]):
+            imp_res = self.tool_registry.execute_tool("get_business_impact", session=session)
+            tools_used.append("get_business_impact")
+            if imp_res.get("status") == "success" and imp_res.get("data", {}).get("found"):
+                retrieved_data["business_impact"] = imp_res["data"]["impact"]
+                evidence_refs.append("BUSINESS_IMPACT_ROI")
+
+        # Predictive Nodal Drift Radar questions
+        elif any(k in q_lower for k in [
+            "drift",
+            "deteriorating",
+            "early warning",
+            "drift risk",
+            "nodal health deteriorating",
+            "predictive",
+            "radar",
+            "leading indicator",
+            "leading signal",
+            "drift score",
+        ]):
+            drift_res = self.tool_registry.execute_tool("get_drift_prediction", session=session)
+            tools_used.append("get_drift_prediction")
+            if drift_res.get("status") == "success" and drift_res.get("data", {}).get("found"):
+                retrieved_data["drift_prediction"] = drift_res["data"]["drift"]
+                evidence_refs.append(drift_res["data"]["drift"]["prediction_id"])
+
+        # Confidence Calibration / Reliability questions
+        elif any(k in q_lower for k in [
+            "calibration",
+            "calibrated",
+            "confidence reliable",
+            "how reliable is confidence",
+            "historical correctness",
+            "confidence calibration",
+            "brier",
+            "ece",
+        ]):
+            calib_res = self.tool_registry.execute_tool("get_confidence_calibration", session=session)
+            tools_used.append("get_confidence_calibration")
+            if calib_res.get("status") == "success" and calib_res.get("data", {}).get("found"):
+                retrieved_data["confidence_calibration"] = calib_res["data"]["calibration"]
+                evidence_refs.append(calib_res["data"]["calibration"]["snapshot_id"])
+
+        # Escalation Webhook questions
+        elif any(k in q_lower for k in [
+            "webhook",
+            "escalation webhook",
+            "escalate webhook",
+            "downstream alert",
+            "escalation status",
+            "did we escalate",
+            "escalations delivered",
+        ]):
+            exc_id_param = exc_ids[0] if exc_ids else None
+            esc_res = self.tool_registry.execute_tool("get_escalation_status", session=session, exception_id=exc_id_param)
+            tools_used.append("get_escalation_status")
+            if esc_res.get("status") == "success":
+                retrieved_data["escalation_status"] = esc_res.get("data", {})
 
         # Pattern Miner / Recurring cluster questions
         elif any(k in q_lower for k in ["pattern", "cluster", "recurring", "repeated", "clustering", "largest pattern"]):
@@ -372,6 +447,173 @@ class AskSentinelService:
                 
             answer = "\n".join(answer_parts)
             reasoning = f"Deterministic Merchant Trust Score retrieved for {m_id}."
+            return answer, reasoning, "HIGH", None
+
+        elif "business_impact" in data:
+            imp = data["business_impact"]
+            total_exp_str = self._format_minor_units(imp["financial_exposure_identified"])
+            actionable = imp["actionable_case_count"]
+            high_risk = imp["high_risk_case_count"]
+            patterns = imp["recurring_pattern_count"]
+            merchants = imp["merchants_impacted"]
+            seeded = imp["seeded_case_count"]
+            live_injected = imp["live_injected_case_count"]
+            live_exp_str = self._format_minor_units(imp.get("live_injected_exposure_identified", 0))
+
+            q_asks_savings = any(w in question.lower() for w in ["saved", "save", "savings", "recovered", "recovery"])
+
+            lines = []
+            if q_asks_savings:
+                lines.append(
+                    f"Sentinel identified **{total_exp_str}** in financial exposure for review across **{actionable} actionable cases**. "
+                    "The current dataset does not contain evidence of realized cash recovery, so this should not be interpreted as money saved."
+                )
+            else:
+                lines.append(
+                    f"Sentinel has identified a total of **{total_exp_str}** in potential financial exposure requiring review across **{actionable} actionable cases**."
+                )
+
+            lines.append(
+                f"- **High-Risk Cases**: {high_risk} (severe financial/reconciliation anomalies)\n"
+                f"- **Recurring Patterns Identified**: {patterns} systemic clusters\n"
+                f"- **Merchants Impacted**: {merchants} distinct merchants\n"
+                f"- **Case Provenance**: {seeded} baseline seeded, {live_injected} synthetic live-injected ({live_exp_str} live exposure)"
+            )
+
+            lines.append(
+                f"*Note: Value is classified as {imp['value_type']} (exposure surfaced for governance and human/policy intervention; not equivalent to recovered savings).*"
+            )
+
+            answer = "\n\n".join(lines)
+            reasoning = "Direct deterministic business impact calculation compiled from persisted exceptions, transactions, and pattern clusters."
+            return answer, reasoning, "HIGH", None
+
+        elif "drift_prediction" in data:
+            drift = data["drift_prediction"]
+            direction = drift.get("direction", "STABLE")
+            score = drift.get("drift_score", 0)
+            band = drift.get("risk_band", "STABLE")
+            conf = drift.get("confidence", "MEDIUM")
+            signals = drift.get("signals", [])
+            account_id = drift.get("nodal_account_id", "nodal_escrow_main")
+
+            if direction == "INSUFFICIENT_DATA":
+                answer = (
+                    "Sentinel does not currently have enough historical temporal evidence to make a reliable operational drift prediction. "
+                    "A valid predictive drift evaluation requires multiple temporal observation windows."
+                )
+                reasoning = "Insufficient temporal observations in database."
+                return answer, reasoning, "LOW", "Insufficient historical baseline data."
+
+            lines = [
+                f"Predictive Nodal Drift Radar indicates **{direction}** operational health for account **{account_id}** "
+                f"with a deterministic Drift Score of **{score}/100** ({band} risk band, Confidence: **{conf}**)."
+            ]
+
+            active_signals = [s for s in signals if s.get("contribution", 0) > 0]
+            if active_signals:
+                lines.append("\n**Leading Early-Warning Signals**:")
+                for s in active_signals:
+                    lines.append(f"- **{s['name']}** (+{s['contribution']} pts): {s['explanation']}")
+            else:
+                lines.append("\nNo deteriorating operational signals detected; metrics remain stable across observation windows.")
+
+            source = drift.get("source", {})
+            if source.get("synthetic_included"):
+                lines.append(f"\n*Note: Prediction incorporates {source.get('live_injected_count')} synthetic live-injected observations.*")
+
+            lines.append(
+                "\n*Disclaimer: This is an analytical early-warning indicator based on leading trend signals, "
+                "not a guarantee that a failure will occur or an automated policy mutation.*"
+            )
+
+            answer = "\n".join(lines)
+            reasoning = f"Deterministic temporal window drift analysis compiled for {account_id}."
+            return answer, reasoning, conf, None
+
+        elif "confidence_calibration" in data:
+            calib = data["confidence_calibration"]
+            status = calib.get("status", "INSUFFICIENT_DATA")
+            tot = calib.get("total_predictions", 0)
+            eval_cnt = calib.get("evaluated_predictions", 0)
+            cov = calib.get("coverage")
+            cr = calib.get("correctness_rate")
+            buckets = calib.get("confidence_buckets", {})
+            reasons = calib.get("insufficiency_reasons", [])
+
+            if status in ("INSUFFICIENT_DATA", "NOT_CALIBRATABLE"):
+                reason_txt = "; ".join(reasons) if reasons else "insufficient evaluated historical outcomes."
+                answer = (
+                    f"Sentinel's confidence calibration is currently **{status}** ({reason_txt}). "
+                    "There are not enough evaluated outcomes to make a statistically verified calibration assertion.\n\n"
+                    "*Note: Sentinel confidence labels represent model certainty at prediction time, not mathematical failure probabilities.*"
+                )
+                reasoning = "Insufficient evaluated outcomes available in database."
+                return answer, reasoning, "LOW", "Insufficient historical evaluated outcomes."
+
+            cov_str = f"{cov * 100:.1f}%" if cov is not None else "N/A"
+            cr_str = f"{cr * 100:.1f}%" if cr is not None else "N/A"
+
+            lines = [
+                f"Sentinel's empirical confidence calibration status is **{status}** with **{cov_str}** evaluation coverage "
+                f"({eval_cnt} evaluated out of {tot} predictions) and an overall observed correctness rate of **{cr_str}**.\n",
+                "**Empirical Correctness by Confidence Level**:"
+            ]
+
+            for lvl in ["HIGH", "MEDIUM", "LOW"]:
+                b = buckets.get(lvl, {})
+                p_cnt = b.get("prediction_count", 0)
+                e_cnt = b.get("evaluated_count", 0)
+                c_cnt = b.get("correct_count", 0)
+                rate = b.get("correctness_rate")
+                rate_str = f"{rate * 100:.1f}%" if rate is not None else "N/A (no evaluations)"
+                lines.append(f"- **{lvl} Confidence**: {e_cnt} evaluated, {c_cnt} correct ({rate_str}) [out of {p_cnt} predictions]")
+
+            num = calib.get("numerical_metrics", {})
+            if num.get("status") == "CALCULATED":
+                lines.append(f"\n**Numerical Calibration**: Brier Score: **{num.get('brier_score')}**, ECE: **{num.get('ece')}**.")
+
+            lines.append(
+                "\n*Note: Sentinel confidence labels represent model certainty at prediction time, "
+                "not mathematical failure probabilities. Displayed rates reflect observed historical outcomes.*"
+            )
+
+            answer = "\n".join(lines)
+            reasoning = "Deterministic confidence calibration compiled from persisted evaluation records and investigation runs."
+            return answer, reasoning, "HIGH", None
+
+        elif "escalation_status" in data:
+            esc = data["escalation_status"]
+            cfg = esc.get("configuration", {})
+            dels = esc.get("recent_deliveries", [])
+            specific = esc.get("specific_delivery")
+
+            status_str = "ENABLED" if cfg.get("enabled") and cfg.get("configured") else ("DISABLED" if not cfg.get("enabled") else "UNCONFIGURED")
+            target_str = cfg.get("destination_url", "NOT CONFIGURED")
+            auth_str = cfg.get("authentication_method", "HMAC-SHA256")
+
+            lines = [
+                f"Escalation Webhook Dispatcher is currently **{status_str}** (Destination: `{target_str}`, Security: `{auth_str}`)."
+            ]
+
+            if specific:
+                lines.append(
+                    f"\n**Delivery status for {specific['exception_id']}**: "
+                    f"Status: **{specific['delivery_status']}**, Event ID: `{specific['event_id']}`, Attempts: {specific['attempt_count']}."
+                )
+            elif dels:
+                lines.append(f"\n**Recent Outbound Escalations** ({len(dels)} logged):")
+                for d in dels[:3]:
+                    lines.append(f"- Event `{d['event_id']}` ({d['exception_id']}): **{d['delivery_status']}** (Attempts: {d['attempt_count']})")
+            else:
+                lines.append("\nNo outbound escalation webhook dispatches have been recorded yet.")
+
+            lines.append(
+                "\n*Safety Guarantee: Outbound escalation webhooks are strictly decoupled from Sentinel's policy engine. Webhook delivery failure never modifies policy decisions.*"
+            )
+
+            answer = "\n".join(lines)
+            reasoning = "Deterministic escalation webhook configuration and delivery state compiled from operational database."
             return answer, reasoning, "HIGH", None
 
         elif "aggregate" in data:

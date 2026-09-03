@@ -1,10 +1,14 @@
 import React from "react";
 import { Navbar } from "../components/Navbar";
 import { SystemStatus } from "../components/SystemStatus";
+import { BusinessImpactTile } from "../components/BusinessImpactTile";
 import { AskSentinelPanel } from "../components/AskSentinelPanel";
 import { VerifierPanel } from "../components/VerifierPanel";
 import { PatternMinerPanel } from "../components/PatternMinerPanel";
 import { MerchantTrustScorePanel } from "../components/MerchantTrustScorePanel";
+import { PredictiveDriftRadarPanel } from "../components/PredictiveDriftRadarPanel";
+import { ConfidenceCalibrationPanel } from "../components/ConfidenceCalibrationPanel";
+import { EscalationWebhookPanel } from "../components/EscalationWebhookPanel";
 import { LiveInjectionConsole } from "../components/LiveInjectionConsole";
 import { ControlLoop } from "../components/ControlLoop";
 import { LayerArchitecture } from "../components/LayerArchitecture";
@@ -56,6 +60,9 @@ export default function Home() {
         {/* Live Controller Status */}
         <SystemStatus />
 
+        {/* v2.0: Tier-2 Business Impact & Deterministic ROI Tile */}
+        <BusinessImpactTile />
+
         {/* v2.0: Ask Sentinel Grounded Operational Copilot */}
         <AskSentinelPanel />
 
@@ -67,6 +74,15 @@ export default function Home() {
         
         {/* v2.0: Merchant Trust & Impact Score */}
         <MerchantTrustScorePanel />
+
+        {/* v2.0: Tier-3 Predictive Nodal Drift Radar */}
+        <PredictiveDriftRadarPanel />
+
+        {/* v2.0: Tier-3 Confidence Calibration Dashboard */}
+        <ConfidenceCalibrationPanel />
+
+        {/* v2.0: Tier-3 Escalation Webhook Dispatcher */}
+        <EscalationWebhookPanel />
 
         {/* v2.0: Live Digital-Twin Injection Console */}
         <LiveInjectionConsole />
@@ -84,42 +100,42 @@ export default function Home() {
         <LayerArchitecture />
 
         {/* Safety Principles Section */}
-        <section className="py-12 border-t border-slate-800/80 mb-12">
+        <section id="safety-guarantees" className="py-12 border-t border-slate-800/80 mb-12">
           <div className="glass-panel rounded-2xl p-8 border border-slate-800/80 relative overflow-hidden">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-6 flex items-center gap-2.5">
               <ShieldCheck className="w-6 h-6 text-teal-400" />
-              Core Safety & Control Guarantees
-            </h3>
+              <span>Core safety & control guarantees</span>
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300">
               <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
                 <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-white mb-1">Deterministic Financial Arithmetic</h4>
-                  <p className="text-xs text-slate-400">All monetary calculations, reconciliations, and balance updates are computed deterministically without LLM intervention.</p>
+                  <h3 className="font-semibold text-white mb-1 text-base">Deterministic financial arithmetic</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">All monetary calculations, reconciliations, and balance updates are computed deterministically without LLM intervention.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
                 <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-white mb-1">Bounded AI Investigation</h4>
-                  <p className="text-xs text-slate-400">The AI agent reasons via read-only inspection tools and recommends actions subject to policy approval.</p>
+                  <h3 className="font-semibold text-white mb-1 text-base">Bounded AI investigation</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">The AI agent reasons via read-only inspection tools and recommends actions subject to policy approval.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
                 <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-white mb-1">Post-Action Invariant Verification</h4>
-                  <p className="text-xs text-slate-400">Any remediation step must pass automated double-entry verification and invariant checks prior to transaction commit.</p>
+                  <h3 className="font-semibold text-white mb-1 text-base">Post-action invariant verification</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">Any remediation step must pass automated double-entry verification and invariant checks prior to transaction commit.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
                 <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-white mb-1">Immutable Audit Trail</h4>
-                  <p className="text-xs text-slate-400">Every anomaly detection, AI reasoning trace, policy decision, and verification check is logged to an immutable audit record.</p>
+                  <h3 className="font-semibold text-white mb-1 text-base">Immutable audit trail</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">Every anomaly detection, AI reasoning trace, policy decision, and verification check is logged to an immutable audit record.</p>
                 </div>
               </div>
             </div>

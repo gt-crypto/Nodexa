@@ -55,6 +55,32 @@ class Settings(BaseModel):
         description="Minimum exception count required to form a recurring pattern cluster",
     )
 
+    # Escalation Webhook Configuration
+    escalation_webhook_enabled: bool = Field(
+        default=False,
+        description="Enable outbound escalation webhook notifications",
+    )
+    escalation_webhook_url: Optional[str] = Field(
+        default=None,
+        description="Destination webhook URL for outbound escalation notifications",
+    )
+    escalation_webhook_secret: Optional[str] = Field(
+        default=None,
+        description="Secret key for HMAC-SHA256 payload signing",
+    )
+    escalation_webhook_timeout_seconds: int = Field(
+        default=5,
+        ge=1,
+        le=30,
+        description="Timeout for webhook delivery in seconds",
+    )
+    escalation_webhook_max_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        description="Maximum delivery retries for transient failures",
+    )
+
 
     @field_validator("environment")
     @classmethod
@@ -101,6 +127,9 @@ class Settings(BaseModel):
         if data.get("llm_api_key"):
             key = data["llm_api_key"]
             data["llm_api_key"] = f"***{key[-4:]}" if len(key) >= 8 else "***"
+        if data.get("escalation_webhook_secret"):
+            sec = data["escalation_webhook_secret"]
+            data["escalation_webhook_secret"] = f"***{sec[-4:]}" if len(sec) >= 8 else "***REDACTED***"
         return data
 
 
@@ -126,6 +155,11 @@ def load_settings() -> Settings:
         max_automated_remediation_paise=int(os.getenv("MAX_AUTOMATED_REMEDIATION_PAISE", "5000000")),
         critical_exposure_threshold_paise=int(os.getenv("CRITICAL_EXPOSURE_THRESHOLD_PAISE", "10000000")),
         pattern_miner_min_cluster_size=int(os.getenv("PATTERN_MINER_MIN_CLUSTER_SIZE", "2")),
+        escalation_webhook_enabled=os.getenv("ESCALATION_WEBHOOK_ENABLED", "false").lower() in ("true", "1", "yes"),
+        escalation_webhook_url=os.getenv("ESCALATION_WEBHOOK_URL"),
+        escalation_webhook_secret=os.getenv("ESCALATION_WEBHOOK_SECRET"),
+        escalation_webhook_timeout_seconds=int(os.getenv("ESCALATION_WEBHOOK_TIMEOUT_SECONDS", "5")),
+        escalation_webhook_max_retries=int(os.getenv("ESCALATION_WEBHOOK_MAX_RETRIES", "3")),
     )
 
 

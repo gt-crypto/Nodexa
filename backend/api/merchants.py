@@ -50,12 +50,13 @@ def refresh_merchant_scores(db: Session = Depends(get_db)):
 @router.get("/{merchant_id}/trust-score")
 def get_merchant_trust_score(merchant_id: str, db: Session = Depends(get_db)):
     """Get the calculated trust and impact score for a specific merchant."""
-    score = db.query(MerchantScore).filter(MerchantScore.merchant_id == merchant_id).first()
+    from sqlalchemy import func
+    score = db.query(MerchantScore).filter(func.lower(MerchantScore.merchant_id) == merchant_id.lower()).first()
     
     # If not found, run refresh just in case data exists but wasn't materialized
     if not score:
         scoring_service.calculate_all_scores(db)
-        score = db.query(MerchantScore).filter(MerchantScore.merchant_id == merchant_id).first()
+        score = db.query(MerchantScore).filter(func.lower(MerchantScore.merchant_id) == merchant_id.lower()).first()
         
     if not score:
         raise HTTPException(status_code=404, detail="Merchant score not found")

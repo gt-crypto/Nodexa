@@ -118,17 +118,17 @@ export const LayerArchitecture: React.FC = () => {
                     LAYER 0{layer.num}
                   </span>
                 </div>
-                <h3 className="font-semibold text-white text-base mb-1.5">
+                <h3 className="font-semibold text-white text-base mb-1.5 font-mono">
                   {layer.title}
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <p className="text-sm text-slate-400 leading-relaxed">
                   {layer.desc}
                 </p>
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-800/40">
-                <span className="text-[11px] font-mono text-slate-500">
-                  Category: <span className="text-slate-300">{layer.type}</span>
+                <span className="text-xs font-mono text-slate-400">
+                  Category: <span className="text-slate-200">{layer.type}</span>
                 </span>
               </div>
             </div>

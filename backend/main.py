@@ -28,6 +28,10 @@ from backend.api.copilot import router as copilot_router
 from backend.api.verifier import router as verifier_router
 from backend.api.patterns import router as patterns_router
 from backend.api.merchants import router as merchants_router
+from backend.api.impact import router as impact_router
+from backend.api.predictions import router as predictions_router
+from backend.api.calibration import router as calibration_router
+from backend.api.escalation import router as escalation_router
 
 load_dotenv()
 
@@ -89,6 +93,10 @@ app.include_router(copilot_router)
 app.include_router(verifier_router)
 app.include_router(patterns_router)
 app.include_router(merchants_router)
+app.include_router(impact_router)
+app.include_router(predictions_router)
+app.include_router(calibration_router)
+app.include_router(escalation_router)
 
 
 if __name__ == "__main__":

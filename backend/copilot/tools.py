@@ -40,6 +40,10 @@ class AskSentinelToolRegistry:
         "get_verifier_opinion",
         "get_clusters",
         "get_merchant_trust_score",
+        "get_business_impact",
+        "get_drift_prediction",
+        "get_confidence_calibration",
+        "get_escalation_status",
         "get_audit_events",
         "get_aggregate_summary",
     ]
@@ -61,6 +65,10 @@ class AskSentinelToolRegistry:
             "get_verifier_opinion": self.get_verifier_opinion,
             "get_clusters": self.get_clusters,
             "get_merchant_trust_score": self.get_merchant_trust_score,
+            "get_business_impact": self.get_business_impact,
+            "get_drift_prediction": self.get_drift_prediction,
+            "get_confidence_calibration": self.get_confidence_calibration,
+            "get_escalation_status": self.get_escalation_status,
             "get_audit_events": self.get_audit_events,
             "get_aggregate_summary": self.get_aggregate_summary,
         }
@@ -406,20 +414,70 @@ class AskSentinelToolRegistry:
 
     def get_merchant_trust_score(self, session: Session, merchant_id: str) -> Dict[str, Any]:
         """Retrieves deterministic Merchant Trust & Impact Score."""
+        from sqlalchemy import func
         from backend.api.merchants import _format_merchant_response
         from backend.models.merchant_score import MerchantScore
         from backend.merchants.scoring import MerchantScoringService
         
-        score = session.query(MerchantScore).filter(MerchantScore.merchant_id == merchant_id).first()
+        m_id_clean = merchant_id.strip()
+        score = session.query(MerchantScore).filter(func.lower(MerchantScore.merchant_id) == m_id_clean.lower()).first()
         if not score:
             scoring_service = MerchantScoringService()
             scoring_service.calculate_all_scores(session)
-            score = session.query(MerchantScore).filter(MerchantScore.merchant_id == merchant_id).first()
+            score = session.query(MerchantScore).filter(func.lower(MerchantScore.merchant_id) == m_id_clean.lower()).first()
             
         if not score:
             return {"found": False, "message": f"Merchant score for '{merchant_id}' not found."}
             
         return {"found": True, "score": _format_merchant_response(score)}
+
+    def get_business_impact(self, session: Session) -> Dict[str, Any]:
+        """Retrieves deterministic Business Impact and ROI analytics from persisted records."""
+        from backend.impact.roi_service import BusinessImpactService
+        service = BusinessImpactService()
+        result = service.calculate_impact(session=session, log_audit=True, actor_type="AI_AGENT", actor_id="ask_sentinel")
+        return {
+            "found": True,
+            "impact": result,
+        }
+
+    def get_drift_prediction(self, session: Session, nodal_account_id: str = "nodal_escrow_main") -> Dict[str, Any]:
+        """Retrieves deterministic leading early-warning operational drift signals for a nodal account."""
+        from backend.predictions.drift_service import PredictiveDriftService
+        service = PredictiveDriftService()
+        result = service.evaluate_drift(
+            session=session,
+            nodal_account_id=nodal_account_id,
+            persist=True,
+            log_audit=True,
+            actor_id="ask_sentinel",
+        )
+        return {
+            "found": True,
+            "drift": result,
+        }
+
+    def get_confidence_calibration(
+        self,
+        session: Session,
+        prediction_type: Optional[str] = None,
+        source: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Retrieves deterministic confidence calibration and empirical correctness metrics."""
+        from backend.calibration.service import ConfidenceCalibrationService
+        service = ConfidenceCalibrationService()
+        result = service.evaluate_calibration(
+            session=session,
+            prediction_type=prediction_type,
+            source=source,
+            persist=True,
+            log_audit=True,
+            actor_id="ask_sentinel",
+        )
+        return {
+            "found": True,
+            "calibration": result,
+        }
 
     def get_audit_events(self, session: Session, entity_id: Optional[str] = None, limit: int = 10) -> Dict[str, Any]:
         """Retrieves append-only audit event trail."""
@@ -485,4 +543,25 @@ class AskSentinelToolRegistry:
             "open_exceptions_count": open_count,
             "open_exposure_minor_units": open_exposure,
             "family_breakdown": family_breakdown,
+        }
+
+    def get_escalation_status(self, session: Session, exception_id: Optional[str] = None) -> Dict[str, Any]:
+        """Retrieves safe escalation webhook delivery status and masked configuration."""
+        from backend.escalation.service import EscalationWebhookService
+        svc = EscalationWebhookService()
+        cfg = svc.get_webhook_configuration()
+        recent = svc.get_recent_deliveries(session=session, limit=10)
+
+        specific = None
+        if exception_id:
+            for d in recent:
+                if d["exception_id"] == exception_id:
+                    specific = d
+                    break
+
+        return {
+            "configuration": cfg,
+            "specific_delivery": specific,
+            "recent_deliveries_count": len(recent),
+            "recent_deliveries": recent[:5],
         }

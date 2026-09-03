@@ -97,27 +97,28 @@ export const EvaluationDashboard: React.FC = () => {
   });
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl text-slate-100">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-slate-800 gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/10 border border-indigo-500/30 rounded-lg text-indigo-400">
-              <Award className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
-                Benchmark Evaluation & Precision/Recall Engine
-                <span className="text-xs px-2.5 py-0.5 rounded-full font-mono bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
-                  v1.0.0
-                </span>
-              </h2>
-              <p className="text-sm text-slate-400">
-                Independent accuracy evaluation layer with zero operational mutation and deterministic scoring
-              </p>
+    <section id="benchmark" className="w-full">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl text-slate-100">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-slate-800 gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-400">
+                <Award className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-wide flex items-center gap-2">
+                  <span>Benchmark Evaluation & Precision/Recall Engine</span>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-mono bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
+                    v1.0.0
+                  </span>
+                </h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Independent accuracy evaluation layer with zero operational mutation and deterministic scoring
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -498,14 +499,14 @@ export const EvaluationDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Tab 3: Risk & Confusion Matrices */}
+          {/* Tab 3: Risk & Confusion Matrices (Issue 15: H3 headers) */}
           {activeTab === "risk" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Severity Matrix */}
               <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-xl space-y-3">
-                <h4 className="font-semibold text-sm text-white">
-                  Severity Classification Matrix
-                </h4>
+                <h3 className="font-semibold text-sm text-white">
+                  Severity classification matrix
+                </h3>
                 <div className="space-y-2">
                   {report.severity_confusion_matrix?.map((item, idx) => (
                     <div
@@ -531,7 +532,7 @@ export const EvaluationDashboard: React.FC = () => {
 
               {/* Priority Matrix */}
               <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-xl space-y-3">
-                <h4 className="font-semibold text-sm text-white">Priority Level Matrix</h4>
+                <h3 className="font-semibold text-sm text-white">Priority level matrix</h3>
                 <div className="space-y-2">
                   {report.priority_confusion_matrix?.map((item, idx) => (
                     <div
@@ -641,7 +642,7 @@ export const EvaluationDashboard: React.FC = () => {
                         </td>
                         <td className="px-3 py-2.5">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                            className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
                               c.match_status === "TRUE_POSITIVE" || c.match_status === "LEGITIMATE_CORRECT"
                                 ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
                                 : c.match_status === "FALSE_POSITIVE"
@@ -652,7 +653,7 @@ export const EvaluationDashboard: React.FC = () => {
                             {c.match_status}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-slate-400 font-mono text-[10px]">
+                        <td className="px-3 py-2.5 text-slate-400 font-mono text-xs">
                           {c.matched_by}
                         </td>
                         <td className="px-3 py-2.5 font-mono text-slate-300">
@@ -756,5 +757,6 @@ export const EvaluationDashboard: React.FC = () => {
         </div>
       )}
     </div>
+  </section>
   );
 };

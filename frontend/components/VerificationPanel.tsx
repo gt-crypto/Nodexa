@@ -115,21 +115,21 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
   });
 
   return (
-    <section className="py-8">
+    <section className="py-8" id="verification">
       <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800 relative overflow-hidden">
         {/* Glow effect */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* Header */}
+        {/* Header (Issue 14: H2) */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="w-6 h-6 text-teal-400" />
-              <h3 className="text-xl font-bold text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                 Post-Remediation Verification & Self-Verification Engine
-              </h3>
+              </h2>
             </div>
-            <p className="text-xs sm:text-sm text-slate-400">
+            <p className="text-sm text-slate-400">
               Deterministic mathematical verification of financial state changes with zero-trust execution.
             </p>
           </div>
@@ -232,13 +232,13 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
           </div>
         )}
 
-        {/* 8 Deterministic Checks Matrix */}
+        {/* 8 Deterministic Checks Matrix (Issue 15: H3) */}
         {(record || dryRunResult) && (
           <div className="mt-8">
-            <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2 font-mono">
               <Layers className="w-4 h-4 text-teal-400" />
-              Automated Check Suite (8 Deterministic Gates)
-            </h4>
+              <span>Automated check suite (8 deterministic gates)</span>
+            </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               {[
@@ -279,16 +279,16 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
           </div>
         )}
 
-        {/* Evidence & Invariant Audit Breakdown */}
+        {/* Evidence & Invariant Audit Breakdown (Issue 15: H3) */}
         {evidenceItems.length > 0 && (
           <div className="mt-8">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2 font-mono">
                 <Database className="w-4 h-4 text-cyan-400" />
-                Deterministic Verification Evidence Trail ({filteredEvidence.length})
-              </h4>
+                <span>Deterministic verification evidence trail ({filteredEvidence.length})</span>
+              </h3>
 
-              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 text-[11px]">
+              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
                 {(["ALL", "PASS", "FAIL"] as const).map((f) => (
                   <button
                     key={f}
@@ -308,16 +308,16 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
             <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-mono text-[11px] bg-slate-950/40">
+                  <tr className="border-b border-slate-800 text-slate-400 font-mono text-xs bg-slate-950/40">
                     <th className="py-2.5 px-3">Check ID</th>
-                    <th className="py-2.5 px-3">Source Table</th>
+                    <th className="py-2.5 px-3">Source table</th>
                     <th className="py-2.5 px-3">Expected</th>
                     <th className="py-2.5 px-3">Actual</th>
                     <th className="py-2.5 px-3">Status</th>
                     <th className="py-2.5 px-3">Explanation</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
                   {filteredEvidence.map((ev, idx) => (
                     <tr key={idx} className="hover:bg-slate-800/30 transition">
                       <td className="py-2 px-3 text-slate-300 font-medium">{ev.check_id}</td>
