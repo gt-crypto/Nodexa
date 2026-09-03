@@ -167,20 +167,20 @@ export function PatternMinerPanel() {
         </div>
       </div>
 
-      {/* Filters Bar */}
+      {/* Filters Bar (Issues 6 & 19: Unified Brand Active Filters & Prominent Group Labels) */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/80">
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <span className="text-slate-400 mr-1 flex items-center gap-1 font-medium">
-            <Filter className="w-3.5 h-3.5 text-slate-400" /> Pattern type:
+          <span className="text-slate-200 mr-1 flex items-center gap-1 font-semibold text-xs">
+            <Filter className="w-3.5 h-3.5 text-teal-400" /> Pattern type:
           </span>
           {["ALL", "FAMILY_SIGNATURE", "MERCHANT_REPEATED_FAMILY", "CONTROL_FINDING_SIGNATURE", "TIMING_SLA_SIGNATURE"].map((t) => (
             <button
               key={t}
               onClick={() => setSelectedType(t)}
-              className={`px-3 py-1 rounded-lg border transition-all ${
+              className={`px-3 py-1 rounded-lg border transition-all duration-150 cursor-pointer ${
                 selectedType === t
-                  ? "bg-purple-500/20 border-purple-500/50 text-purple-300 font-semibold shadow-sm"
-                  : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200"
+                  ? "bg-teal-500/20 border-teal-500/50 text-teal-300 font-semibold shadow-sm shadow-teal-500/10"
+                  : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
               }`}
             >
               {t === "ALL" ? "All types" : t.replace(/_/g, " ")}
@@ -189,15 +189,15 @@ export function PatternMinerPanel() {
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono">
-          <span className="text-slate-400 font-medium">Source:</span>
+          <span className="text-slate-200 font-semibold text-xs">Source:</span>
           {["ALL", "seeded", "live-injected"].map((s) => (
             <button
               key={s}
               onClick={() => setSelectedSource(s)}
-              className={`px-2.5 py-1 rounded-lg border transition-all ${
+              className={`px-2.5 py-1 rounded-lg border transition-all duration-150 cursor-pointer ${
                 selectedSource === s
-                  ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-semibold shadow-sm"
-                  : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200"
+                  ? "bg-teal-500/20 border-teal-500/50 text-teal-300 font-semibold shadow-sm shadow-teal-500/10"
+                  : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
               }`}
             >
               {s === "ALL" ? "All" : s}
@@ -254,7 +254,7 @@ export function PatternMinerPanel() {
                         {cluster.description}
                       </p>
 
-                      {/* METADATA: Unified Compact Line (Issue 18) */}
+                      {/* METADATA: Unified Compact Line (Issue 18 & Major Issue 3: Subtle Metadata Treatment) */}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-slate-400 mt-2">
                         <span className="text-white font-medium">{cluster.exception_count} cases</span>
                         <span>•</span>
@@ -264,7 +264,7 @@ export function PatternMinerPanel() {
                         {cluster.live_injected_count > 0 && (
                           <>
                             <span>•</span>
-                            <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold">
+                            <span className="text-slate-400 font-medium">
                               {cluster.live_injected_count} live-injected
                             </span>
                           </>
@@ -276,7 +276,7 @@ export function PatternMinerPanel() {
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="secondary"
                       onClick={() => setExpandedClusterId(isExpanded ? null : cluster.cluster_id)}
                       icon={isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       aria-label={isExpanded ? "Collapse cluster details" : "Expand cluster details"}

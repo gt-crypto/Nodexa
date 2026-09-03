@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import {
   Eye,
   AlertTriangle,
@@ -13,7 +15,10 @@ import {
   History,
   ArrowRight,
   Activity,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import { Button } from "./ui/Button";
 
 interface Step {
   title: string;
@@ -104,19 +109,21 @@ const steps: Step[] = [
 ];
 
 export const ControlLoop: React.FC = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const renderCard = (step: Step, idx: number) => {
     const Icon = step.icon;
     return (
       <div
-        key={step.title}
-        className="glass-panel glass-panel-hover rounded-xl p-5 border border-slate-800/80 relative flex flex-col justify-between"
+        key={idx}
+        className="glass-panel glass-panel-hover rounded-xl p-5 border border-slate-800/80 flex flex-col justify-between"
       >
         <div>
           <div className="flex items-center justify-between mb-3">
-            <div className={`p-2.5 rounded-lg border bg-gradient-to-b ${step.color}`}>
+            <div className={`p-2 rounded-lg border bg-gradient-to-br ${step.color}`}>
               <Icon className="w-5 h-5" />
             </div>
-            <span className="text-xs font-mono px-2 py-0.5 rounded border border-slate-700/60 bg-slate-800/60 text-slate-300 font-medium">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
               {step.category}
             </span>
           </div>
@@ -140,7 +147,7 @@ export const ControlLoop: React.FC = () => {
 
   return (
     <section id="control-loop" className="py-12 border-t border-slate-800/80">
-      <div className="text-center max-w-3xl mx-auto mb-10">
+      <div className="text-center max-w-3xl mx-auto mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-mono mb-3">
           <Activity className="w-3.5 h-3.5 text-blue-400" />
           <span>Core Operational Lifecycle</span>
@@ -151,22 +158,36 @@ export const ControlLoop: React.FC = () => {
         <p className="mt-3 text-slate-400 text-sm sm:text-base leading-relaxed">
           A disciplined, 11-stage autonomous control cycle ensuring nodal accounts remain balanced, verified, and continuously compliant.
         </p>
-      </div>
-
-      {/* Balanced 3-Column Responsive Grid (Issue 5: Rows 1-3 have 3 items; Row 4 has 2 centered items) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {steps.slice(0, 9).map((step, idx) => renderCard(step, idx))}
-      </div>
-
-      {/* Row 4: Final two cards centered */}
-      <div className="mt-5 flex flex-col md:flex-row justify-center gap-5">
-        <div className="w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]">
-          {renderCard(steps[9], 9)}
-        </div>
-        <div className="w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]">
-          {renderCard(steps[10], 10)}
+        <div className="mt-4 flex justify-center">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            icon={isExpanded ? <ChevronUp className="w-4 h-4 text-cyan-400" /> : <ChevronDown className="w-4 h-4 text-cyan-400" />}
+          >
+            {isExpanded ? "Hide 11-stage control cycle" : "Show 11-stage control cycle (11 steps)"}
+          </Button>
         </div>
       </div>
+
+      {isExpanded && (
+        <div className="animate-in fade-in duration-200">
+          {/* Balanced 3-Column Responsive Grid (Issue 5: Rows 1-3 have 3 items; Row 4 has 2 centered items) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {steps.slice(0, 9).map((step, idx) => renderCard(step, idx))}
+          </div>
+
+          {/* Row 4: Final two cards centered */}
+          <div className="mt-5 flex flex-col md:flex-row justify-center gap-5">
+            <div className="w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]">
+              {renderCard(steps[9], 9)}
+            </div>
+            <div className="w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]">
+              {renderCard(steps[10], 10)}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

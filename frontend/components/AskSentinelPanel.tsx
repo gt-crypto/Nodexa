@@ -110,25 +110,27 @@ export function AskSentinelPanel() {
         }}
         className="space-y-4 mb-6"
       >
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask Sentinel a question about exceptions, payments, settlements, or exposure..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500/50 transition-colors"
+              className="w-full pl-10 pr-4 h-11 rounded-xl bg-slate-950/80 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all"
             />
           </div>
 
-          <input
-            type="text"
-            value={exceptionIdContext}
-            onChange={(e) => setExceptionIdContext(e.target.value)}
-            placeholder="Context ID (optional)"
-            className="sm:w-48 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-white placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-teal-500/50 transition-colors"
-          />
+          <div className="sm:w-48 shrink-0">
+            <input
+              type="text"
+              value={exceptionIdContext}
+              onChange={(e) => setExceptionIdContext(e.target.value)}
+              placeholder="Context ID (optional)"
+              className="w-full px-3.5 h-11 rounded-xl bg-slate-950/80 border border-slate-800 text-white placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all"
+            />
+          </div>
 
           <Button
             type="submit"
@@ -136,7 +138,7 @@ export function AskSentinelPanel() {
             variant="primary"
             loading={loading}
             icon={<Sparkles className="w-4 h-4" />}
-            className="shrink-0"
+            className="shrink-0 h-11 px-5"
           >
             Ask Sentinel
           </Button>

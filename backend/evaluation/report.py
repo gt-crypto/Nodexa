@@ -1,6 +1,6 @@
 """Structured benchmark report builder and serializer."""
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from backend.evaluation.matcher import CaseMatchResult
 from backend.evaluation.models import (
     EvaluationRunResponse,
@@ -25,6 +25,10 @@ class EvaluationReportBuilder:
         legitimate_summary: Dict[str, Any],
         normal_summary: Dict[str, Any],
         safety_violations: List[str],
+        inv_metrics: Optional[Dict[str, Any]] = None,
+        pol_metrics: Optional[Dict[str, Any]] = None,
+        rem_metrics: Optional[Dict[str, Any]] = None,
+        ver_metrics: Optional[Dict[str, Any]] = None,
     ) -> EvaluationReportSummary:
         """Assembles all evaluation artifacts into a structured EvaluationReportSummary."""
         case_responses = [
@@ -53,6 +57,11 @@ class EvaluationReportBuilder:
             "priority": risk_metrics.get("priority_confusion_matrix", []),
         }
 
+        inv = inv_metrics or {}
+        pol = pol_metrics or {}
+        rem = rem_metrics or {}
+        ver = ver_metrics or {}
+
         return EvaluationReportSummary(
             run=run,
             detection_by_type=type_breakdown,
@@ -64,6 +73,14 @@ class EvaluationReportBuilder:
             false_negatives=false_negatives,
             misclassifications=misclassifications,
             critical_safety_violations=safety_violations,
+            root_cause_accuracy=float(inv.get("root_cause_accuracy", 0.0)),
+            root_cause_accuracy_bps=int(inv.get("root_cause_accuracy_bps", 0)),
+            severity_accuracy=float(risk_metrics.get("severity_accuracy", 0.0)),
+            priority_accuracy=float(risk_metrics.get("priority_accuracy", 0.0)),
+            policy_accuracy=float(pol.get("policy_accuracy", 0.0)),
+            remediation_success_rate=float(rem.get("remediation_success_rate", 0.0)),
+            verification_success_rate=float(ver.get("verification_success_rate", 0.0)),
+            false_closure_count=int(ver.get("false_closure_count", 0)),
         )
 
     @staticmethod

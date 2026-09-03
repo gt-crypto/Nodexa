@@ -9,36 +9,73 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: "impact", label: "Business ROI", icon: TrendingUp },
-  { id: "copilot", label: "Copilot", icon: Sparkles },
-  { id: "verifier", label: "Verifier", icon: Scale },
-  { id: "patterns", label: "Patterns", icon: Network },
-  { id: "merchants", label: "Trust Score", icon: Shield },
-  { id: "drift", label: "Drift Radar", icon: Activity },
-  { id: "calibration", label: "Calibration", icon: Gauge },
-  { id: "escalations", label: "Escalations", icon: Send },
-  { id: "injection", label: "Injection", icon: Zap },
-  { id: "benchmark", label: "Benchmark", icon: Award },
+interface NavGroup {
+  name: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    name: "Overview",
+    items: [
+      { id: "impact", label: "Business ROI", icon: TrendingUp },
+      { id: "copilot", label: "Copilot", icon: Sparkles },
+    ],
+  },
+  {
+    name: "Analysis",
+    items: [
+      { id: "patterns", label: "Patterns", icon: Network },
+      { id: "merchants", label: "Trust Score", icon: Shield },
+      { id: "drift", label: "Drift Radar", icon: Activity },
+    ],
+  },
+  {
+    name: "Operations",
+    items: [
+      { id: "verifier", label: "Verifier", icon: Scale },
+      { id: "escalations", label: "Escalations", icon: Send },
+    ],
+  },
+  {
+    name: "Evaluation",
+    items: [
+      { id: "injection", label: "Injection", icon: Zap },
+      { id: "benchmark", label: "Benchmark", icon: Award },
+      { id: "calibration", label: "Calibration", icon: Gauge },
+    ],
+  },
 ];
+
+const ALL_NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 export const Navbar: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>("impact");
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200;
-      for (const item of NAV_ITEMS) {
+      const threshold = 180;
+      let currentSection = ALL_NAV_ITEMS[0].id;
+
+      for (const item of ALL_NAV_ITEMS) {
         const el = document.getElementById(item.id);
         if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPosition >= top && scrollPosition < top + height) {
-            setActiveSection(item.id);
-            break;
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= threshold) {
+            currentSection = item.id;
           }
         }
       }
+
+      // Bottom of page check
+      if (
+        typeof window !== "undefined" &&
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100
+      ) {
+        currentSection = ALL_NAV_ITEMS[ALL_NAV_ITEMS.length - 1].id;
+      }
+
+      setActiveSection(currentSection);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -73,30 +110,39 @@ export const Navbar: React.FC = () => {
           </span>
         </div>
 
-        {/* Scroll Spy Navigation (Issue 17) */}
+        {/* Grouped Scroll Spy Navigation (Issue 22 & Finding #8) */}
         <nav
           aria-label="Dashboard sections"
-          className="flex items-center gap-1.5 overflow-x-auto py-1 text-xs font-medium scrollbar-none max-w-2xl"
+          className="flex items-center gap-2 overflow-x-auto py-1 text-xs font-medium scrollbar-none max-w-3xl"
         >
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id;
-            return (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                onClick={(e) => scrollTo(item.id, e)}
-                className={`px-3 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5 shrink-0 focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
-                  isActive
-                    ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 font-semibold shadow-sm shadow-teal-500/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-teal-400" : "text-slate-500"}`} />
-                <span>{item.label}</span>
-              </a>
-            );
-          })}
+          {NAV_GROUPS.map((group, groupIdx) => (
+            <React.Fragment key={group.name}>
+              {groupIdx > 0 && <span className="h-4 w-px bg-slate-800/80 shrink-0" />}
+              <div className="flex items-center gap-1 shrink-0">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeSection === item.id;
+                  return (
+                    <a
+                      key={item.id}
+                      href={`#${item.id}`}
+                      onClick={(e) => scrollTo(item.id, e)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`px-2.5 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5 shrink-0 focus:outline-none focus:ring-2 focus:ring-teal-500/40 text-xs ${
+                        isActive
+                          ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 font-semibold shadow-sm shadow-teal-500/10"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
+                      }`}
+                      title={`${group.name} → ${item.label}`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? "text-teal-400" : "text-slate-500"}`} />
+                      <span>{item.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </React.Fragment>
+          ))}
         </nav>
 
         {/* System Status Pill */}

@@ -139,3 +139,11 @@ class EvaluationReportSummary(BaseModel):
     false_negatives: List[EvaluationCaseResponse]
     misclassifications: List[EvaluationCaseResponse]
     critical_safety_violations: List[str]
+    root_cause_accuracy: float = 0.0
+    root_cause_accuracy_bps: int = 0
+    severity_accuracy: float = 0.0
+    priority_accuracy: float = 0.0
+    policy_accuracy: float = 0.0
+    remediation_success_rate: float = 0.0
+    verification_success_rate: float = 0.0
+    false_closure_count: int = 0

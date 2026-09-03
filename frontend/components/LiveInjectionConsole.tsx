@@ -175,8 +175,8 @@ function FamilyCard({
         </p>
       </div>
 
-      <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 min-h-[36px]">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span
             className={`text-xs px-2 py-0.5 rounded font-mono font-medium ${
               family.category === "ANOMALY"
@@ -187,21 +187,21 @@ function FamilyCard({
             {family.category}
           </span>
           {family.is_legitimate && (
-            <span className="text-xs text-slate-400">
-              ✓ Edge case
+            <span className="px-1.5 py-0.5 rounded text-[11px] font-mono text-slate-400 bg-slate-800/80 border border-slate-700/60">
+              Edge case
             </span>
           )}
         </div>
 
-        {/* Explicit Affordance (Issue 16) */}
+        {/* Explicit Affordance (Issue 16 & Major Issue 2) */}
         {selected ? (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-300 border border-teal-400/40 font-mono">
+          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-500/25 text-teal-300 border border-teal-400/40 font-mono shrink-0">
             <CheckCircle2 className="w-3.5 h-3.5 text-teal-300" />
             Selected
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-teal-300 font-mono font-medium">
-            Select &rarr;
+          <span className="inline-flex items-center text-xs font-medium px-2 py-1 text-slate-400 hover:text-teal-300 font-mono shrink-0">
+            Select →
           </span>
         )}
       </div>
@@ -275,7 +275,7 @@ function InjectionResultCard({
         </div>
         <div className="p-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
           <p className="text-slate-400 mb-0.5 font-medium">Exception ID</p>
-          <p className="text-amber-300 truncate" title={result.linked_exception_id ?? "—"}>
+          <p className="text-amber-300 font-mono text-xs select-all truncate tracking-tight" title={result.linked_exception_id ?? "—"}>
             {result.linked_exception_id ?? "—"}
           </p>
         </div>
@@ -529,23 +529,31 @@ export const LiveInjectionConsole: React.FC = () => {
           }}
           description="Inject a fresh synthetic anomaly at runtime. The case enters the exact same canonical pipeline as seeded data — deterministic controls → detection → AI investigation → risk → policy → audit. No shortcuts, zero benchmark contamination."
           action={
-            <div className="flex items-center gap-1.5 text-xs font-mono bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+            <div
+              role="radiogroup"
+              aria-label="Injection execution mode"
+              className="flex items-center gap-1 text-xs font-mono bg-slate-900/90 p-1 rounded-xl border border-slate-800"
+            >
               <button
+                role="radio"
+                aria-checked={streamMode}
                 onClick={() => setStreamMode(true)}
-                className={`px-3 py-1.5 rounded-lg border transition ${
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-teal-500/40 cursor-pointer ${
                   streamMode
-                    ? "bg-teal-500/20 border-teal-500/40 text-teal-300 font-semibold"
-                    : "bg-transparent border-transparent text-slate-400 hover:text-slate-200"
+                    ? "bg-teal-500 text-slate-950 font-bold shadow-sm shadow-teal-500/20"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                 }`}
               >
                 SSE stream
               </button>
               <button
+                role="radio"
+                aria-checked={!streamMode}
                 onClick={() => setStreamMode(false)}
-                className={`px-3 py-1.5 rounded-lg border transition ${
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-teal-500/40 cursor-pointer ${
                   !streamMode
-                    ? "bg-violet-500/20 border-violet-500/40 text-violet-300 font-semibold"
-                    : "bg-transparent border-transparent text-slate-400 hover:text-slate-200"
+                    ? "bg-teal-500 text-slate-950 font-bold shadow-sm shadow-teal-500/20"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                 }`}
               >
                 Synchronous
@@ -566,9 +574,9 @@ export const LiveInjectionConsole: React.FC = () => {
           </span>
         </div>
 
-        {/* Family Selector (Issue 15: H3 subheading) */}
+        {/* Family Selector (Sentence case heading - Finding #6) */}
         <div className="mt-6">
-          <h3 className="text-xs font-semibold text-slate-300 mb-3 uppercase tracking-wider font-mono">
+          <h3 className="text-xs font-semibold text-slate-300 mb-3 font-mono">
             Select anomaly family
           </h3>
           {families.length === 0 ? (
@@ -589,10 +597,10 @@ export const LiveInjectionConsole: React.FC = () => {
           )}
         </div>
 
-        {/* Operator ID + Inject Button */}
-        <div className="mt-5 flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono">
+        {/* Operator ID + Inject Button (Issue 24: Constrained Operator Input Width) */}
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-72">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono font-medium">
               Operator:
             </span>
             <input
@@ -601,7 +609,7 @@ export const LiveInjectionConsole: React.FC = () => {
               value={operatorId}
               onChange={(e) => setOperatorId(e.target.value)}
               placeholder="demo-operator"
-              className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-20 pr-3 py-2.5 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
+              className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-20 pr-3 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30"
             />
           </div>
 
@@ -612,7 +620,6 @@ export const LiveInjectionConsole: React.FC = () => {
             variant="primary"
             loading={loading}
             icon={<Zap className="w-4 h-4" />}
-            className="w-full sm:w-auto"
           >
             {loading ? "Injecting…" : "Inject live anomaly"}
           </Button>

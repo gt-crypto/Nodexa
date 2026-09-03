@@ -1,5 +1,20 @@
-import React from "react";
-import { Lock, Cpu, Bot, ShieldAlert, Wrench, CheckCircle, ScrollText, BarChart3, LayoutDashboard } from "lucide-react";
+"use client";
+
+import React, { useState } from "react";
+import {
+  Lock,
+  Cpu,
+  Bot,
+  ShieldAlert,
+  Wrench,
+  CheckCircle,
+  ScrollText,
+  BarChart3,
+  LayoutDashboard,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { Button } from "./ui/Button";
 
 interface Layer {
   num: number;
@@ -86,9 +101,11 @@ const layers: Layer[] = [
 ];
 
 export const LayerArchitecture: React.FC = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <section id="architecture" className="py-12 border-t border-slate-800/80">
-      <div className="text-center max-w-3xl mx-auto mb-10">
+      <div className="text-center max-w-3xl mx-auto mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-mono mb-4">
           <Lock className="w-3.5 h-3.5" />
           Strict Architectural Isolation
@@ -99,42 +116,54 @@ export const LayerArchitecture: React.FC = () => {
         <p className="mt-3 text-slate-400 text-sm sm:text-base">
           The AI investigation engine has zero direct access to modify financial state. All ledger operations are strictly isolated inside deterministic, verified control barriers.
         </p>
+        <div className="mt-4 flex justify-center">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            icon={isExpanded ? <ChevronUp className="w-4 h-4 text-teal-400" /> : <ChevronDown className="w-4 h-4 text-teal-400" />}
+          >
+            {isExpanded ? "Hide 9-layer architecture" : "Show 9-layer architecture (9 layers)"}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {layers.map((layer) => {
-          const Icon = layer.icon;
-          return (
-            <div
-              key={layer.num}
-              className="glass-panel glass-panel-hover rounded-xl p-5 border border-slate-800/80 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`p-2 rounded-lg border ${layer.accent}`}>
-                    <Icon className="w-5 h-5" />
+      {isExpanded && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-in fade-in duration-200">
+          {layers.map((layer) => {
+            const Icon = layer.icon;
+            return (
+              <div
+                key={layer.num}
+                className="glass-panel glass-panel-hover rounded-xl p-5 border border-slate-800/80 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-2 rounded-lg border ${layer.accent}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className="font-mono text-xs font-bold text-slate-400">
+                      LAYER 0{layer.num}
+                    </span>
                   </div>
-                  <span className="font-mono text-xs font-bold text-slate-400">
-                    LAYER 0{layer.num}
+                  <h3 className="font-semibold text-white text-base mb-1.5 font-mono">
+                    {layer.title}
+                  </h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">
+                    {layer.desc}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-800/40">
+                  <span className="text-xs font-mono text-slate-400">
+                    Category: <span className="text-slate-200">{layer.type}</span>
                   </span>
                 </div>
-                <h3 className="font-semibold text-white text-base mb-1.5 font-mono">
-                  {layer.title}
-                </h3>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  {layer.desc}
-                </p>
               </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-800/40">
-                <span className="text-xs font-mono text-slate-400">
-                  Category: <span className="text-slate-200">{layer.type}</span>
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 };

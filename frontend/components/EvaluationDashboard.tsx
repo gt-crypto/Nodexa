@@ -32,6 +32,15 @@ import {
   getEvaluationRuns,
   getEvaluationCases,
 } from "../lib/api";
+import { Button } from "./ui/Button";
+import { Tabs } from "./ui/Tabs";
+
+function formatAccuracy(val: number | undefined | null): string {
+  if (val === undefined || val === null || isNaN(val)) {
+    return "N/A";
+  }
+  return `${(val * 100).toFixed(1)}%`;
+}
 
 export const EvaluationDashboard: React.FC = () => {
   const [datasetId, setDatasetId] = useState<string>("ds_seed42_demo");
@@ -132,18 +141,15 @@ export const EvaluationDashboard: React.FC = () => {
               className="w-full bg-slate-950 border border-slate-700 pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:border-indigo-500 font-mono text-slate-200"
             />
           </div>
-          <button
+          <Button
             onClick={() => handleRunEvaluation(true)}
             disabled={loading || !datasetId.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm rounded-lg transition shadow-lg shadow-indigo-500/20"
+            variant="primary"
+            loading={loading}
+            icon={<Play className="w-4 h-4 fill-current" />}
           >
-            {loading ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Play className="w-4 h-4" />
-            )}
             Run Benchmark
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -180,9 +186,9 @@ export const EvaluationDashboard: React.FC = () => {
                 </span>
                 <span className="text-xs text-slate-500">/ 100</span>
               </div>
-              <div className="mt-2 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div className="mt-2.5 w-full bg-slate-900 border border-slate-700/60 rounded-full h-2.5 overflow-hidden p-0.5">
                 <div
-                  className="bg-indigo-500 h-1.5 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-indigo-500 to-teal-400 h-full rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(report.run.overall_score, 100)}%` }}
                 />
               </div>
@@ -279,92 +285,91 @@ export const EvaluationDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Component Score Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-            {[
-              {
-                label: "Detection",
-                score: report.run.scores.detection,
-                max: 25,
-                color: "text-blue-400",
-              },
-              {
-                label: "Investigation",
-                score: report.run.scores.investigation,
-                max: 15,
-                color: "text-indigo-400",
-              },
-              {
-                label: "Financial Exposure",
-                score: report.run.scores.financial,
-                max: 15,
-                color: "text-amber-400",
-              },
-              {
-                label: "Risk Materiality",
-                score: report.run.scores.risk,
-                max: 20,
-                color: "text-purple-400",
-              },
-              {
-                label: "Policy Gating",
-                score: report.run.scores.policy,
-                max: 10,
-                color: "text-emerald-400",
-              },
-              {
-                label: "Remediation",
-                score: report.run.scores.remediation,
-                max: 5,
-                color: "text-cyan-400",
-              },
-              {
-                label: "Verification",
-                score: report.run.scores.verification,
-                max: 10,
-                color: "text-teal-400",
-              },
-            ].map((c) => (
-              <div
-                key={c.label}
-                className="bg-slate-950/40 border border-slate-800/80 p-3 rounded-lg flex flex-col justify-between"
-              >
-                <span className="text-xs text-slate-400 font-medium truncate">
-                  {c.label}
-                </span>
-                <div className="mt-1 flex items-baseline justify-between">
-                  <span className={`text-lg font-bold ${c.color}`}>
-                    {c.score}
+          {/* Sub-system Component Scores Strip (Issue 21: Secondary Metrics Grouping) */}
+          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/80 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider font-mono">
+                Sub-system component scores (100 pts max)
+              </span>
+              <span className="text-xs text-slate-500 font-mono">Isolated synthetic ground truth</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+              {[
+                {
+                  label: "Detection",
+                  score: report.run.scores.detection,
+                  max: 25,
+                  color: "text-blue-400",
+                },
+                {
+                  label: "Investigation",
+                  score: report.run.scores.investigation,
+                  max: 15,
+                  color: "text-indigo-400",
+                },
+                {
+                  label: "Financial Exposure",
+                  score: report.run.scores.financial,
+                  max: 15,
+                  color: "text-amber-400",
+                },
+                {
+                  label: "Risk Materiality",
+                  score: report.run.scores.risk,
+                  max: 20,
+                  color: "text-purple-400",
+                },
+                {
+                  label: "Policy Gating",
+                  score: report.run.scores.policy,
+                  max: 10,
+                  color: "text-emerald-400",
+                },
+                {
+                  label: "Remediation",
+                  score: report.run.scores.remediation,
+                  max: 5,
+                  color: "text-cyan-400",
+                },
+                {
+                  label: "Verification",
+                  score: report.run.scores.verification,
+                  max: 10,
+                  color: "text-teal-400",
+                },
+              ].map((c) => (
+                <div
+                  key={c.label}
+                  className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-lg flex flex-col justify-between"
+                >
+                  <span className="text-xs text-slate-400 font-medium truncate">
+                    {c.label}
                   </span>
-                  <span className="text-xs text-slate-500">/{c.max}</span>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className={`text-lg font-bold ${c.color}`}>
+                      {c.score}
+                    </span>
+                    <span className="text-xs text-slate-500">/{c.max}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex border-b border-slate-800 gap-2 overflow-x-auto text-sm">
-            {[
+          {/* Navigation Tabs (Issue 5: Reusable Tabs Component) */}
+          <Tabs
+            ariaLabel="Benchmark evaluation sections"
+            activeTab={activeTab}
+            onChange={(id) => setActiveTab(id as any)}
+            tabs={[
               { id: "overview", label: "Benchmark Overview" },
               { id: "detection", label: "Detection Metrics by Type" },
               { id: "risk", label: "Risk & Confusion Matrices" },
               { id: "exposure", label: "Financial Exposure" },
-              { id: "cases", label: `Case Explorer (${allCases.length})` },
+              { id: "cases", label: "Case Explorer", count: allCases.length },
               { id: "safety", label: "Safety & Invariants" },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id as any)}
-                className={`px-4 py-2.5 font-medium border-b-2 transition whitespace-nowrap ${
-                  activeTab === t.id
-                    ? "border-indigo-500 text-indigo-400"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+            ]}
+          />
 
           {/* Tab 1: Benchmark Overview */}
           {activeTab === "overview" && (
@@ -417,37 +422,37 @@ export const EvaluationDashboard: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Root Cause Diagnosis Accuracy</span>
                     <span className="font-mono font-bold text-indigo-400">
-                      {(report.root_cause_accuracy * 100).toFixed(1)}%
+                      {formatAccuracy(report.root_cause_accuracy)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Severity Classification Accuracy</span>
                     <span className="font-mono font-bold text-purple-400">
-                      {(report.severity_accuracy * 100).toFixed(1)}%
+                      {formatAccuracy(report.severity_accuracy)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Priority Level Accuracy</span>
                     <span className="font-mono font-bold text-purple-400">
-                      {(report.priority_accuracy * 100).toFixed(1)}%
+                      {formatAccuracy(report.priority_accuracy)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Policy Gating Compliance</span>
                     <span className="font-mono font-bold text-emerald-400">
-                      {(report.policy_accuracy * 100).toFixed(1)}%
+                      {formatAccuracy(report.policy_accuracy)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Remediation Execution Success</span>
                     <span className="font-mono font-bold text-cyan-400">
-                      {(report.remediation_success_rate * 100).toFixed(1)}%
+                      {formatAccuracy(report.remediation_success_rate)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Post-Remediation Verification</span>
                     <span className="font-mono font-bold text-teal-400">
-                      {(report.verification_success_rate * 100).toFixed(1)}%
+                      {formatAccuracy(report.verification_success_rate)}
                     </span>
                   </div>
                 </div>

@@ -178,6 +178,10 @@ class BenchmarkEvaluationService:
                 legitimate_summary=legit_metrics,
                 normal_summary=normal_metrics,
                 safety_violations=failure_reasons,
+                inv_metrics=inv_metrics,
+                pol_metrics=pol_metrics,
+                rem_metrics=rem_metrics,
+                ver_metrics=ver_metrics,
             )
 
             # 8. Persist EvaluationRun and Cases in Database

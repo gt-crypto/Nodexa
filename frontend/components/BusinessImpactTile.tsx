@@ -79,13 +79,16 @@ export function BusinessImpactTile() {
               </Button>
 
               <Button
-                variant="icon"
+                variant="secondary"
+                size="sm"
                 onClick={loadImpact}
                 disabled={loading}
                 title="Refresh business impact"
                 aria-label="Refresh business impact"
-                icon={<RefreshCcw className={`w-4 h-4 ${loading ? "animate-spin text-teal-400" : ""}`} />}
-              />
+                icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
+              >
+                Refresh
+              </Button>
             </div>
           }
         />

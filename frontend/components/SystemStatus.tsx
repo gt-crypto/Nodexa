@@ -70,7 +70,7 @@ export const SystemStatus: React.FC = () => {
               {health?.status === "healthy" ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400 font-semibold uppercase">Operational (200 OK)</span>
+                  <span className="text-emerald-400 font-semibold">Operational (200 OK)</span>
                 </>
               ) : error ? (
                 <>
