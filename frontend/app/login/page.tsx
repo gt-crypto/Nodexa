@@ -81,9 +81,49 @@ export default function LoginPage() {
       {/* Visual Identity Background Layer */}
       <NodexaBackground variant="login" />
 
-      {/* Top minimal brand bar */}
+      {/* ── Layer: Ambient Neon Glow System (Restrained Fintech Infrastructure) ── */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0"
+      >
+        {/* Primary soft radial glow centered behind login card on desktop / centered on mobile */}
+        <div
+          className="ambient-glow-primary absolute top-1/2 left-1/2 lg:left-[72%] w-[420px] sm:w-[580px] lg:w-[720px] h-[420px] sm:h-[580px] lg:h-[720px] rounded-full blur-[100px] sm:blur-[130px] lg:blur-[160px] pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(14, 165, 233, 0.22) 0%, rgba(99, 102, 241, 0.16) 40%, rgba(139, 92, 246, 0.08) 65%, transparent 80%)",
+          }}
+        />
+
+        {/* Secondary complementary soft glow in upper-left corner */}
+        <div
+          className="ambient-glow-secondary absolute -top-24 -left-24 sm:-top-32 sm:-left-32 w-[340px] sm:w-[480px] h-[340px] sm:h-[480px] rounded-full blur-[90px] sm:blur-[120px] pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(6, 182, 212, 0.08) 50%, transparent 75%)",
+          }}
+        />
+
+        {/* Tertiary ultra-subtle bottom-right anchor glow */}
+        <div
+          className="absolute -bottom-32 right-[-10%] w-[380px] sm:w-[520px] h-[380px] sm:h-[520px] rounded-full blur-[110px] pointer-events-none opacity-40"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(2, 132, 199, 0.12) 0%, rgba(79, 70, 229, 0.06) 60%, transparent 80%)",
+          }}
+        />
+      </div>
+
+      {/* Top minimal brand bar with subtle logo ambient glow */}
       <header className="w-full px-6 py-4 border-b border-slate-800/80 bg-[#090d16]/70 backdrop-blur-md flex items-center justify-between relative z-10">
-        <NodexaLogo size={24} showSubtitle={false} />
+        <div className="relative inline-flex items-center">
+          {/* Subtle soft ambient bloom behind the brand mark */}
+          <div
+            aria-hidden="true"
+            className="absolute -inset-2 bg-sky-500/15 rounded-full blur-md pointer-events-none"
+          />
+          <NodexaLogo size={24} showSubtitle={false} className="relative z-10" />
+        </div>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-medium bg-sky-950/40 text-sky-400 border border-sky-800/40">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
@@ -169,7 +209,13 @@ export default function LoginPage() {
         </div>
 
         {/* RIGHT COLUMN: Enterprise Login Card */}
-        <div className="w-full lg:w-1/2 max-w-md">
+        <div className="w-full lg:w-1/2 max-w-md relative">
+          {/* Dedicated soft neon backlight focused directly behind the login card */}
+          <div
+            aria-hidden="true"
+            className="absolute -inset-1.5 sm:-inset-2 bg-gradient-to-br from-sky-500/15 via-indigo-500/10 to-transparent rounded-2xl blur-xl pointer-events-none opacity-80"
+          />
+
           <div className="rounded-xl border border-slate-800/80 bg-[#0d121d]/90 backdrop-blur-md p-6 sm:p-8 shadow-2xl relative">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">

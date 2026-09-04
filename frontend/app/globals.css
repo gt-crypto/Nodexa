@@ -160,3 +160,44 @@ body {
     transform: scale(1.06);
   }
 }
+
+/* ── Premium Neon Ambient Glow for Login Screen ── */
+@media (prefers-reduced-motion: no-preference) {
+  .ambient-glow-primary {
+    animation: ambientFloatPrimary 18s ease-in-out infinite alternate;
+  }
+  .ambient-glow-secondary {
+    animation: ambientFloatSecondary 15s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes ambientFloatPrimary {
+  0% {
+    transform: translate(-50%, -50%) scale(1) translate(0px, 0px);
+    opacity: 0.16;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.08) translate(12px, -8px);
+    opacity: 0.22;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.96) translate(-10px, 10px);
+    opacity: 0.15;
+  }
+}
+
+@keyframes ambientFloatSecondary {
+  0% {
+    transform: scale(1) translate(0px, 0px);
+    opacity: 0.08;
+  }
+  50% {
+    transform: scale(1.12) translate(-15px, 12px);
+    opacity: 0.13;
+  }
+  100% {
+    transform: scale(0.92) translate(10px, -15px);
+    opacity: 0.07;
+  }
+}
+
