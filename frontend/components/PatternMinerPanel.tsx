@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { ClustersResponse, ExceptionCluster } from "../types";
 import { fetchClusters, refreshClusters } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { formatPaiseOrUnavailable } from "../lib/formatters";
 import { Button } from "./ui/Button";
 
@@ -23,6 +25,7 @@ export function PatternMinerPanel() {
   const [clustersData, setClustersData] = useState<ClustersResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Filters
@@ -40,15 +43,27 @@ export function PatternMinerPanel() {
   const loadClusters = async () => {
     setLoading(true);
     setError(null);
+    setWakingState(null);
     try {
       const params: any = {};
       if (selectedType !== "ALL") params.pattern_type = selectedType;
       if (selectedSource !== "ALL") params.source = selectedSource;
 
-      const res = await fetchClusters(params);
+      const res = await executeWithColdStartRetry(
+        () => fetchClusters(params),
+        {
+          onWaking: (attempt) => setWakingState({ attempt, isTimeout: false }),
+          onRecovered: () => setWakingState(null),
+        }
+      );
       setClustersData(res);
+      setWakingState(null);
     } catch (err: any) {
-      setError(err.message || "Failed to load pattern clusters.");
+      if (wakingState && wakingState.attempt >= 6) {
+        setWakingState({ attempt: 6, isTimeout: true });
+      } else {
+        setError(err.message || "Failed to load pattern clusters.");
+      }
     } finally {
       setLoading(false);
     }
@@ -231,8 +246,19 @@ export function PatternMinerPanel() {
         </div>
       </div>
 
-      {/* Error state */}
-      {error && (
+      {/* Error / Waking state */}
+      {wakingState ? (
+        <div className="mb-5">
+          <ColdStartWakingCard
+            attempt={wakingState.attempt}
+            maxAttempts={6}
+            isTimeout={wakingState.isTimeout}
+            onRetry={loadClusters}
+            description="Connecting to Exception Pattern Miner…"
+            compact
+          />
+        </div>
+      ) : error ? (
         <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-start gap-2.5 mb-5">
           <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
           <div>
@@ -240,7 +266,7 @@ export function PatternMinerPanel() {
             <p className="text-rose-300/80 mt-0.5">{error}</p>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Clusters List with Progressive Disclosure */}
       {loading && !clustersData ? (

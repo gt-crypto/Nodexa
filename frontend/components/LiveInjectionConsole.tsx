@@ -34,6 +34,8 @@ import {
   fetchExceptions,
   BACKEND_URL,
 } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 
@@ -407,6 +409,8 @@ export const LiveInjectionConsole: React.FC = () => {
     string | null
   >(null);
 
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
+
   const loadHistory = useCallback(async () => {
     try {
       const res = await fetchInjectedCases();
@@ -420,7 +424,18 @@ export const LiveInjectionConsole: React.FC = () => {
     async function init() {
       try {
         const [resFam, resHist] = await Promise.all([
-          fetchSupportedFamilies().catch(() => []),
+          executeWithColdStartRetry(
+            () => fetchSupportedFamilies(),
+            {
+              onWaking: (attempt) => setWakingState({ attempt, isTimeout: false }),
+              onRecovered: () => setWakingState(null),
+            }
+          ).catch((err) => {
+            if (wakingState && wakingState.attempt >= 6) {
+              setWakingState({ attempt: 6, isTimeout: true });
+            }
+            return [];
+          }),
           fetchInjectedCases().catch(() => []),
         ]);
         const famList = Array.isArray(resFam) ? resFam : (resFam as any)?.families || [];
@@ -429,6 +444,9 @@ export const LiveInjectionConsole: React.FC = () => {
           setSelectedFamily(famList[0].family);
         }
         setHistory(Array.isArray(resHist) ? resHist : (resHist as any)?.cases || []);
+        if (famList.length > 0) {
+          setWakingState(null);
+        }
       } catch {
         // Handled gracefully
       }
@@ -579,7 +597,17 @@ export const LiveInjectionConsole: React.FC = () => {
           <h3 className="text-xs font-semibold text-slate-300 mb-2.5 font-mono uppercase tracking-wider">
             Select Anomaly Family
           </h3>
-          {families.length === 0 ? (
+          {wakingState ? (
+            <div className="py-2">
+              <ColdStartWakingCard
+                attempt={wakingState.attempt}
+                maxAttempts={6}
+                isTimeout={wakingState.isTimeout}
+                description="Connecting to Live Anomaly Injection Engine…"
+                compact
+              />
+            </div>
+          ) : families.length === 0 ? (
             <div className="text-xs text-slate-500 font-mono">
               Loading families… (requires backend connection)
             </div>

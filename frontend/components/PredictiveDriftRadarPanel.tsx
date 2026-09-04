@@ -19,6 +19,8 @@ import {
   Minus,
 } from "lucide-react";
 import { DriftPredictionData, fetchDriftPrediction } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { formatNumber, formatSignedNumber, toSentenceCase } from "../lib/formatters";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
@@ -26,6 +28,7 @@ import { SectionHeading } from "./ui/SectionHeading";
 export function PredictiveDriftRadarPanel() {
   const [data, setData] = useState<DriftPredictionData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -36,11 +39,23 @@ export function PredictiveDriftRadarPanel() {
   const loadPrediction = async () => {
     setLoading(true);
     setError(null);
+    setWakingState(null);
     try {
-      const res = await fetchDriftPrediction();
+      const res = await executeWithColdStartRetry(
+        () => fetchDriftPrediction(),
+        {
+          onWaking: (attempt) => setWakingState({ attempt, isTimeout: false }),
+          onRecovered: () => setWakingState(null),
+        }
+      );
       setData(res);
+      setWakingState(null);
     } catch (err: any) {
-      setError(err.message || "Failed to load drift radar prediction.");
+      if (wakingState && wakingState.attempt >= 6) {
+        setWakingState({ attempt: 6, isTimeout: true });
+      } else {
+        setError(err.message || "Failed to load drift radar prediction.");
+      }
     } finally {
       setLoading(false);
     }
@@ -149,12 +164,21 @@ export function PredictiveDriftRadarPanel() {
 
         {/* Panel Body */}
         <div className="space-y-5">
-          {error && (
+          {wakingState ? (
+            <ColdStartWakingCard
+              attempt={wakingState.attempt}
+              maxAttempts={6}
+              isTimeout={wakingState.isTimeout}
+              onRetry={loadPrediction}
+              description="Connecting to Predictive Drift Radar…"
+              compact
+            />
+          ) : error ? (
             <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-center gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
-          )}
+          ) : null}
 
           {/* Insufficient Data State */}
           {data && data.direction === "INSUFFICIENT_DATA" ? (

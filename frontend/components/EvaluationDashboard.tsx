@@ -32,6 +32,8 @@ import {
   getEvaluationRuns,
   getEvaluationCases,
 } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { Button } from "./ui/Button";
 import { Tabs } from "./ui/Tabs";
 
@@ -46,6 +48,7 @@ export const EvaluationDashboard: React.FC = () => {
   const [datasetId, setDatasetId] = useState<string>("ds_seed42_demo");
   const [report, setReport] = useState<EvaluationReportSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "overview" | "detection" | "risk" | "exposure" | "cases" | "safety"
@@ -60,15 +63,25 @@ export const EvaluationDashboard: React.FC = () => {
 
   const loadLatestBenchmark = async () => {
     try {
-      const data = await getLatestBenchmark();
+      const data = await executeWithColdStartRetry(
+        () => getLatestBenchmark(),
+        {
+          onWaking: (attempt) => setWakingState({ attempt, isTimeout: false }),
+          onRecovered: () => setWakingState(null),
+        }
+      );
       if (data) {
         setReport(data);
         if (data.run?.dataset_id) {
           setDatasetId(data.run.dataset_id);
         }
       }
+      setWakingState(null);
     } catch {
-      // Benchmark report not yet generated on initial load
+      // Benchmark report not yet generated or cold-start
+      if (wakingState && wakingState.attempt >= 6) {
+        setWakingState({ attempt: 6, isTimeout: true });
+      }
     }
   };
 
@@ -153,12 +166,23 @@ export const EvaluationDashboard: React.FC = () => {
         </div>
       </div>
 
-      {error && (
+      {wakingState ? (
+        <div className="mt-4">
+          <ColdStartWakingCard
+            attempt={wakingState.attempt}
+            maxAttempts={6}
+            isTimeout={wakingState.isTimeout}
+            onRetry={loadLatestBenchmark}
+            description="Connecting to Benchmark Evaluation Engine…"
+            compact
+          />
+        </div>
+      ) : error ? (
         <div className="mt-4 p-4 bg-rose-500/10 border border-rose-500/30 rounded-lg flex items-center gap-3 text-rose-300 text-sm">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
-      )}
+      ) : null}
 
       {report ? (
         <div className="mt-6 space-y-6">

@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { EscalationConfigData, EscalationDeliveryItem } from "../lib/api";
 import { fetchEscalationConfig, fetchEscalationDeliveries, triggerEscalationWebhook } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 
@@ -24,6 +26,7 @@ export function EscalationWebhookPanel() {
   const [config, setConfig] = useState<EscalationConfigData | null>(null);
   const [deliveries, setDeliveries] = useState<EscalationDeliveryItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Manual Trigger State
@@ -38,15 +41,27 @@ export function EscalationWebhookPanel() {
   const loadData = async () => {
     setLoading(true);
     setError(null);
+    setWakingState(null);
     try {
-      const [cfg, dels] = await Promise.all([
-        fetchEscalationConfig(),
-        fetchEscalationDeliveries(20),
-      ]);
+      const [cfg, dels] = await executeWithColdStartRetry(
+        () => Promise.all([
+          fetchEscalationConfig(),
+          fetchEscalationDeliveries(20),
+        ]),
+        {
+          onWaking: (attempt) => setWakingState({ attempt, isTimeout: false }),
+          onRecovered: () => setWakingState(null),
+        }
+      );
       setConfig(cfg);
       setDeliveries(Array.isArray(dels) ? dels : (dels as any)?.deliveries || []);
+      setWakingState(null);
     } catch (err: any) {
-      setError(err.message || "Failed to load escalation webhook status.");
+      if (wakingState && wakingState.attempt >= 6) {
+        setWakingState({ attempt: 6, isTimeout: true });
+      } else {
+        setError(err.message || "Failed to load escalation webhook status.");
+      }
     } finally {
       setLoading(false);
     }
@@ -121,12 +136,21 @@ export function EscalationWebhookPanel() {
 
         {/* Panel Body */}
         <div className="space-y-5 mt-4">
-          {error && (
+          {wakingState ? (
+            <ColdStartWakingCard
+              attempt={wakingState.attempt}
+              maxAttempts={6}
+              isTimeout={wakingState.isTimeout}
+              onRetry={loadData}
+              description="Connecting to Escalation Webhook Dispatcher…"
+              compact
+            />
+          ) : error ? (
             <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-3">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
-          )}
+          ) : null}
 
           {/* Configuration & Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">

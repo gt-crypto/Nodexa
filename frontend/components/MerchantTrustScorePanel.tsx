@@ -12,6 +12,8 @@ import {
   Search,
 } from "lucide-react";
 import { MerchantScore, fetchMerchantScores } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { toSentenceCase } from "../lib/formatters";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
@@ -22,6 +24,7 @@ export function MerchantTrustScorePanel() {
   const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,14 +34,26 @@ export function MerchantTrustScorePanel() {
   const loadScores = async () => {
     setLoading(true);
     setError(null);
+    setWakingState(null);
     try {
-      const data = await fetchMerchantScores();
+      const data = await executeWithColdStartRetry(
+        () => fetchMerchantScores(),
+        {
+          onWaking: (attempt) => setWakingState({ attempt, isTimeout: false }),
+          onRecovered: () => setWakingState(null),
+        }
+      );
       setScores(data);
       if (data.length > 0 && !selectedMerchantId) {
         setSelectedMerchantId(data[0].merchant_id);
       }
+      setWakingState(null);
     } catch (err: any) {
-      setError(err.message || "Failed to load merchant scores.");
+      if (wakingState && wakingState.attempt >= 6) {
+        setWakingState({ attempt: 6, isTimeout: true });
+      } else {
+        setError(err.message || "Failed to load merchant scores.");
+      }
     } finally {
       setLoading(false);
     }
@@ -61,11 +76,22 @@ export function MerchantTrustScorePanel() {
           description="Deterministic risk &amp; operational impact analytics for merchants participating in nodal transaction clearing."
         />
 
-        {error && (
+        {wakingState ? (
+          <div className="mb-5">
+            <ColdStartWakingCard
+              attempt={wakingState.attempt}
+              maxAttempts={6}
+              isTimeout={wakingState.isTimeout}
+              onRetry={loadScores}
+              description="Connecting to Merchant Trust Intelligence…"
+              compact
+            />
+          </div>
+        ) : error ? (
           <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs mb-5">
             {error}
           </div>
-        )}
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left: Merchant List */}

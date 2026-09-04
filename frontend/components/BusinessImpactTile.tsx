@@ -14,12 +14,15 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { BusinessImpactData, fetchBusinessImpact } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { formatPaiseOrUnavailable } from "../lib/formatters";
 import { Button } from "./ui/Button";
 
 export function BusinessImpactTile() {
   const [data, setData] = useState<BusinessImpactData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showMethodology, setShowMethodology] = useState(false);
 
@@ -30,11 +33,27 @@ export function BusinessImpactTile() {
   const loadImpact = async () => {
     setLoading(true);
     setError(null);
+    setWakingState(null);
     try {
-      const res = await fetchBusinessImpact();
+      const res = await executeWithColdStartRetry(
+        () => fetchBusinessImpact(),
+        {
+          onWaking: (attempt, maxAttempts) => {
+            setWakingState({ attempt, isTimeout: false });
+          },
+          onRecovered: () => {
+            setWakingState(null);
+          },
+        }
+      );
       setData(res);
+      setWakingState(null);
     } catch (err: any) {
-      setError(err.message || "Failed to load business impact metrics.");
+      if (wakingState && wakingState.attempt >= 6) {
+        setWakingState({ attempt: 6, isTimeout: true });
+      } else {
+        setError(err.message || "Failed to load business impact metrics.");
+      }
     } finally {
       setLoading(false);
     }
@@ -97,12 +116,21 @@ export function BusinessImpactTile() {
 
         {/* Main Content Area */}
         <div className="space-y-5">
-          {error && (
+          {wakingState ? (
+            <ColdStartWakingCard
+              attempt={wakingState.attempt}
+              maxAttempts={6}
+              isTimeout={wakingState.isTimeout}
+              onRetry={loadImpact}
+              description="Connecting to Finance Controller…"
+              compact
+            />
+          ) : error ? (
             <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-center gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
-          )}
+          ) : null}
 
           {/* Primary Hero Metric: Financial Exposure Identified */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

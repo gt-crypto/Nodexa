@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { VerifierOpinion } from "../types";
 import { fetchVerifierOpinion, evaluateVerifierOpinion, fetchExceptions } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 
@@ -23,6 +25,7 @@ export function VerifierPanel() {
   const [exceptionId, setExceptionId] = useState<string>("");
   const [opinion, setOpinion] = useState<VerifierOpinion | null>(null);
   const [loading, setLoading] = useState(false);
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentExceptions, setRecentExceptions] = useState<Array<{ exception_id: string; source_flag?: string }>>([]);
 
@@ -30,7 +33,13 @@ export function VerifierPanel() {
   useEffect(() => {
     async function loadRecent() {
       try {
-        const data = await fetchExceptions(undefined, 8);
+        const data = await executeWithColdStartRetry(
+          () => fetchExceptions(undefined, 8),
+          {
+            onWaking: (attempt) => setWakingState({ attempt, isTimeout: false }),
+            onRecovered: () => setWakingState(null),
+          }
+        );
         const items = Array.isArray(data) ? data : (data as any)?.items || [];
         if (Array.isArray(items) && items.length > 0) {
           setRecentExceptions(items);
@@ -40,6 +49,7 @@ export function VerifierPanel() {
             handleFetchOpinion(items[0].exception_id);
           }
         }
+        setWakingState(null);
       } catch {
         // Fallback to demo default
         const fallback = "EXC-GHOST-001";
@@ -230,8 +240,19 @@ export function VerifierPanel() {
         )}
       </div>
 
-      {/* Error state */}
-      {error && (
+      {/* Error / Waking state */}
+      {wakingState ? (
+        <div className="mb-5">
+          <ColdStartWakingCard
+            attempt={wakingState.attempt}
+            maxAttempts={6}
+            isTimeout={wakingState.isTimeout}
+            onRetry={() => handleFetchOpinion()}
+            description="Connecting to Adversarial Verifier…"
+            compact
+          />
+        </div>
+      ) : error ? (
         <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-start gap-2.5 mb-5">
           <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
           <div>
@@ -239,7 +260,7 @@ export function VerifierPanel() {
             <p className="text-rose-300/80 mt-0.5">{error}</p>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Opinion Results Display */}
       {loading ? (

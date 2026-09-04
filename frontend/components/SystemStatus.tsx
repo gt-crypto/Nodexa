@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { fetchHealthStatus } from "../lib/api";
+import { executeWithColdStartRetry, isLikelyWakingError } from "../lib/resilience";
 import { HealthCheckResponse } from "../types";
 import { Server, CheckCircle2, AlertCircle, RefreshCw, Radio } from "lucide-react";
 import { Button } from "./ui/Button";
@@ -9,6 +10,7 @@ import { Button } from "./ui/Button";
 export const SystemStatus: React.FC = () => {
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [wakingAttempt, setWakingAttempt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
@@ -16,10 +18,22 @@ export const SystemStatus: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchHealthStatus();
+      const data = await executeWithColdStartRetry(
+        () => fetchHealthStatus(),
+        {
+          onWaking: (attempt) => {
+            setWakingAttempt(attempt);
+          },
+          onRecovered: () => {
+            setWakingAttempt(null);
+          },
+        }
+      );
       setHealth(data);
+      setWakingAttempt(null);
       setLastChecked(new Date());
     } catch (err) {
+      setWakingAttempt(null);
       setError(err instanceof Error ? err.message : "Backend unavailable (run uvicorn)");
       setHealth(null);
     } finally {
@@ -73,6 +87,13 @@ export const SystemStatus: React.FC = () => {
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span className="text-emerald-400 font-semibold font-sans">Operational (200 OK)</span>
                 </>
+              ) : wakingAttempt ? (
+                <>
+                  <Radio className="w-3.5 h-3.5 text-sky-400 animate-ping" />
+                  <span className="text-sky-300 font-semibold font-sans">
+                    Waking Controller (retry {wakingAttempt}/6)...
+                  </span>
+                </>
               ) : error ? (
                 <>
                   <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
@@ -81,7 +102,7 @@ export const SystemStatus: React.FC = () => {
               ) : (
                 <>
                   <Radio className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-                  <span className="text-slate-400 font-sans">Pinging...</span>
+                  <span className="text-slate-400 font-sans">Connecting...</span>
                 </>
               )}
             </div>

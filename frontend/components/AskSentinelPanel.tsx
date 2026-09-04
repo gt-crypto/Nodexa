@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { CopilotAskResponse } from "../types";
 import { askCopilot } from "../lib/api";
+import { executeWithColdStartRetry } from "../lib/resilience";
+import { ColdStartWakingCard } from "./ColdStartWakingCard";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 
@@ -30,6 +32,7 @@ export function AskSentinelPanel() {
   const [question, setQuestion] = useState("");
   const [exceptionIdContext, setExceptionIdContext] = useState("");
   const [loading, setLoading] = useState(false);
+  const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<CopilotAskResponse | null>(null);
 
@@ -39,16 +42,29 @@ export function AskSentinelPanel() {
 
     setLoading(true);
     setError(null);
+    setWakingState(null);
     try {
-      const data = await askCopilot({
-        question: qToAsk,
-        exception_id: exceptionIdContext.trim() || undefined,
-        actor_id: "operations-copilot-ui",
-      });
+      const data = await executeWithColdStartRetry(
+        () =>
+          askCopilot({
+            question: qToAsk,
+            exception_id: exceptionIdContext.trim() || undefined,
+            actor_id: "operations-copilot-ui",
+          }),
+        {
+          onWaking: (attempt) => setWakingState({ attempt, isTimeout: false }),
+          onRecovered: () => setWakingState(null),
+        }
+      );
       setResponse(data);
       if (customQ) setQuestion(customQ);
+      setWakingState(null);
     } catch (err: any) {
-      setError(err.message || "Failed to query Ask Nodexa.");
+      if (wakingState && wakingState.attempt >= 6) {
+        setWakingState({ attempt: 6, isTimeout: true });
+      } else {
+        setError(err.message || "Failed to query Ask Nodexa.");
+      }
     } finally {
       setLoading(false);
     }
@@ -142,13 +158,24 @@ export function AskSentinelPanel() {
         </div>
       </form>
 
-      {/* Error state */}
-      {error && (
+      {/* Error / Waking state */}
+      {wakingState ? (
+        <div className="mb-5">
+          <ColdStartWakingCard
+            attempt={wakingState.attempt}
+            maxAttempts={6}
+            isTimeout={wakingState.isTimeout}
+            onRetry={() => handleAsk()}
+            description="Connecting to Grounded Copilot Engine…"
+            compact
+          />
+        </div>
+      ) : error ? (
         <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs font-mono mb-5">
           <p className="font-semibold mb-0.5">Copilot Query Error</p>
           <p>{error}</p>
         </div>
-      )}
+      ) : null}
 
       {/* Response Display */}
       {response && (
