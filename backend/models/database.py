@@ -83,6 +83,8 @@ _TYPE_MIGRATIONS: list = [
     ("evaluation_cases", "predicted_root_cause", "VARCHAR(512)"),
     ("evaluation_cases", "expected_resolution_class", "VARCHAR(128)"),
     ("evaluation_cases", "predicted_resolution_class", "VARCHAR(128)"),
+    ("investigation_runs", "recommended_action", "VARCHAR(512)"),
+    ("investigation_runs", "final_classification", "VARCHAR(128)"),
 ]
 
 

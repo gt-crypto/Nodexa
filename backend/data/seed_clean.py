@@ -182,13 +182,18 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
         try:
             agent_service.investigate_exception(session=db, exception_id=exc["exception_id"])
         except Exception as e:
+            db.rollback()
             logger.warning(operation="INVESTIGATION_SKIP", message=f"Investigation skipped for {exc['exception_id']}: {e}")
     db.commit()
 
     # 4. Risk Assessment Prioritization
-    risk_service = RiskAssessmentService()
-    risk_service.assess_all_open_exceptions(session=db)
-    db.commit()
+    try:
+        risk_service = RiskAssessmentService()
+        risk_service.assess_all_open_exceptions(session=db)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.warning(operation="RISK_ASSESSMENT_ERROR", message=f"Risk assessment error: {e}")
 
     # 5. Policy Gating
     policy_service = PolicyService()
@@ -200,7 +205,7 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
                 requested_action="INVESTIGATE",
             )
         except Exception:
-            pass
+            db.rollback()
     db.commit()
 
     # 6. Close Finance-Ops Loop for 1 Eligible Exception (Remediation + Dual Approval + Verification)
