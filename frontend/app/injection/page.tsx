@@ -2,7 +2,7 @@ import React from "react";
 import { LiveInjectionConsole } from "../../components/LiveInjectionConsole";
 
 export const metadata = {
-  title: "Live Digital-Twin Injection | Nodal Sentinel",
+  title: "Live Digital-Twin Injection | Nodexa",
   description: "Live runtime synthetic anomaly injection for financial pipeline verification.",
 };
 

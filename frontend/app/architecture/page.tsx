@@ -4,7 +4,7 @@ import { LayerArchitecture } from "../../components/LayerArchitecture";
 import { ShieldCheck, CheckCircle, Lock, Cpu, Database } from "lucide-react";
 
 export const metadata = {
-  title: "Architecture & Control Loop | Nodal Sentinel",
+  title: "Architecture & Control Loop | Nodexa",
   description: "11-stage autonomous control cycle and 9-layer architectural isolation specification.",
 };
 
@@ -21,7 +21,7 @@ export default function ArchitecturePage() {
           System Architecture & Control Loop
         </h1>
         <p className="mt-2 text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
-          Nodal Sentinel enforces strict separation between deterministic financial control (balance arithmetic, double-entry verification, reconciliation, SLA invariants) and AI-driven investigation.
+          Nodexa enforces strict separation between deterministic financial control (balance arithmetic, double-entry verification, reconciliation, SLA invariants) and AI-driven investigation.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-4 text-xs font-mono">

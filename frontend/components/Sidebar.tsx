@@ -110,7 +110,7 @@ export const Sidebar: React.FC = () => {
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-base tracking-tight text-white group-hover:text-teal-200 transition">
-                Nodal<span className="text-teal-400">Sentinel</span>
+                NODEXA
               </span>
               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/60 font-mono">
                 v2.0
@@ -244,7 +244,7 @@ export const Sidebar: React.FC = () => {
             <Shield className="w-4 h-4" />
           </div>
           <span className="font-bold text-sm tracking-tight text-white">
-            Nodal<span className="text-teal-400">Sentinel</span>
+            NODEXA
           </span>
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/60 font-mono">
             v2.0

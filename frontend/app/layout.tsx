@@ -4,9 +4,9 @@ import { AuthProvider } from "../lib/auth";
 import { AppShell } from "../components/AppShell";
 
 export const metadata: Metadata = {
-  title: "Nodal Sentinel | AI Finance Controller",
+  title: "Nodexa — AI Finance Controller",
   description:
-    "AI Finance Controller for Nodal Account Health. Deterministic financial control coupled with controlled AI investigation.",
+    "AI-powered financial control, reconciliation, investigation, and verification for payment operations.",
 };
 
 export default function RootLayout({

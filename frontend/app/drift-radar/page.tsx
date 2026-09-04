@@ -2,7 +2,7 @@ import React from "react";
 import { PredictiveDriftRadarPanel } from "../../components/PredictiveDriftRadarPanel";
 
 export const metadata = {
-  title: "Predictive Drift Radar | Nodal Sentinel",
+  title: "Predictive Drift Radar | Nodexa",
   description: "Continuous anomaly drift detection and predictive stability monitoring.",
 };
 

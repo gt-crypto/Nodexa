@@ -91,7 +91,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
         {/* Global footer */}
         <footer className="border-t border-slate-900 glass-panel py-6 text-center text-xs text-slate-400 font-mono">
-          <p>Nodal Sentinel &copy; 2026 &mdash; Autonomous AI Finance Controller Architecture &bull; Demo Access</p>
+          <p>Nodexa &copy; 2026 &mdash; Autonomous AI Finance Controller Architecture &bull; Demo Access</p>
         </footer>
       </div>
     </div>

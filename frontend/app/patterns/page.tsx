@@ -2,7 +2,7 @@ import React from "react";
 import { PatternMinerPanel } from "../../components/PatternMinerPanel";
 
 export const metadata = {
-  title: "Pattern Miner | Nodal Sentinel",
+  title: "Pattern Miner | Nodexa",
   description: "Deterministic exception clustering and pattern miner for nodal reconciliation.",
 };
 

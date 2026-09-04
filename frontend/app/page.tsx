@@ -14,7 +14,7 @@ export default function Home() {
         </div>
 
         <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
-          Nodal <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-emerald-400">Sentinel</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-emerald-400">NODEXA</span>
         </h1>
 
         <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto font-medium mb-2">

@@ -90,7 +90,7 @@ export function ConfidenceCalibrationPanel() {
             icon: <Target className="w-3.5 h-3.5 text-cyan-400" />,
             color: "bg-cyan-500/10 border-cyan-500/30 text-cyan-300",
           }}
-          description="Empirical verification evaluating whether Sentinel's confidence labels correspond to observed correctness across genuine historical prediction outcomes without fabricating probabilities."
+          description="Empirical verification evaluating whether Nodexa's confidence labels correspond to observed correctness across genuine historical prediction outcomes without fabricating probabilities."
           action={
             <div className="flex flex-wrap items-center gap-2">
               <select
@@ -329,7 +329,7 @@ export function ConfidenceCalibrationPanel() {
 
               <div className="text-xs text-slate-300 space-y-2 leading-relaxed">
                 <p>
-                  <strong>1. Empirical Correctness vs Probability:</strong> Sentinel makes a strict distinction between a confidence label (e.g. HIGH) and mathematical probability. A HIGH confidence prediction means the engine identified consistent supporting operational signals, not that it represents a 90% Bayesian failure probability.
+                  <strong>1. Empirical Correctness vs Probability:</strong> Nodexa makes a strict distinction between a confidence label (e.g. HIGH) and mathematical probability. A HIGH confidence prediction means the engine identified consistent supporting operational signals, not that it represents a 90% Bayesian failure probability.
                 </p>
                 <p>
                   <strong>2. Evaluation Ground Truth Isolation:</strong> Evaluated outcomes are obtained strictly from benchmark ground truth comparisons (<code className="text-cyan-300">evaluation_cases</code>) and verified post-decision verification records (<code className="text-cyan-300">verification_records</code>). Live-injected anomalies without confirmed ground truth remain isolated in the unevaluated count and do not alter the evaluated correctness rate.

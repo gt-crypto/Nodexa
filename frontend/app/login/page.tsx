@@ -61,12 +61,12 @@ export default function LoginPage() {
     setError(null);
   };
 
-  if (isLoading || isAuthenticated) {
+    if (isLoading || isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#090d16] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-mono text-slate-400">Loading Sentinel session...</span>
+          <span className="text-xs font-mono text-slate-400">Loading Nodexa session...</span>
         </div>
       </div>
     );
@@ -81,7 +81,7 @@ export default function LoginPage() {
             <Shield className="w-4 h-4" />
           </div>
           <span className="font-bold text-sm tracking-tight text-white">
-            Nodal<span className="text-teal-400">Sentinel</span>
+            NODEXA
           </span>
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/60 font-mono">
             v2.0
@@ -103,7 +103,7 @@ export default function LoginPage() {
               <Shield className="w-7 h-7" />
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-1">
-              NODAL <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-300">SENTINEL</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-300">NODEXA</span>
             </h1>
             <p className="text-xs font-mono text-teal-400/90 tracking-wide uppercase font-semibold mb-2">
               AI Finance Controller
@@ -206,7 +206,7 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <span>Sign in to Sentinel</span>
+                  <span>Sign in to Nodexa</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -293,7 +293,7 @@ export default function LoginPage() {
 
       {/* Footer disclaimer */}
       <footer className="max-w-md w-full mx-auto text-center py-2 text-[11px] text-slate-400 font-mono">
-        <p>Demo access &bull; Hackathon evaluation environment &bull; Nodal Sentinel &copy; 2026</p>
+        <p>Demo environment &bull; Synthetic / Test Data &bull; Nodexa &copy; 2026</p>
       </footer>
     </div>
   );

@@ -21,7 +21,7 @@ import { SectionHeading } from "./ui/SectionHeading";
 const EXAMPLE_QUESTIONS = [
   "What is the status of EXC-GHOST-001?",
   "What recurring patterns exist in the exceptions?",
-  "What financial exposure has Sentinel surfaced?",
+  "What financial exposure has Nodexa surfaced?",
   "What is the trust score for merchant ACME_CORP?",
   "Is nodal health deteriorating according to drift radar?",
 ];
@@ -48,7 +48,7 @@ export function AskSentinelPanel() {
       setResponse(data);
       if (customQ) setQuestion(customQ);
     } catch (err: any) {
-      setError(err.message || "Failed to query Ask Sentinel.");
+      setError(err.message || "Failed to query Ask Nodexa.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export function AskSentinelPanel() {
       {/* Header (Issue 3 & 14) */}
       <SectionHeading
         icon={<Sparkles className="w-6 h-6 text-teal-400" />}
-        title="Ask Sentinel Grounded Copilot"
+        title="Ask Nodexa Grounded Copilot"
         badge={{
           text: "Tier-1 Copilot Active (v2.0)",
           icon: <MessageSquare className="w-3.5 h-3.5 text-teal-400" />,
@@ -117,7 +117,7 @@ export function AskSentinelPanel() {
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask Sentinel a question about exceptions, payments, settlements, or exposure..."
+              placeholder="Ask Nodexa a question about exceptions, payments, settlements, or exposure..."
               className="w-full pl-10 pr-4 h-11 rounded-xl bg-slate-950/80 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all"
             />
           </div>
@@ -140,7 +140,7 @@ export function AskSentinelPanel() {
             icon={<Sparkles className="w-4 h-4" />}
             className="shrink-0 h-11 px-5"
           >
-            Ask Sentinel
+            Ask Nodexa
           </Button>
         </div>
       </form>

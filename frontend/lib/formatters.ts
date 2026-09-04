@@ -1,5 +1,5 @@
 /**
- * Financial and Numeric Formatting Utilities for Nodal Sentinel
+ * Financial and Numeric Formatting Utilities for Nodexa
  *
  * Enforces integer minor-unit (paise) convention for financial precision.
  * Distinguishes between:

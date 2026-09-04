@@ -224,7 +224,7 @@ export function BusinessImpactTile() {
                 <span>Deterministic calculation methodology & traceability</span>
               </h3>
               <p className="text-sm text-slate-300 leading-relaxed">
-                Nodal Sentinel rejects black-box or hallucinated financial claims. All metrics displayed in this tile are computed directly from SQLite persisted application records without LLM interpolation.
+                Nodexa rejects black-box or hallucinated financial claims. All metrics displayed in this tile are computed directly from SQLite persisted application records without LLM interpolation.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">

@@ -2,7 +2,7 @@ import React from "react";
 import { MerchantTrustScorePanel } from "../../components/MerchantTrustScorePanel";
 
 export const metadata = {
-  title: "Merchant Trust Score | Nodal Sentinel",
+  title: "Merchant Trust Score | Nodexa",
   description: "Dynamic operational merchant risk assessment and determinant factor scoring.",
 };
 

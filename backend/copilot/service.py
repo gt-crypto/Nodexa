@@ -114,7 +114,7 @@ class AskSentinelService:
                     question=question,
                     answer=(
                         "I cannot answer questions regarding system credentials, external predictions, or legal/out-of-scope matters. "
-                        "I can only retrieve and explain live Nodal Sentinel operational facts."
+                        "I can only retrieve and explain live Nodexa operational facts."
                     ),
                     evidence_refs=[],
                     reasoning="Query asks for information outside operational database scope.",
@@ -312,7 +312,7 @@ class AskSentinelService:
                 query_id=query_id,
                 question=question,
                 answer=(
-                    "I cannot establish an answer from available Nodal Sentinel operational records. "
+                    "I cannot establish an answer from available Nodexa operational records. "
                     "No matching exception, payment, or settlement records were found for your query."
                 ),
                 evidence_refs=[],

@@ -102,7 +102,7 @@ export const Navbar: React.FC = () => {
           </div>
           <div className="hidden sm:block">
             <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
-              Nodal<span className="text-teal-400">Sentinel</span>
+              NODEXA
             </span>
           </div>
           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-teal-950/80 text-teal-300 border border-teal-800/60 font-mono">

@@ -1,8 +1,8 @@
-# Nodal Sentinel
+# Nodexa
 
 **AI Finance Controller for Nodal & Escrow Account Health**
 
-Nodal Sentinel is a production-hardened finance controller architecture enforcing strict separation between **deterministic financial control** (balance arithmetic, double-entry verification, reconciliation, settlement SLA monitoring, invariant enforcement) and **AI-driven investigation** (cross-source reasoning, root-cause analysis, temporal trace synthesis).
+Nodexa is a production-hardened finance controller architecture enforcing strict separation between **deterministic financial control** (balance arithmetic, double-entry verification, reconciliation, settlement SLA monitoring, invariant enforcement) and **AI-driven investigation** (cross-source reasoning, root-cause analysis, temporal trace synthesis).
 
 ---
 

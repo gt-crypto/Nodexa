@@ -3,7 +3,7 @@ import { EvaluationDashboard } from "../../components/EvaluationDashboard";
 import { ConfidenceCalibrationPanel } from "../../components/ConfidenceCalibrationPanel";
 
 export const metadata = {
-  title: "Benchmark & Accuracy Evaluation | Nodal Sentinel",
+  title: "Benchmark & Accuracy Evaluation | Nodexa",
   description: "Comprehensive benchmark suite, operational accuracy rates, and confidence calibration.",
 };
 
