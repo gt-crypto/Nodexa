@@ -6,7 +6,7 @@ import traceback
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from backend.models.database import get_db
 from backend.models.financial_sources import (
