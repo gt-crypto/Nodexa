@@ -107,8 +107,8 @@ class EvaluationCase(Base):
     expected_exception_type = Column(String(64), nullable=True)
     predicted_exception_type = Column(String(64), nullable=True)
 
-    expected_root_cause = Column(String(256), nullable=True)
-    predicted_root_cause = Column(String(256), nullable=True)
+    expected_root_cause = Column(String(512), nullable=True)
+    predicted_root_cause = Column(String(512), nullable=True)
 
     # Financial Exposure (paise minor units)
     expected_exposure = Column(BigInteger, nullable=False, default=0)
@@ -121,8 +121,8 @@ class EvaluationCase(Base):
     expected_priority = Column(String(32), nullable=True)
     predicted_priority = Column(String(32), nullable=True)
 
-    expected_resolution_class = Column(String(64), nullable=True)
-    predicted_resolution_class = Column(String(64), nullable=True)
+    expected_resolution_class = Column(String(128), nullable=True)
+    predicted_resolution_class = Column(String(128), nullable=True)
 
     expected_policy_decision = Column(String(64), nullable=True)
     predicted_policy_decision = Column(String(64), nullable=True)

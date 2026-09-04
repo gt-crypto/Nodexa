@@ -28,12 +28,12 @@ class EvaluationGroundTruth(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     case_id = Column(String(64), unique=True, nullable=False, index=True)
     anomaly_type = Column(String(64), nullable=False, index=True)
-    expected_root_cause = Column(String(64), nullable=False, index=True)
+    expected_root_cause = Column(String(512), nullable=False, index=True)
     
     # Expected exposure stored as integer minor units
     expected_exposure = Column(BigInteger, nullable=False)
-    expected_resolution_class = Column(String(64), nullable=False)
-    expected_verification_state = Column(String(64), nullable=False)
+    expected_resolution_class = Column(String(128), nullable=False)
+    expected_verification_state = Column(String(128), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     __table_args__ = (

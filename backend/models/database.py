@@ -75,6 +75,17 @@ _COLUMN_MIGRATIONS: dict = {
 }
 
 
+_TYPE_MIGRATIONS: list = [
+    ("evaluation_ground_truth", "expected_root_cause", "VARCHAR(512)"),
+    ("evaluation_ground_truth", "expected_resolution_class", "VARCHAR(128)"),
+    ("evaluation_ground_truth", "expected_verification_state", "VARCHAR(128)"),
+    ("evaluation_cases", "expected_root_cause", "VARCHAR(512)"),
+    ("evaluation_cases", "predicted_root_cause", "VARCHAR(512)"),
+    ("evaluation_cases", "expected_resolution_class", "VARCHAR(128)"),
+    ("evaluation_cases", "predicted_resolution_class", "VARCHAR(128)"),
+]
+
+
 def init_db(custom_engine=None) -> None:
     """Create all registered database tables and apply incremental schema migrations."""
     import backend.models
@@ -103,6 +114,15 @@ def init_db(custom_engine=None) -> None:
                                 conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS {col_ddl}"))
                     except Exception:
                         pass  # safe ignore if concurrent migration completed
+
+        # 3. Column type widening migrations for PostgreSQL
+        if not is_sqlite:
+            for table_name, col_name, new_type in _TYPE_MIGRATIONS:
+                try:
+                    with target_engine.begin() as conn:
+                        conn.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN {col_name} TYPE {new_type}"))
+                except Exception:
+                    pass
     except Exception:
         pass
 
