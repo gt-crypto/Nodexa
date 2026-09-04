@@ -6,6 +6,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.errors.exceptions import SentinelError
 from backend.logging import get_current_request_id, logger
+from backend.config import settings
 
 
 def format_error_response(
@@ -110,9 +111,15 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         message=f"Unhandled internal server error: {str(exc)}",
         error=str(exc),
     )
+    is_prod = settings.environment.lower() == "production"
+    user_message = (
+        "We couldn't complete that request. Please try again."
+        if is_prod
+        else f"An unexpected internal server error occurred: {str(exc)}"
+    )
     return format_error_response(
         error_code="INTERNAL_ERROR",
-        message=f"An unexpected internal server error occurred: {str(exc)}",
+        message=user_message,
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         request=request,
     )

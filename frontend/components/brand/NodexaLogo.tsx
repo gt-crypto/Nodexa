@@ -146,7 +146,7 @@ export const NodexaLogo: React.FC<NodexaLogoProps> = ({
           </span>
         </div>
         {showSubtitle && (
-          <span className="text-[10px] font-mono tracking-wider text-slate-400 mt-1 uppercase font-medium">
+          <span className="text-xs font-mono tracking-wider text-slate-400 mt-1 uppercase font-medium">
             {subtitle}
           </span>
         )}

@@ -123,7 +123,7 @@ export const Sidebar: React.FC = () => {
       >
         {NAV_GROUPS.map((group, groupIdx) => (
           <div key={group.name} className={`space-y-1 ${groupIdx > 0 ? "pt-1" : ""}`}>
-            <h2 className="px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5 font-sans">
+            <h2 className="px-2.5 text-xs font-semibold tracking-normal text-slate-300 mb-1.5 font-sans">
               {group.name}
             </h2>
             <div className="space-y-0.5">
@@ -260,7 +260,7 @@ export const Sidebar: React.FC = () => {
 
       {/* Desktop Fixed Left Sidebar (≥ 1024px) */}
       <aside
-        className="hidden lg:flex flex-col fixed top-0 bottom-0 left-0 w-60 h-screen z-30 bg-[#090d16] border-r border-slate-800/80"
+        className="hidden lg:flex flex-col fixed top-0 bottom-0 left-0 w-64 h-screen z-30 bg-[#090d16] border-r border-slate-800/80"
         aria-label="Main Navigation"
       >
         {navContent}

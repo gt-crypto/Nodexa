@@ -84,9 +84,11 @@ export const DEMO_USERS: Record<string, DemoUser> = {
 };
 
 const AUTH_STORAGE_KEY = "nodal_sentinel_demo_session_v1";
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24-hour session expiration
 
 /**
  * Reads the current demo user from localStorage (safe in SSR).
+ * Validates session expiration against 24-hour TTL.
  */
 export function getCurrentUser(): DemoUser | null {
   if (typeof window === "undefined") return null;
@@ -94,6 +96,16 @@ export function getCurrentUser(): DemoUser | null {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
+
+    // Validate session expiration timestamp
+    if (parsed && parsed.authenticatedAt) {
+      const authTime = new Date(parsed.authenticatedAt).getTime();
+      if (!isNaN(authTime) && Date.now() - authTime > SESSION_TTL_MS) {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+      }
+    }
+
     if (parsed && parsed.email && DEMO_USERS[parsed.email.toLowerCase()]) {
       return DEMO_USERS[parsed.email.toLowerCase()];
     }

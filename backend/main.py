@@ -202,14 +202,20 @@ async def global_exception_handler(request: Request, exc: Exception):
         message=str(exc),
         details={"path": str(request.url), "request_id": req_id, "traceback": tb},
     )
+    is_prod = settings.environment.lower() == "production"
+    user_message = (
+        "We couldn't complete that request. Please try again."
+        if is_prod
+        else str(exc)
+    )
     return JSONResponse(
         status_code=500,
         content={
             "error": "INTERNAL_ERROR",
-            "message": str(exc),
-            "detail": str(exc),
+            "message": user_message,
+            "detail": user_message,
             "request_id": req_id,
-            "details": {"traceback": tb.splitlines()[-6:] if tb else []},
+            "details": {} if is_prod else {"traceback": tb.splitlines()[-6:] if tb else []},
         },
     )
 

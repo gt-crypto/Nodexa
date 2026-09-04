@@ -63,11 +63,11 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <Sidebar />
 
       {/* ── Layer 3: Main Page Content & Contextual Header (relative z-10) ── */}
-      <div className="lg:pl-60 flex flex-col min-h-screen relative z-10">
+      <div className="lg:pl-64 flex flex-col min-h-screen relative z-10">
         {/* Top contextual role banner with single global Sign out action */}
         <header className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-2 border-b border-slate-800/80 bg-[#080b11]/80 backdrop-blur-md gap-2 sticky top-0 z-20">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-xs font-medium text-slate-400 hidden sm:inline">
+            <span className="text-xs font-semibold text-slate-200 hidden sm:inline tracking-tight font-sans">
               Terminal Session:
             </span>
             <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-sky-950/40 border border-sky-800/40 text-sky-300 text-xs font-medium truncate">

@@ -17,6 +17,8 @@ RATE_LIMITED_ROUTES: Dict[str, Tuple[int, int]] = {
     "/data/generate": (10, 60),        # 10 generations per minute
     "/exceptions/detect": (30, 60),     # 30 full detection runs per minute
     "/evaluation/run": (20, 60),        # 20 benchmark runs per minute
+    "/remediation/execute": (30, 60),   # 30 remediation executions per minute
+    "/copilot/chat": (60, 60),          # 60 copilot queries per minute
 }
 
 

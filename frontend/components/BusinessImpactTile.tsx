@@ -73,7 +73,7 @@ export function BusinessImpactTile() {
                 <h2 className="text-base font-semibold text-white tracking-tight font-sans">
                   Business Impact &amp; Value Surfaced
                 </h2>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono bg-sky-950/30 border border-sky-800/40 text-sky-300">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-mono bg-sky-950/30 border border-sky-800/40 text-sky-300">
                   <DollarSign className="w-3 h-3 text-sky-400" />
                   <span>Tier-2 Business Impact</span>
                 </span>
@@ -134,33 +134,33 @@ export function BusinessImpactTile() {
 
           {/* Primary Hero Metric: Financial Exposure Identified */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div className="lg:col-span-5 rounded-xl bg-[#090d16] border border-sky-800/40 p-5 flex flex-col justify-between relative shadow-sm">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-slate-300 font-sans">
-                    Financial Exposure Identified
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold font-sans bg-sky-950/50 text-sky-300 border border-sky-800/50 tracking-wide">
+            <div className="lg:col-span-5 rounded-xl bg-[#090d16] border border-sky-800/40 p-5 flex flex-col justify-between shadow-sm">
+              <div className="space-y-2.5">
+                <span className="text-xs font-medium text-slate-300 font-sans block">
+                  Financial Exposure Identified
+                </span>
+
+                <div className="flex items-baseline gap-2.5 flex-wrap">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-xl font-bold text-sky-400 font-sans">₹</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight financial-num">
+                      {data ? (data.financial_exposure_identified / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "—"}
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold font-sans bg-sky-950/50 text-sky-300 border border-sky-800/50 tracking-wide">
                     POTENTIAL
                   </span>
                 </div>
 
-                <div className="mt-2 flex items-baseline gap-1.5">
-                  <span className="text-xl font-bold text-sky-400 font-sans">₹</span>
-                  <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight financial-num">
-                    {data ? (data.financial_exposure_identified / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "—"}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5 leading-relaxed font-sans font-normal">
+                <p className="text-xs text-slate-400 flex items-center gap-1.5 leading-relaxed font-sans font-normal">
                   <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                  Potential financial risk surfaced for governance and policy review
+                  <span>Potential financial risk surfaced for governance and policy review</span>
                 </p>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-sans">Realized savings:</span>
-                <span className="text-slate-200 font-semibold num-tabular">
+              <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-sans">Realized savings</span>
+                <span className="text-slate-200 font-semibold num-tabular font-sans">
                   {formatPaiseOrUnavailable(data?.realized_savings, "N/A")}
                 </span>
               </div>
@@ -175,7 +175,7 @@ export function BusinessImpactTile() {
                     {data?.actionable_case_count ?? "—"}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
+                <div className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
                   Quantifiable exposure &gt; 0
                 </div>
               </div>
@@ -187,7 +187,7 @@ export function BusinessImpactTile() {
                     {data?.high_risk_case_count ?? "—"}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
+                <div className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
                   Severity: HIGH / CRITICAL
                 </div>
               </div>
@@ -199,7 +199,7 @@ export function BusinessImpactTile() {
                     {data?.recurring_pattern_count ?? "—"}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
+                <div className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
                   Identified by pattern miner
                 </div>
               </div>
@@ -211,7 +211,7 @@ export function BusinessImpactTile() {
                     {data?.merchants_impacted ?? "—"}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
+                <div className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
                   Distinct merchant accounts
                 </div>
               </div>
@@ -270,7 +270,7 @@ export function BusinessImpactTile() {
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-400 font-mono pt-1">
+              <div className="text-xs text-slate-400 font-mono pt-1">
                 API endpoint: <span className="text-slate-300">GET /impact/roi</span> | Engine version: <span className="text-slate-300">{data?.version || "v1.0.0"}</span>
               </div>
             </div>
