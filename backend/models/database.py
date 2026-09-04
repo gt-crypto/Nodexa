@@ -1,8 +1,8 @@
-"""Centralized database configuration and session management for Nodal Sentinel."""
+"""Centralized database configuration and session management for Nodexa."""
 import os
 from typing import Generator
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
@@ -10,7 +10,18 @@ load_dotenv()
 
 # Database URL from environment or default to SQLite local file
 DEFAULT_DATABASE_URL = "sqlite:///./nodal_sentinel.db"
-DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+raw_db_url = (
+    os.getenv("DATABASE_URL")
+    or os.getenv("INTERNAL_DATABASE_URL")
+    or os.getenv("POSTGRES_URL")
+    or DEFAULT_DATABASE_URL
+)
+
+# Normalize postgres:// to postgresql:// for SQLAlchemy 2.0 compatibility
+if raw_db_url.startswith("postgres://"):
+    DATABASE_URL = raw_db_url.replace("postgres://", "postgresql://", 1)
+else:
+    DATABASE_URL = raw_db_url
 
 # SQLite-specific connect args
 connect_args = {}
@@ -47,39 +58,56 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def init_db(custom_engine=None) -> None:
-    """Create all registered database tables and apply incremental schema migrations."""
-    from sqlalchemy import inspect, text
-    target_engine = custom_engine or engine
-    # Create any completely new tables
-    Base.metadata.create_all(bind=target_engine)
-
-    # Incremental column migrations for SQLite (ALTER TABLE ADD COLUMN is safe and idempotent)
-    if str(target_engine.url).startswith("sqlite"):
-        inspector = inspect(target_engine)
-        with target_engine.connect() as conn:
-            for table_name, columns in _COLUMN_MIGRATIONS.items():
-                try:
-                    existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
-                except Exception:
-                    continue  # table doesn't exist yet; create_all will handle it
-                for col_name, col_ddl in columns:
-                    if col_name not in existing_cols:
-                        conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_ddl}"))
-            conn.commit()
-
-
 # Incremental migrations: list of (column_name, full_DDL_fragment) per table.
-# Add new entries here whenever a column is added to an existing ORM model.
+# Applied across both SQLite and PostgreSQL to ensure zero missing column errors.
 _COLUMN_MIGRATIONS: dict = {
     "exceptions": [
-        ("source_flag", "source_flag TEXT NOT NULL DEFAULT 'seeded'"),
+        ("source_flag", "source_flag VARCHAR(32) NOT NULL DEFAULT 'seeded'"),
+    ],
+    "exception_clusters": [
+        ("seeded_count", "seeded_count INTEGER NOT NULL DEFAULT 0"),
+        ("live_injected_count", "live_injected_count INTEGER NOT NULL DEFAULT 0"),
+        ("evidence", "evidence TEXT NOT NULL DEFAULT '{}'"),
+    ],
+    "evaluation_runs": [
+        ("safety_score", "safety_score INTEGER NOT NULL DEFAULT 0"),
     ],
 }
+
+
+def init_db(custom_engine=None) -> None:
+    """Create all registered database tables and apply incremental schema migrations."""
+    import backend.models
+
+    target_engine = custom_engine or engine
+
+    # 2. Create any newly registered tables
+    Base.metadata.create_all(bind=target_engine)
+
+    # 3. Universal incremental column migrations for both SQLite and PostgreSQL
+    inspector = inspect(target_engine)
+    is_sqlite = str(target_engine.url).startswith("sqlite")
+
+    with target_engine.connect() as conn:
+        for table_name, columns in _COLUMN_MIGRATIONS.items():
+            try:
+                existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
+            except Exception:
+                continue  # table doesn't exist yet; create_all will handle it
+            for col_name, col_ddl in columns:
+                if col_name not in existing_cols:
+                    try:
+                        if is_sqlite:
+                            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_ddl}"))
+                        else:
+                            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS {col_ddl}"))
+                    except Exception:
+                        pass  # safe ignore if concurrent migration completed
+        conn.commit()
 
 
 def reset_db(custom_engine=None) -> None:
     """Drop all tables and recreate clean schema."""
     target_engine = custom_engine or engine
     Base.metadata.drop_all(bind=target_engine)
-    Base.metadata.create_all(bind=target_engine)
+    init_db(custom_engine=target_engine)

@@ -2,12 +2,13 @@
 
 Ensures the canonical synthetic baseline is deterministically populated:
 - 60 Gateway Transactions (50+ record synthetic batch requirement)
-- 60 Merchant Orders, 63 Settlement Batches, 76 Ledger Entries, 13 Dispute Events
+- 60 Merchant Orders, 62 Settlement Batches, 76 Ledger Entries, 14 Dispute Events
 - 14 canonical detected exceptions
 - Full finance-ops loop closed on eligible cases (1 verified closed, 13 honestly unresolved/escalated)
 - 10 pattern clusters discovered by pattern miner
 - Baseline benchmark evaluation run with real measured match rate
 - Fully idempotent: checks existing counts to prevent duplicate records
+- Robust PostgreSQL & SQLite compatibility with staged commits and savepoint isolation
 """
 import sys
 from typing import Dict, Any
@@ -22,7 +23,7 @@ from backend.models.enums import (
     RemediationStatus,
     VerificationStatus,
 )
-from backend.models.exceptions import ExceptionRecord
+from backend.models.exceptions import ExceptionRecord, ExceptionStateTransition, ExceptionAffectedRecord
 from backend.models.cluster import ExceptionCluster
 from backend.models.ground_truth import EvaluationGroundTruth
 from backend.models.injected_cases import InjectedCase
@@ -33,8 +34,12 @@ from backend.models.financial_sources import (
     DisputeRefundEvent,
     NodalLedgerEntry,
 )
-from backend.models.evaluation import EvaluationRun
+from backend.models.evaluation import EvaluationRun, EvaluationCase
 from backend.models.remediation import RemediationAction
+from backend.models.verification import VerificationRecord
+from backend.models.investigation import InvestigationRun
+from backend.models.risk import RiskAssessment
+from backend.models.policy import PolicyDecisionRecord
 from backend.data.generator.service import generate_dataset
 from backend.controls.engine import ControlEngine
 from backend.exceptions.service import ExceptionDetectionService
@@ -49,27 +54,49 @@ from backend.evaluation.models import EvaluationRunRequest
 from backend.logging import logger
 
 
+def clear_operational_data(db: Session) -> None:
+    """Safely clears all operational and analytical tables in reverse foreign key order."""
+    db.query(EvaluationCase).delete()
+    db.query(EvaluationRun).delete()
+    db.query(VerificationRecord).delete()
+    db.query(RemediationAction).delete()
+    db.query(PolicyDecisionRecord).delete()
+    db.query(RiskAssessment).delete()
+    db.query(InvestigationRun).delete()
+    db.query(ExceptionStateTransition).delete()
+    db.query(ExceptionAffectedRecord).delete()
+    db.query(ExceptionRecord).delete()
+    db.query(ExceptionCluster).delete()
+    db.query(EvaluationGroundTruth).delete()
+    db.query(DisputeRefundEvent).delete()
+    db.query(BankSettlementBatch).delete()
+    db.query(MerchantOrder).delete()
+    db.query(NodalLedgerEntry).delete()
+    db.query(GatewayTransaction).delete()
+    db.commit()
+
+
 def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, Any]:
     """Idempotently ensures the canonical synthetic dataset is populated and processed.
     
     If the database already contains >= 50 transactions and >= 14 exceptions,
     it returns the existing operational summary without duplicating records.
+    Otherwise, it populates Seed 42, executes controls, closes the loop, and persists.
     """
     if not force_reset:
         tx_count = db.scalar(select(func.count(GatewayTransaction.id))) or 0
         exc_count = db.scalar(select(func.count(ExceptionRecord.id))) or 0
         eval_count = db.scalar(select(func.count(EvaluationRun.id))) or 0
+        resolved_count = db.scalar(
+            select(func.count(ExceptionRecord.id)).where(ExceptionRecord.state == ExceptionState.VERIFIED_CLOSED.value)
+        ) or 0
 
-        if tx_count >= 50 and exc_count >= 14:
+        if tx_count >= 50 and exc_count >= 14 and resolved_count >= 1 and eval_count > 0:
             logger.info(
                 operation="STARTUP_SEED_CHECK",
-                message="Canonical synthetic dataset already initialized. Skipping re-seed.",
-                details={"gateway_transactions": tx_count, "exceptions": exc_count, "evaluations": eval_count},
+                message="Canonical synthetic dataset already initialized with closed finance-ops loop. Skipping re-seed.",
+                details={"gateway_transactions": tx_count, "exceptions": exc_count, "resolved": resolved_count, "evaluations": eval_count},
             )
-            # Query existing status breakdown
-            resolved_count = db.scalar(
-                select(func.count(ExceptionRecord.id)).where(ExceptionRecord.state == ExceptionState.VERIFIED_CLOSED.value)
-            ) or 0
             clusters_count = db.scalar(select(func.count(ExceptionCluster.id))) or 0
             gt_count = db.scalar(select(func.count(EvaluationGroundTruth.id))) or 0
 
@@ -83,51 +110,53 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
                 "benchmark_available": eval_count > 0,
             }
 
-    # If force_reset requested, reset schema cleanly
-    if force_reset:
-        logger.info(operation="DB_RESET", message="Resetting database schema on target database...")
-        reset_db(custom_engine=engine)
+    # Clear existing partial data to ensure clean foreign-key insertion without unique-key collisions
+    logger.info(operation="CANONICAL_SEED_PREPARE", message="Purging partial/stale operational data before seeding...")
+    clear_operational_data(db)
 
+    # 1. Generate Canonical Synthetic Financial Dataset (Seed 42, 60 TXs)
     logger.info(operation="CANONICAL_SEED", message="Generating canonical synthetic dataset (Seed 42, 60 TXs)...")
     gen_result = generate_dataset(session=db, record_count=60, seed=42, reset_existing=False)
     dataset_id = gen_result["dataset_id"]
+    db.commit()
 
-    # 1. Deterministic Controls
+    # 2. Deterministic Controls & Exception Detection
     control_engine = ControlEngine()
     control_engine.run_all_controls(session=db)
-    db.flush()
+    db.commit()
 
-    # 2. Invariant Exception Detection
     detection_service = ExceptionDetectionService()
     det_report = detection_service.detect_exceptions(session=db, dataset_id=dataset_id)
-    db.flush()
+    db.commit()
 
-    # 3. AI Investigation on Detected Exceptions
+    # 3. AI Investigation on Detected Exceptions (with savepoint isolation)
     agent_service = InvestigationService()
     for exc in det_report.exceptions:
         try:
-            agent_service.investigate_exception(session=db, exception_id=exc["exception_id"])
+            with db.begin_nested():
+                agent_service.investigate_exception(session=db, exception_id=exc["exception_id"])
         except Exception as e:
             logger.warning(operation="INVESTIGATION_SKIP", message=f"Investigation skipped for {exc['exception_id']}: {e}")
-    db.flush()
+    db.commit()
 
     # 4. Risk Assessment Prioritization
     risk_service = RiskAssessmentService()
     risk_service.assess_all_open_exceptions(session=db)
-    db.flush()
+    db.commit()
 
-    # 5. Policy Gating
+    # 5. Policy Gating (with savepoint isolation)
     policy_service = PolicyService()
     for exc in det_report.exceptions:
         try:
-            policy_service.evaluate_policy(
-                session=db,
-                exception_id=exc["exception_id"],
-                requested_action="INVESTIGATE",
-            )
+            with db.begin_nested():
+                policy_service.evaluate_policy(
+                    session=db,
+                    exception_id=exc["exception_id"],
+                    requested_action="INVESTIGATE",
+                )
         except Exception:
             pass
-    db.flush()
+    db.commit()
 
     # 6. Close Finance-Ops Loop for 1 Eligible Exception (Remediation + Dual Approval + Verification)
     ghost_exc = next(
@@ -150,7 +179,7 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
             },
             requested_by="operator-alice",
         )
-        db.flush()
+        db.commit()
 
         # Dual-controller approval (separation of duties: bob != alice)
         if plan.approval_required:
@@ -161,20 +190,20 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
                 decision="APPROVED",
                 reason="Approved after ledger and bank reconciliation review",
             )
-            db.flush()
+            db.commit()
 
         # Execute remediation
         rem_service.execute_remediation(session=db, action_id=plan.action_id)
-        db.flush()
+        db.commit()
 
         # Independent post-remediation verification
         ver_service.verify_remediation(session=db, remediation_id=plan.action_id)
-        db.flush()
+        db.commit()
 
     # 7. Pattern Miner
     miner = PatternMinerService(min_cluster_size=2)
     clusters = miner.mine_patterns(db, persist=True)
-    db.flush()
+    db.commit()
 
     # 8. Baseline Benchmark Evaluation
     eval_service = BenchmarkEvaluationService()
@@ -235,4 +264,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-

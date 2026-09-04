@@ -2,6 +2,7 @@
 Main FastAPI application entrypoint.
 """
 from contextlib import asynccontextmanager
+from typing import Optional, Dict, Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -38,9 +39,18 @@ from backend.api.escalation import router as escalation_router
 load_dotenv()
 
 
+STARTUP_ERROR: Optional[dict] = None
+
+
+def get_startup_error() -> Optional[dict]:
+    """Returns any recorded startup error for diagnostic telemetry."""
+    return STARTUP_ERROR
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager to validate configuration, initialize database schema, and seed canonical dataset."""
+    global STARTUP_ERROR
     # 1. Strict Configuration & Startup Validation
     settings.validate_startup()
     logger.info(
@@ -67,10 +77,17 @@ async def lifespan(app: FastAPI):
             details=seed_summary,
         )
     except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        STARTUP_ERROR = {
+            "error": str(e),
+            "type": type(e).__name__,
+            "traceback": tb,
+        }
         logger.error(
             operation="STARTUP_SEED_ERROR",
             message=f"Failed to ensure canonical seed on startup: {str(e)}",
-            details={"error": str(e)},
+            details={"error": str(e), "traceback": tb},
         )
     finally:
         db.close()

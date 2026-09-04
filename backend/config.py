@@ -103,7 +103,9 @@ class Settings(BaseModel):
     @field_validator("database_url")
     @classmethod
     def validate_database_url(cls, v: str) -> str:
-        if not (v.startswith("sqlite") or v.startswith("postgresql") or v.startswith("postgres")):
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql://", 1)
+        if not (v.startswith("sqlite") or v.startswith("postgresql")):
             raise ValueError(f"Unsupported database URL scheme in '{v}'. Must start with sqlite or postgresql.")
         return v
 
@@ -139,12 +141,21 @@ def load_settings() -> Settings:
     raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
     origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
 
+    raw_db = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("INTERNAL_DATABASE_URL")
+        or os.getenv("POSTGRES_URL")
+        or "sqlite:///./nodal_sentinel.db"
+    )
+    if raw_db.startswith("postgres://"):
+        raw_db = raw_db.replace("postgres://", "postgresql://", 1)
+
     return Settings(
         environment=os.getenv("ENVIRONMENT", "development"),
         host=os.getenv("HOST", "127.0.0.1"),
         port=int(os.getenv("PORT", "8000")),
         allowed_origins=origins,
-        database_url=os.getenv("DATABASE_URL", "sqlite:///./nodal_sentinel.db"),
+        database_url=raw_db,
         llm_provider=os.getenv("LLM_PROVIDER", "mock"),
         llm_model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
         llm_api_key=os.getenv("LLM_API_KEY"),

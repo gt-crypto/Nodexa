@@ -1,8 +1,10 @@
 """Nodexa - Deployment Diagnostics API
 Provides health, operational data volume, and finance-ops loop status for deployed instances.
+Includes on-demand self-healing seed initialization and complete diagnostic error exposure.
 """
-from typing import Dict, Any
-from fastapi import APIRouter, Depends
+import traceback
+from typing import Dict, Any, Optional
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
 
@@ -19,7 +21,9 @@ from backend.models.cluster import ExceptionCluster
 from backend.models.enums import ExceptionState
 from backend.models.ground_truth import EvaluationGroundTruth
 from backend.models.evaluation import EvaluationRun
+from backend.data.seed_clean import ensure_canonical_seed
 from backend.config import settings
+from backend.logging import logger
 
 router = APIRouter(prefix="/diagnostics", tags=["Diagnostics"])
 
@@ -30,7 +34,46 @@ def get_deployment_diagnostics(db: Session = Depends(get_db)) -> Dict[str, Any]:
     
     Verifies that the deployed instance has loaded canonical synthetic operational records,
     detected exceptions, closed the eligible finance-ops loop, and generated benchmark results.
+    If the operational database is empty on cold start, it automatically executes the canonical
+    seeder and self-heals before returning.
     """
+    from backend.main import get_startup_error
+
+    initialization_error: Optional[Dict[str, Any]] = get_startup_error()
+
+    tx_count = db.scalar(select(func.count(GatewayTransaction.id))) or 0
+    total_exceptions = db.scalar(select(func.count(ExceptionRecord.id))) or 0
+
+    # Self-healing on-demand seed trigger: if operational tables are empty, initialize them now!
+    if tx_count < 50 or total_exceptions < 14:
+        try:
+            logger.info(
+                operation="DIAGNOSTIC_SELF_HEAL",
+                message="Operational records below threshold. Executing canonical synthetic seed...",
+                details={"existing_tx": tx_count, "existing_exceptions": total_exceptions},
+            )
+            seed_summary = ensure_canonical_seed(db)
+            db.commit()
+            logger.info(
+                operation="DIAGNOSTIC_SELF_HEAL_SUCCESS",
+                message="Canonical seed self-healing complete.",
+                details=seed_summary,
+            )
+            initialization_error = None
+        except Exception as seed_err:
+            tb = traceback.format_exc()
+            logger.error(
+                operation="DIAGNOSTIC_SELF_HEAL_FAILED",
+                message=f"On-demand seed failed: {str(seed_err)}",
+                details={"error": str(seed_err), "traceback": tb},
+            )
+            initialization_error = {
+                "error": str(seed_err),
+                "type": type(seed_err).__name__,
+                "traceback": tb,
+            }
+
+    # Query latest operational state
     tx_count = db.scalar(select(func.count(GatewayTransaction.id))) or 0
     order_count = db.scalar(select(func.count(MerchantOrder.id))) or 0
     settlement_count = db.scalar(select(func.count(BankSettlementBatch.id))) or 0
@@ -67,9 +110,10 @@ def get_deployment_diagnostics(db: Session = Depends(get_db)) -> Dict[str, Any]:
         }
 
     operational_total = tx_count + order_count + settlement_count + ledger_count + dispute_count
+    is_healthy = tx_count >= 50 and total_exceptions >= 14 and resolved_exceptions >= 1 and benchmark_available
 
-    return {
-        "status": "healthy" if tx_count >= 50 and total_exceptions >= 14 else "degraded",
+    payload: Dict[str, Any] = {
+        "status": "healthy" if is_healthy else "degraded",
         "service": "Nodexa AI Finance Controller",
         "environment": settings.environment,
         "database_type": "sqlite" if "sqlite" in settings.database_url else "postgresql",
@@ -95,3 +139,38 @@ def get_deployment_diagnostics(db: Session = Depends(get_db)) -> Dict[str, Any]:
             "latest_run": benchmark_metrics,
         },
     }
+
+    if initialization_error:
+        payload["initialization_error"] = initialization_error
+
+    return payload
+
+
+@router.post("/seed")
+def trigger_canonical_seed(
+    force_reset: bool = Query(False, description="Whether to purge and re-seed the canonical dataset"),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """Explicit endpoint to trigger or force-reinitialize the canonical synthetic seed."""
+    try:
+        summary = ensure_canonical_seed(db, force_reset=force_reset)
+        db.commit()
+        return {
+            "status": "SUCCESS",
+            "message": "Canonical dataset successfully seeded and processed.",
+            "summary": summary,
+        }
+    except Exception as e:
+        db.rollback()
+        tb = traceback.format_exc()
+        logger.error(
+            operation="MANUAL_SEED_ERROR",
+            message=f"Manual seed trigger failed: {str(e)}",
+            details={"error": str(e), "traceback": tb},
+        )
+        return {
+            "status": "FAILED",
+            "error": str(e),
+            "type": type(e).__name__,
+            "traceback": tb,
+        }
