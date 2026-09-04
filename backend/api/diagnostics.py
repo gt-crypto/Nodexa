@@ -41,11 +41,38 @@ def get_deployment_diagnostics(db: Session = Depends(get_db)) -> Dict[str, Any]:
 
     initialization_error: Optional[Dict[str, Any]] = get_startup_error()
 
-    try:
-        tx_count = db.scalar(select(func.count(GatewayTransaction.id))) or 0
-        total_exceptions = db.scalar(select(func.count(ExceptionRecord.id))) or 0
+    import time
+    t0 = time.perf_counter()
 
-        # Self-healing on-demand seed trigger: if operational tables are empty, initialize them now!
+    try:
+        # Atomic consolidated telemetry query across all operational tables in a single round-trip
+        counts = db.execute(
+            text(
+                "SELECT "
+                "(SELECT count(*) FROM gateway_transactions) AS tx_count, "
+                "(SELECT count(*) FROM merchant_orders) AS order_count, "
+                "(SELECT count(*) FROM bank_settlement_batches) AS settlement_count, "
+                "(SELECT count(*) FROM nodal_ledger) AS ledger_count, "
+                "(SELECT count(*) FROM dispute_refund_events) AS dispute_count, "
+                "(SELECT count(*) FROM exceptions) AS total_exceptions, "
+                "(SELECT count(*) FROM exceptions WHERE state = :closed_state) AS resolved_exceptions, "
+                "(SELECT count(*) FROM exception_clusters) AS clusters_count, "
+                "(SELECT count(*) FROM evaluation_ground_truth) AS gt_count"
+            ),
+            {"closed_state": ExceptionState.VERIFIED_CLOSED.value},
+        ).mappings().first()
+
+        tx_count = counts["tx_count"] or 0
+        order_count = counts["order_count"] or 0
+        settlement_count = counts["settlement_count"] or 0
+        ledger_count = counts["ledger_count"] or 0
+        dispute_count = counts["dispute_count"] or 0
+        total_exceptions = counts["total_exceptions"] or 0
+        resolved_exceptions = counts["resolved_exceptions"] or 0
+        clusters_count = counts["clusters_count"] or 0
+        gt_count = counts["gt_count"] or 0
+
+        # Self-healing on-demand seed trigger: ONLY if operational tables are genuinely empty/below threshold
         if tx_count < 50 or total_exceptions < 14:
             try:
                 logger.info(
@@ -61,6 +88,33 @@ def get_deployment_diagnostics(db: Session = Depends(get_db)) -> Dict[str, Any]:
                     details=seed_summary,
                 )
                 initialization_error = None
+
+                # Re-query updated counts
+                counts = db.execute(
+                    text(
+                        "SELECT "
+                        "(SELECT count(*) FROM gateway_transactions) AS tx_count, "
+                        "(SELECT count(*) FROM merchant_orders) AS order_count, "
+                        "(SELECT count(*) FROM bank_settlement_batches) AS settlement_count, "
+                        "(SELECT count(*) FROM nodal_ledger) AS ledger_count, "
+                        "(SELECT count(*) FROM dispute_refund_events) AS dispute_count, "
+                        "(SELECT count(*) FROM exceptions) AS total_exceptions, "
+                        "(SELECT count(*) FROM exceptions WHERE state = :closed_state) AS resolved_exceptions, "
+                        "(SELECT count(*) FROM exception_clusters) AS clusters_count, "
+                        "(SELECT count(*) FROM evaluation_ground_truth) AS gt_count"
+                    ),
+                    {"closed_state": ExceptionState.VERIFIED_CLOSED.value},
+                ).mappings().first()
+
+                tx_count = counts["tx_count"] or 0
+                order_count = counts["order_count"] or 0
+                settlement_count = counts["settlement_count"] or 0
+                ledger_count = counts["ledger_count"] or 0
+                dispute_count = counts["dispute_count"] or 0
+                total_exceptions = counts["total_exceptions"] or 0
+                resolved_exceptions = counts["resolved_exceptions"] or 0
+                clusters_count = counts["clusters_count"] or 0
+                gt_count = counts["gt_count"] or 0
             except Exception as seed_err:
                 db.rollback()
                 tb = traceback.format_exc()
@@ -75,23 +129,7 @@ def get_deployment_diagnostics(db: Session = Depends(get_db)) -> Dict[str, Any]:
                     "traceback": tb,
                 }
 
-        # Query latest operational state
-        tx_count = db.scalar(select(func.count(GatewayTransaction.id))) or 0
-        order_count = db.scalar(select(func.count(MerchantOrder.id))) or 0
-        settlement_count = db.scalar(select(func.count(BankSettlementBatch.id))) or 0
-        ledger_count = db.scalar(select(func.count(NodalLedgerEntry.id))) or 0
-        dispute_count = db.scalar(select(func.count(DisputeRefundEvent.id))) or 0
-
-        total_exceptions = db.scalar(select(func.count(ExceptionRecord.id))) or 0
-        resolved_exceptions = db.scalar(
-            select(func.count(ExceptionRecord.id)).where(
-                ExceptionRecord.state == ExceptionState.VERIFIED_CLOSED.value
-            )
-        ) or 0
         unresolved_exceptions = total_exceptions - resolved_exceptions
-
-        clusters_count = db.scalar(select(func.count(ExceptionCluster.id))) or 0
-        gt_count = db.scalar(select(func.count(EvaluationGroundTruth.id))) or 0
 
         # Retrieve latest benchmark run
         latest_eval = db.query(EvaluationRun).order_by(EvaluationRun.created_at.desc()).first()

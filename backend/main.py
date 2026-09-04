@@ -54,15 +54,20 @@ def get_startup_error() -> Optional[dict]:
 async def lifespan(app: FastAPI):
     """Lifespan context manager to validate configuration, initialize database schema, and seed canonical dataset."""
     global STARTUP_ERROR
+    t_startup_start = time.perf_counter()
+
     # 1. Strict Configuration & Startup Validation
+    t0 = time.perf_counter()
     try:
         settings.validate_startup()
+        t_cfg = round((time.perf_counter() - t0) * 1000, 2)
         logger.info(
             operation="STARTUP_CONFIG_VALIDATED",
-            message="System configuration validated successfully.",
+            message=f"System configuration validated successfully in {t_cfg}ms.",
             details=settings.masked_dict(),
         )
     except Exception as e:
+        t_cfg = round((time.perf_counter() - t0) * 1000, 2)
         import traceback
         tb = traceback.format_exc()
         STARTUP_ERROR = {
@@ -73,9 +78,16 @@ async def lifespan(app: FastAPI):
         logger.error(operation="STARTUP_CONFIG_ERROR", message=str(e), details={"traceback": tb})
 
     # 2. Database Schema Creation and Column Migrations
+    t0 = time.perf_counter()
     try:
         init_db()
+        t_db = round((time.perf_counter() - t0) * 1000, 2)
+        logger.info(
+            operation="STARTUP_SCHEMA_READY",
+            message=f"Database schema verified/migrated in {t_db}ms.",
+        )
     except Exception as e:
+        t_db = round((time.perf_counter() - t0) * 1000, 2)
         import traceback
         tb = traceback.format_exc()
         STARTUP_ERROR = {
@@ -86,18 +98,22 @@ async def lifespan(app: FastAPI):
         logger.error(operation="STARTUP_INIT_DB_ERROR", message=str(e), details={"traceback": tb})
 
     # 3. Canonical Synthetic Seed Verification
+    t0 = time.perf_counter()
+    seed_summary = {}
     try:
         db = SessionLocal()
         try:
             seed_summary = ensure_canonical_seed(db)
+            t_seed = round((time.perf_counter() - t0) * 1000, 2)
             logger.info(
                 operation="CANONICAL_SEED_VERIFIED",
-                message="Canonical synthetic dataset verified and ready.",
+                message=f"Canonical synthetic dataset verified and ready in {t_seed}ms.",
                 details=seed_summary,
             )
         finally:
             db.close()
     except Exception as e:
+        t_seed = round((time.perf_counter() - t0) * 1000, 2)
         import traceback
         tb = traceback.format_exc()
         STARTUP_ERROR = {
@@ -110,6 +126,19 @@ async def lifespan(app: FastAPI):
             message=f"Failed to ensure canonical seed on startup: {str(e)}",
             details={"error": str(e), "traceback": tb},
         )
+
+    t_total = round((time.perf_counter() - t_startup_start) * 1000, 2)
+    logger.info(
+        operation="STARTUP_PERFORMANCE",
+        message=f"Total application startup ready in {t_total}ms (config: {t_cfg}ms, db_schema: {t_db}ms, seed_check: {t_seed}ms).",
+        details={
+            "total_startup_ms": t_total,
+            "config_ms": t_cfg,
+            "db_schema_ms": t_db,
+            "seed_check_ms": t_seed,
+            "seed_status": seed_summary.get("status"),
+        },
+    )
 
     yield
 

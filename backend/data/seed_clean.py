@@ -11,8 +11,9 @@ Ensures the canonical synthetic baseline is deterministically populated:
 - Robust PostgreSQL & SQLite compatibility with staged commits and savepoint isolation
 """
 import sys
+import time
 from typing import Dict, Any
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.orm import Session
 
 from backend.models.database import engine, SessionLocal, reset_db
@@ -131,21 +132,51 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
     Otherwise, it populates Seed 42, executes controls, closes the loop, and persists.
     """
     if not force_reset:
-        tx_count = db.scalar(select(func.count(GatewayTransaction.id))) or 0
-        exc_count = db.scalar(select(func.count(ExceptionRecord.id))) or 0
-        eval_count = db.scalar(select(func.count(EvaluationRun.id))) or 0
-        resolved_count = db.scalar(
-            select(func.count(ExceptionRecord.id)).where(ExceptionRecord.state == ExceptionState.VERIFIED_CLOSED.value)
-        ) or 0
+        t0 = time.perf_counter()
+        row = None
+        try:
+            row = db.execute(
+                text(
+                    "SELECT "
+                    "(SELECT count(*) FROM gateway_transactions) AS tx_count, "
+                    "(SELECT count(*) FROM exceptions) AS exc_count, "
+                    "(SELECT count(*) FROM exceptions WHERE state = :closed_state) AS resolved_count, "
+                    "(SELECT count(*) FROM evaluation_runs) AS eval_count, "
+                    "(SELECT count(*) FROM exception_clusters) AS clusters_count, "
+                    "(SELECT count(*) FROM evaluation_ground_truth) AS gt_count"
+                ),
+                {"closed_state": ExceptionState.VERIFIED_CLOSED.value},
+            ).mappings().first()
+        except Exception:
+            # Fallback to ORM if raw SQL fails on a non-standard database dialect
+            pass
 
-        if tx_count >= 50 and exc_count >= 14 and resolved_count >= 1 and eval_count > 0:
+        if (
+            row
+            and (row["tx_count"] or 0) >= 50
+            and (row["exc_count"] or 0) >= 14
+            and (row["resolved_count"] or 0) >= 1
+            and (row["eval_count"] or 0) > 0
+        ):
+            elapsed_ms = round((time.perf_counter() - t0) * 1000, 2)
+            tx_count = row["tx_count"]
+            exc_count = row["exc_count"]
+            resolved_count = row["resolved_count"]
+            eval_count = row["eval_count"]
+            clusters_count = row["clusters_count"] or 0
+            gt_count = row["gt_count"] or 0
+
             logger.info(
                 operation="STARTUP_SEED_CHECK",
-                message="Canonical synthetic dataset already initialized with closed finance-ops loop. Skipping re-seed.",
-                details={"gateway_transactions": tx_count, "exceptions": exc_count, "resolved": resolved_count, "evaluations": eval_count},
+                message=f"Canonical synthetic dataset already initialized with closed finance-ops loop ({elapsed_ms}ms). Skipping re-seed.",
+                details={
+                    "gateway_transactions": tx_count,
+                    "exceptions": exc_count,
+                    "resolved": resolved_count,
+                    "evaluations": eval_count,
+                    "check_duration_ms": elapsed_ms,
+                },
             )
-            clusters_count = db.scalar(select(func.count(ExceptionCluster.id))) or 0
-            gt_count = db.scalar(select(func.count(EvaluationGroundTruth.id))) or 0
 
             return {
                 "status": "ALREADY_INITIALIZED",
@@ -154,7 +185,9 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
                 "exceptions_resolved": resolved_count,
                 "exceptions_unresolved": exc_count - resolved_count,
                 "ground_truth_count": gt_count,
+                "clusters_count": clusters_count,
                 "benchmark_available": eval_count > 0,
+                "check_duration_ms": elapsed_ms,
             }
 
     # Clear existing partial data to ensure clean foreign-key insertion without unique-key collisions

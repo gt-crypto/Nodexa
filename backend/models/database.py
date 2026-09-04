@@ -23,16 +23,21 @@ if raw_db_url.startswith("postgres://"):
 else:
     DATABASE_URL = raw_db_url
 
-# SQLite-specific connect args
-connect_args = {}
+# Engine configuration with production pooling for PostgreSQL
+engine_kwargs = {
+    "echo": os.getenv("SQL_ECHO", "false").lower() == "true",
+}
 if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production PostgreSQL pool configuration optimized for Render
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_size"] = int(os.getenv("DB_POOL_SIZE", "5"))
+    engine_kwargs["max_overflow"] = int(os.getenv("DB_MAX_OVERFLOW", "5"))
+    engine_kwargs["pool_recycle"] = int(os.getenv("DB_POOL_RECYCLE", "300"))
+    engine_kwargs["pool_timeout"] = int(os.getenv("DB_POOL_TIMEOUT", "10"))
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args=connect_args,
-    echo=os.getenv("SQL_ECHO", "false").lower() == "true",
-)
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 
 # Enforce foreign key constraints in SQLite
@@ -82,15 +87,15 @@ _COLUMN_MIGRATIONS: dict = {
 
 
 _TYPE_MIGRATIONS: list = [
-    ("evaluation_ground_truth", "expected_root_cause", "VARCHAR(512)"),
-    ("evaluation_ground_truth", "expected_resolution_class", "VARCHAR(128)"),
-    ("evaluation_ground_truth", "expected_verification_state", "VARCHAR(128)"),
-    ("evaluation_cases", "expected_root_cause", "VARCHAR(512)"),
-    ("evaluation_cases", "predicted_root_cause", "VARCHAR(512)"),
-    ("evaluation_cases", "expected_resolution_class", "VARCHAR(128)"),
-    ("evaluation_cases", "predicted_resolution_class", "VARCHAR(128)"),
-    ("investigation_runs", "recommended_action", "VARCHAR(512)"),
-    ("investigation_runs", "final_classification", "VARCHAR(128)"),
+    ("evaluation_ground_truth", "expected_root_cause", "VARCHAR(512)", 512),
+    ("evaluation_ground_truth", "expected_resolution_class", "VARCHAR(128)", 128),
+    ("evaluation_ground_truth", "expected_verification_state", "VARCHAR(128)", 128),
+    ("evaluation_cases", "expected_root_cause", "VARCHAR(512)", 512),
+    ("evaluation_cases", "predicted_root_cause", "VARCHAR(512)", 512),
+    ("evaluation_cases", "expected_resolution_class", "VARCHAR(128)", 128),
+    ("evaluation_cases", "predicted_resolution_class", "VARCHAR(128)", 128),
+    ("investigation_runs", "recommended_action", "VARCHAR(512)", 512),
+    ("investigation_runs", "final_classification", "VARCHAR(128)", 128),
 ]
 
 
@@ -121,14 +126,24 @@ def init_db(custom_engine=None) -> None:
                             else:
                                 conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS {col_ddl}"))
                     except Exception:
-                        pass  # safe ignore if concurrent migration completed
+                        pass
 
-        # 3. Column type widening migrations for PostgreSQL
+        # 3. Column type widening migrations for PostgreSQL (only if not already widened)
         if not is_sqlite:
-            for table_name, col_name, new_type in _TYPE_MIGRATIONS:
+            # Group all required alters into a single transaction to eliminate network round-trips
+            table_col_map = {}
+            for table_name, col_name, new_type, min_len in _TYPE_MIGRATIONS:
                 try:
-                    with target_engine.begin() as conn:
-                        conn.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN {col_name} TYPE {new_type}"))
+                    if table_name not in table_col_map:
+                        table_col_map[table_name] = {
+                            c["name"]: getattr(c["type"], "length", 0) or 0
+                            for c in inspector.get_columns(table_name)
+                        }
+                    curr_len = table_col_map[table_name].get(col_name, 0)
+                    # If column already has sufficient width, skip ALTER TABLE entirely
+                    if curr_len < min_len:
+                        with target_engine.begin() as conn:
+                            conn.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN {col_name} TYPE {new_type}"))
                 except Exception:
                     pass
     except Exception:

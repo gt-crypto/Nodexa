@@ -419,19 +419,22 @@ export const LiveInjectionConsole: React.FC = () => {
   useEffect(() => {
     async function init() {
       try {
-        const res = await fetchSupportedFamilies();
-        const famList = Array.isArray(res) ? res : (res as any)?.families || [];
+        const [resFam, resHist] = await Promise.all([
+          fetchSupportedFamilies().catch(() => []),
+          fetchInjectedCases().catch(() => []),
+        ]);
+        const famList = Array.isArray(resFam) ? resFam : (resFam as any)?.families || [];
         setFamilies(famList);
         if (famList.length) {
           setSelectedFamily(famList[0].family);
         }
+        setHistory(Array.isArray(resHist) ? resHist : (resHist as any)?.cases || []);
       } catch {
         // Handled gracefully
       }
-      loadHistory();
     }
     init();
-  }, [loadHistory]);
+  }, []);
 
   const handleOpenException = useCallback((excId: string) => {
     setHighlightedExceptionId(excId);
