@@ -100,7 +100,7 @@ def clear_operational_data(db: Session) -> None:
                     "policy_decisions, risk_assessments, investigation_runs, audit_events, "
                     "escalation_webhook_deliveries, exception_state_transitions, exception_affected_records, "
                     "exceptions, exception_clusters, evaluation_ground_truth, "
-                    "dispute_refund_events, bank_settlement_batches, merchant_orders, nodal_ledger_entries, "
+                    "dispute_refund_events, bank_settlement_batches, merchant_orders, nodal_ledger, "
                     "gateway_transactions CASCADE;"
                 )
             )
@@ -112,7 +112,7 @@ def clear_operational_data(db: Session) -> None:
                 "policy_decisions", "risk_assessments", "investigation_runs", "audit_events",
                 "escalation_webhook_deliveries", "exception_state_transitions", "exception_affected_records",
                 "exceptions", "exception_clusters", "evaluation_ground_truth",
-                "dispute_refund_events", "bank_settlement_batches", "merchant_orders", "nodal_ledger_entries",
+                "dispute_refund_events", "bank_settlement_batches", "merchant_orders", "nodal_ledger",
                 "gateway_transactions"
             ]:
                 try:
