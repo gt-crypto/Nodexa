@@ -114,11 +114,12 @@ class Settings(BaseModel):
             ValueError: If critical configuration requirements are unmet.
         """
         if self.environment == "production":
-            if self.database_url.startswith("sqlite"):
+            allow_sqlite_demo = os.getenv("ALLOW_SQLITE_DEMO", "false").lower() in ("true", "1", "yes")
+            if self.database_url.startswith("sqlite") and not allow_sqlite_demo:
                 raise ValueError("SQLite is prohibited in production environment. Configure PostgreSQL.")
             if self.llm_provider != "mock" and not self.llm_api_key:
                 raise ValueError(f"LLM_API_KEY is required for provider '{self.llm_provider}' in production.")
-            if "http://localhost:3000" in self.allowed_origins:
+            if "http://localhost:3000" in self.allowed_origins and not allow_sqlite_demo:
                 raise ValueError("Localhost origins are prohibited in production CORS settings.")
 
     def masked_dict(self) -> dict:

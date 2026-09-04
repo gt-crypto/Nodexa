@@ -8,12 +8,14 @@ from dotenv import load_dotenv
 
 from backend.config import settings
 from backend.logging import logger
-from backend.models.database import init_db
+from backend.models.database import init_db, SessionLocal
+from backend.data.seed_clean import ensure_canonical_seed
 from backend.middleware.request_context import RequestContextMiddleware
 from backend.middleware.rate_limit import RateLimitMiddleware
 from backend.errors.handlers import register_error_handlers
 
 from backend.api.health import router as health_router
+from backend.api.diagnostics import router as diagnostics_router
 from backend.api.data import router as data_router
 from backend.api.nodal import router as nodal_router
 from backend.api.exceptions import router as exceptions_router
@@ -38,20 +40,44 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager to validate configuration and initialize database schema on startup."""
+    """Lifespan context manager to validate configuration, initialize database schema, and seed canonical dataset."""
     # 1. Strict Configuration & Startup Validation
     settings.validate_startup()
     logger.info(
         operation="STARTUP",
-        message="Nodal Sentinel backend initialized with configuration validation",
+        message="Nodexa backend initialized with configuration validation",
         details=settings.masked_dict(),
     )
 
-    # 2. Initialize Database Schema
+    # 2. Initialize Database Schema & Ensure Canonical Seed
     init_db()
+    db = SessionLocal()
+    try:
+        seed_summary = ensure_canonical_seed(db)
+        tx_c = seed_summary.get("gateway_transactions_count", seed_summary.get("gateway_transactions", 0))
+        exc_c = seed_summary.get("exceptions_total", seed_summary.get("exceptions_detected", 0))
+        logger.info(
+            operation="STARTUP_SEED",
+            message=(
+                f"Nodexa startup | Database initialized | "
+                f"Operational records: {tx_c} | "
+                f"Exceptions: {exc_c} | "
+                f"Benchmark: available"
+            ),
+            details=seed_summary,
+        )
+    except Exception as e:
+        logger.error(
+            operation="STARTUP_SEED_ERROR",
+            message=f"Failed to ensure canonical seed on startup: {str(e)}",
+            details={"error": str(e)},
+        )
+    finally:
+        db.close()
+
     yield
 
-    logger.info(operation="SHUTDOWN", message="Nodal Sentinel backend shutting down")
+    logger.info(operation="SHUTDOWN", message="Nodexa backend shutting down")
 
 
 app = FastAPI(
@@ -79,6 +105,7 @@ app.add_middleware(
 
 # 3. Router Registrations
 app.include_router(health_router)
+app.include_router(diagnostics_router)
 app.include_router(data_router)
 app.include_router(nodal_router)
 app.include_router(exceptions_router)

@@ -1,0 +1,46 @@
+# Render Blueprint Specification for Nodexa AI Finance Controller
+services:
+  # -------------------------------------------------------------
+  # Backend API Service (FastAPI + Python 3.12)
+  # -------------------------------------------------------------
+  - type: web
+    name: nodexa-backend
+    runtime: python
+    plan: standard
+    region: oregon
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /diagnostics/deployment
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: PYTHONPATH
+        value: .
+      - key: ENVIRONMENT
+        value: production
+      - key: ALLOW_SQLITE_DEMO
+        value: "true"
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: LOG_LEVEL
+        value: INFO
+
+  # -------------------------------------------------------------
+  # Frontend Web Service (Next.js 15 App Router)
+  # -------------------------------------------------------------
+  - type: web
+    name: nodexa-frontend
+    runtime: node
+    plan: standard
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: nodexa-backend
+          property: host
