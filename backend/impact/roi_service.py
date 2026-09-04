@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy import select, func, distinct
 from sqlalchemy.orm import Session
 
+from backend.logging import logger
 from backend.models.exceptions import ExceptionRecord
 from backend.models.financial_sources import GatewayTransaction
 from backend.models.cluster import ExceptionCluster
@@ -40,31 +41,31 @@ class BusinessImpactService:
         """
         # 1. Total Financial Exposure Identified (SUM of exposure over distinct ExceptionRecords)
         # Direct aggregation over primary table eliminates any possibility of join-induced duplication
-        total_exposure = session.scalar(
+        total_exposure = int(session.scalar(
             select(func.coalesce(func.sum(ExceptionRecord.exposure), 0))
-        ) or 0
+        ) or 0)
 
         # Total detected exception records
-        total_cases = session.scalar(
+        total_cases = int(session.scalar(
             select(func.count(ExceptionRecord.id))
-        ) or 0
+        ) or 0)
 
         # 2. Actionable Case Count (exceptions with exposure > 0 requiring operational review/intervention)
-        actionable_cases = session.scalar(
+        actionable_cases = int(session.scalar(
             select(func.count(ExceptionRecord.id)).where(ExceptionRecord.exposure > 0)
-        ) or 0
+        ) or 0)
 
         # 3. High-Risk / Critical Case Count
-        high_risk_cases = session.scalar(
+        high_risk_cases = int(session.scalar(
             select(func.count(ExceptionRecord.id)).where(
                 ExceptionRecord.severity.in_([ExceptionSeverity.HIGH.value, ExceptionSeverity.CRITICAL.value])
             )
-        ) or 0
+        ) or 0)
 
         # 4. Recurring Patterns Found (Pattern Miner multi-case clusters)
-        pattern_count = session.scalar(
+        pattern_count = int(session.scalar(
             select(func.count(ExceptionCluster.id)).where(ExceptionCluster.exception_count >= 2)
-        ) or 0
+        ) or 0)
 
         # Deduplicated exposure in recurring patterns (deduplicated across overlapping clusters)
         clusters = session.scalars(
@@ -81,64 +82,71 @@ class BusinessImpactService:
                     pass
 
         if clustered_exc_ids:
-            pattern_exposure = session.scalar(
+            pattern_exposure = int(session.scalar(
                 select(func.coalesce(func.sum(ExceptionRecord.exposure), 0)).where(
                     ExceptionRecord.exception_id.in_(clustered_exc_ids)
                 )
-            ) or 0
+            ) or 0)
         else:
             pattern_exposure = 0
 
         # 5. Merchants Impacted (Count of distinct merchants linked to exceptions via payments)
-        merchants_impacted = session.scalar(
+        merchants_impacted = int(session.scalar(
             select(func.count(distinct(GatewayTransaction.merchant_id)))
             .select_from(ExceptionRecord)
             .join(GatewayTransaction, ExceptionRecord.primary_payment_id == GatewayTransaction.payment_id)
             .where(GatewayTransaction.merchant_id.isnot(None))
-        ) or 0
+        ) or 0)
 
         # 6. Seeded vs Live-Injected Breakdown
-        seeded_count = session.scalar(
+        seeded_count = int(session.scalar(
             select(func.count(ExceptionRecord.id)).where(ExceptionRecord.source_flag == "seeded")
-        ) or 0
+        ) or 0)
 
-        live_injected_count = session.scalar(
+        live_injected_count = int(session.scalar(
             select(func.count(ExceptionRecord.id)).where(ExceptionRecord.source_flag == "live-injected")
-        ) or 0
+        ) or 0)
 
-        live_injected_exposure = session.scalar(
+        live_injected_exposure = int(session.scalar(
             select(func.coalesce(func.sum(ExceptionRecord.exposure), 0)).where(
                 ExceptionRecord.source_flag == "live-injected"
             )
-        ) or 0
+        ) or 0)
 
-        seeded_exposure = total_exposure - live_injected_exposure
+        seeded_exposure = int(total_exposure - live_injected_exposure)
 
         # 7. Audit Event Logging (Append-only)
         if log_audit:
-            audit = AuditEvent(
-                audit_event_id=f"audit_impact_{uuid.uuid4().hex[:16]}",
-                event_type="BUSINESS_IMPACT_VIEWED",
-                actor_type=actor_type,
-                actor_id=actor_id,
-                event_summary=(
-                    f"Business impact viewed: ₹{total_exposure / 100:,.2f} exposure surfaced "
-                    f"across {total_cases} cases ({merchants_impacted} merchants impacted)"
-                ),
-                event_payload=json.dumps({
-                    "request_id": request_id,
-                    "methodology_version": BUSINESS_IMPACT_VERSION,
-                    "financial_exposure_identified": total_exposure,
-                    "actionable_case_count": actionable_cases,
-                    "high_risk_case_count": high_risk_cases,
-                    "recurring_pattern_count": pattern_count,
-                    "merchants_impacted": merchants_impacted,
-                    "seeded_case_count": seeded_count,
-                    "live_injected_case_count": live_injected_count,
-                }),
-            )
-            session.add(audit)
-            session.commit()
+            try:
+                audit = AuditEvent(
+                    audit_event_id=f"audit_impact_{uuid.uuid4().hex[:16]}",
+                    event_type="BUSINESS_IMPACT_VIEWED",
+                    actor_type=actor_type,
+                    actor_id=actor_id,
+                    event_summary=(
+                        f"Business impact viewed: ₹{total_exposure / 100:,.2f} exposure surfaced "
+                        f"across {total_cases} cases ({merchants_impacted} merchants impacted)"
+                    )[:255],
+                    event_payload=json.dumps({
+                        "request_id": request_id,
+                        "methodology_version": BUSINESS_IMPACT_VERSION,
+                        "financial_exposure_identified": int(total_exposure),
+                        "actionable_case_count": int(actionable_cases),
+                        "high_risk_case_count": int(high_risk_cases),
+                        "recurring_pattern_count": int(pattern_count),
+                        "merchants_impacted": int(merchants_impacted),
+                        "seeded_case_count": int(seeded_count),
+                        "live_injected_case_count": int(live_injected_count),
+                    }),
+                )
+                session.add(audit)
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                logger.warning(
+                    operation="AUDIT_LOG_FAILED",
+                    message=f"Failed to persist audit log for business impact: {e}"
+                )
 
         # 8. Output Model
         return {

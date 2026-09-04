@@ -72,6 +72,12 @@ _COLUMN_MIGRATIONS: dict = {
     "evaluation_runs": [
         ("safety_score", "safety_score INTEGER NOT NULL DEFAULT 0"),
     ],
+    "audit_events": [
+        ("investigation_id", "investigation_id VARCHAR(64)"),
+        ("actor_id", "actor_id VARCHAR(64)"),
+        ("previous_event_hash", "previous_event_hash VARCHAR(64)"),
+        ("event_hash", "event_hash VARCHAR(64)"),
+    ],
 }
 
 

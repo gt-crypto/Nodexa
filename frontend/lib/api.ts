@@ -7,7 +7,31 @@ import {
   ExceptionCluster,
 } from "../types";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+/**
+ * Resolves the backend base URL dynamically.
+ * Evaluates NEXT_PUBLIC_BACKEND_URL, NEXT_PUBLIC_API_URL, and deployment hostnames.
+ */
+export function getBackendUrl(): string {
+  let url = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+  if (!url) {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      if (hostname !== "localhost" && hostname !== "127.0.0.1") {
+        url = "https://nodexa-api.onrender.com";
+      } else {
+        url = "http://127.0.0.1:8000";
+      }
+    } else {
+      url = "https://nodexa-api.onrender.com";
+    }
+  }
+  if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  return url.replace(/\/+$/, "");
+}
+
+export const BACKEND_URL = getBackendUrl();
 
 /**
  * Fetches the health status from the backend service.
@@ -421,14 +445,32 @@ export interface BusinessImpactData {
  */
 export async function fetchBusinessImpact(): Promise<BusinessImpactData> {
   const url = `${BACKEND_URL}/impact/roi`;
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+  } catch (netErr: any) {
+    throw new Error(
+      `Failed to connect to ${url} (${netErr?.message || "Network request failed. Check server connectivity or CORS"})`
+    );
+  }
+
   if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: "Failed to fetch business impact" }));
-    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+    let errorDetail = `HTTP ${response.status} ${response.statusText}`;
+    try {
+      const errJson = await response.json();
+      if (errJson.detail) {
+        errorDetail = `${errorDetail}: ${typeof errJson.detail === "string" ? errJson.detail : JSON.stringify(errJson.detail)}`;
+      } else if (errJson.message) {
+        errorDetail = `${errorDetail}: ${errJson.message}`;
+      }
+    } catch {
+      // Body was not JSON
+    }
+    throw new Error(`Failed to load business impact from ${url} [${errorDetail}]`);
   }
   return await response.json();
 }

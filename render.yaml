@@ -41,8 +41,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.18.0
+      - key: NEXT_PUBLIC_BACKEND_URL
+        value: https://nodexa-api.onrender.com
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: nodexa-backend
-          property: host
+        value: https://nodexa-api.onrender.com

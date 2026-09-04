@@ -32,12 +32,10 @@ import {
   injectAnomaly,
   fetchInjectedCases,
   fetchExceptions,
+  BACKEND_URL,
 } from "../lib/api";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
-
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
 
 // ─── Stage Metadata ────────────────────────────────────────────────────────
 

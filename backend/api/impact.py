@@ -1,9 +1,10 @@
 """Business Impact and ROI API routes."""
 from typing import Any, Dict, Optional
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from backend.logging import logger
 from backend.models.database import get_db
 from backend.impact.roi_service import BusinessImpactService
 
@@ -47,11 +48,24 @@ def get_business_impact_roi(
     - Zero double-counting across exception joins or pattern miner clusters.
     - Explicit classification as POTENTIAL_EXPOSURE_SURFACED (not money saved).
     """
-    result = service.calculate_impact(
-        session=db,
-        log_audit=True,
-        actor_type="OPERATOR",
-        actor_id=x_actor_id or "operator",
-        request_id=x_request_id,
-    )
-    return BusinessImpactResponse(**result)
+    try:
+        result = service.calculate_impact(
+            session=db,
+            log_audit=True,
+            actor_type="OPERATOR",
+            actor_id=x_actor_id or "operator",
+            request_id=x_request_id,
+        )
+        return BusinessImpactResponse(**result)
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        logger.error(
+            operation="BUSINESS_IMPACT_ERROR",
+            message=f"Failed to calculate business impact ROI: {e}",
+            details={"traceback": tb},
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Business impact calculation error: {str(e)}",
+        )

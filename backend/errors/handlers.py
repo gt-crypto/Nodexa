@@ -13,8 +13,9 @@ def format_error_response(
     message: str,
     status_code: int,
     details: dict = None,
+    request: Request = None,
 ) -> JSONResponse:
-    """Generates standard JSON error response with correlation ID."""
+    """Generates standard JSON error response with correlation ID and CORS reflection."""
     req_id = get_current_request_id()
     content = {
         "error": error_code,
@@ -23,10 +24,18 @@ def format_error_response(
         "request_id": req_id,
         "details": details or {},
     }
+    headers = {"X-Request-ID": req_id}
+    if request:
+        origin = request.headers.get("origin")
+        if origin:
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Access-Control-Allow-Credentials"] = "true"
+            headers["Access-Control-Allow-Headers"] = "*"
+            headers["Access-Control-Allow-Methods"] = "*"
     return JSONResponse(
         status_code=status_code,
         content=content,
-        headers={"X-Request-ID": req_id},
+        headers=headers,
     )
 
 
@@ -42,6 +51,7 @@ async def sentinel_error_handler(request: Request, exc: SentinelError) -> JSONRe
         message=exc.message,
         status_code=exc.status_code,
         details=exc.details,
+        request=request,
     )
 
 
@@ -65,6 +75,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         message="Invalid request payload structure or parameters.",
         status_code=status.HTTP_400_BAD_REQUEST,
         details={"validation_errors": clean_errors},
+        request=request,
     )
 
 
@@ -88,6 +99,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
         error_code=error_code,
         message=message,
         status_code=exc.status_code,
+        request=request,
     )
 
 
@@ -100,8 +112,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     )
     return format_error_response(
         error_code="INTERNAL_ERROR",
-        message="An unexpected internal server error occurred. Please contact system support.",
+        message=f"An unexpected internal server error occurred: {str(exc)}",
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        request=request,
     )
 
 

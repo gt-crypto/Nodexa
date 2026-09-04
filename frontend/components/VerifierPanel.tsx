@@ -15,7 +15,7 @@ import {
   Layers,
 } from "lucide-react";
 import { VerifierOpinion } from "../types";
-import { fetchVerifierOpinion, evaluateVerifierOpinion } from "../lib/api";
+import { fetchVerifierOpinion, evaluateVerifierOpinion, fetchExceptions } from "../lib/api";
 import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 
@@ -30,17 +30,14 @@ export function VerifierPanel() {
   useEffect(() => {
     async function loadRecent() {
       try {
-        const res = await fetch("/api/exceptions?limit=8");
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || data;
-          if (Array.isArray(items) && items.length > 0) {
-            setRecentExceptions(items);
-            // Default to the first exception if not set
-            if (!exceptionId && items[0]?.exception_id) {
-              setExceptionId(items[0].exception_id);
-              handleFetchOpinion(items[0].exception_id);
-            }
+        const data = await fetchExceptions(undefined, 8);
+        const items = Array.isArray(data) ? data : (data as any)?.items || [];
+        if (Array.isArray(items) && items.length > 0) {
+          setRecentExceptions(items);
+          // Default to the first exception if not set
+          if (!exceptionId && items[0]?.exception_id) {
+            setExceptionId(items[0].exception_id);
+            handleFetchOpinion(items[0].exception_id);
           }
         }
       } catch {
