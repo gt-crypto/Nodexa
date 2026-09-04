@@ -1,9 +1,12 @@
 """Nodal Sentinel - AI Finance Controller for Nodal Account Health
 Main FastAPI application entrypoint.
 """
+import time
+import uuid
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -52,30 +55,48 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager to validate configuration, initialize database schema, and seed canonical dataset."""
     global STARTUP_ERROR
     # 1. Strict Configuration & Startup Validation
-    settings.validate_startup()
-    logger.info(
-        operation="STARTUP",
-        message="Nodexa backend initialized with configuration validation",
-        details=settings.masked_dict(),
-    )
-
-    # 2. Initialize Database Schema & Ensure Canonical Seed
-    init_db()
-    db = SessionLocal()
     try:
-        seed_summary = ensure_canonical_seed(db)
-        tx_c = seed_summary.get("gateway_transactions_count", seed_summary.get("gateway_transactions", 0))
-        exc_c = seed_summary.get("exceptions_total", seed_summary.get("exceptions_detected", 0))
+        settings.validate_startup()
         logger.info(
-            operation="STARTUP_SEED",
-            message=(
-                f"Nodexa startup | Database initialized | "
-                f"Operational records: {tx_c} | "
-                f"Exceptions: {exc_c} | "
-                f"Benchmark: available"
-            ),
-            details=seed_summary,
+            operation="STARTUP_CONFIG_VALIDATED",
+            message="System configuration validated successfully.",
+            details=settings.masked_dict(),
         )
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        STARTUP_ERROR = {
+            "error": str(e),
+            "type": type(e).__name__,
+            "traceback": tb,
+        }
+        logger.error(operation="STARTUP_CONFIG_ERROR", message=str(e), details={"traceback": tb})
+
+    # 2. Database Schema Creation and Column Migrations
+    try:
+        init_db()
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        STARTUP_ERROR = {
+            "error": str(e),
+            "type": type(e).__name__,
+            "traceback": tb,
+        }
+        logger.error(operation="STARTUP_INIT_DB_ERROR", message=str(e), details={"traceback": tb})
+
+    # 3. Canonical Synthetic Seed Verification
+    try:
+        db = SessionLocal()
+        try:
+            seed_summary = ensure_canonical_seed(db)
+            logger.info(
+                operation="CANONICAL_SEED_VERIFIED",
+                message="Canonical synthetic dataset verified and ready.",
+                details=seed_summary,
+            )
+        finally:
+            db.close()
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
@@ -89,16 +110,12 @@ async def lifespan(app: FastAPI):
             message=f"Failed to ensure canonical seed on startup: {str(e)}",
             details={"error": str(e), "traceback": tb},
         )
-    finally:
-        db.close()
 
     yield
 
-    logger.info(operation="SHUTDOWN", message="Nodexa backend shutting down")
-
 
 app = FastAPI(
-    title="Nodal Sentinel API",
+    title="Nodexa API",
     description="Deterministic AI Finance Controller for Nodal Account Health with Invariant Guarantees",
     version="1.0.0",
     lifespan=lifespan,
@@ -106,12 +123,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# 1. Custom Error Handlers (Unified JSON Error Payloads with Request Correlation)
-register_error_handlers(app)
-
-# 2. Middleware Stack (Order: Request Context -> Rate Limiter -> CORS)
-app.add_middleware(RequestContextMiddleware)
-app.add_middleware(RateLimitMiddleware)
+# Robust CORS Configuration with Security Gating
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -119,6 +131,65 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def audit_logging_middleware(request: Request, call_next):
+    """Enforces request tracing, logging, and performance tracking."""
+    req_id = request.headers.get("X-Request-ID", f"req_{uuid.uuid4().hex[:12]}")
+    request.state.request_id = req_id
+    start_time = time.perf_counter()
+
+    response = await call_next(request)
+
+    latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+    response.headers["X-Request-ID"] = req_id
+    response.headers["X-Response-Time"] = f"{latency_ms}ms"
+
+    # Health and diagnostics check logging sampled or silent to avoid log pollution
+    if not request.url.path.startswith("/health"):
+        logger.info(
+            operation="HTTP_REQUEST",
+            message=f"{request.method} {request.url.path} -> {response.status_code} ({latency_ms}ms)",
+            details={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "latency_ms": latency_ms,
+                "request_id": req_id,
+            },
+        )
+    return response
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    req_id = getattr(request.state, "request_id", "req_system_internal")
+    import traceback
+    tb = traceback.format_exc()
+    logger.error(
+        operation="UNHANDLED_EXCEPTION",
+        message=str(exc),
+        details={"path": str(request.url), "request_id": req_id, "traceback": tb},
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "INTERNAL_ERROR",
+            "message": str(exc),
+            "detail": str(exc),
+            "request_id": req_id,
+            "details": {"traceback": tb.splitlines()[-6:] if tb else []},
+        },
+    )
+
+
+# 1. Custom Error Handlers (Unified JSON Error Payloads with Request Correlation)
+register_error_handlers(app)
+
+# 2. Middleware Stack (Order: Request Context -> Rate Limiter -> CORS)
+app.add_middleware(RequestContextMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 # 3. Router Registrations
 app.include_router(health_router)

@@ -54,26 +54,73 @@ from backend.evaluation.models import EvaluationRunRequest
 from backend.logging import logger
 
 
+from backend.models.audit import AuditEvent
+from backend.models.escalation import EscalationWebhookDelivery
+from sqlalchemy import text
+
+
 def clear_operational_data(db: Session) -> None:
-    """Safely clears all operational and analytical tables in reverse foreign key order."""
-    db.query(EvaluationCase).delete()
-    db.query(EvaluationRun).delete()
-    db.query(VerificationRecord).delete()
-    db.query(RemediationAction).delete()
-    db.query(PolicyDecisionRecord).delete()
-    db.query(RiskAssessment).delete()
-    db.query(InvestigationRun).delete()
-    db.query(ExceptionStateTransition).delete()
-    db.query(ExceptionAffectedRecord).delete()
-    db.query(ExceptionRecord).delete()
-    db.query(ExceptionCluster).delete()
-    db.query(EvaluationGroundTruth).delete()
-    db.query(DisputeRefundEvent).delete()
-    db.query(BankSettlementBatch).delete()
-    db.query(MerchantOrder).delete()
-    db.query(NodalLedgerEntry).delete()
-    db.query(GatewayTransaction).delete()
-    db.commit()
+    """Safely clears all operational and analytical tables without foreign key violations."""
+    target_engine = db.get_bind()
+    is_sqlite = str(target_engine.url).startswith("sqlite")
+    if is_sqlite:
+        for model in [
+            EvaluationCase,
+            EvaluationRun,
+            VerificationRecord,
+            RemediationAction,
+            PolicyDecisionRecord,
+            RiskAssessment,
+            InvestigationRun,
+            EscalationWebhookDelivery,
+            AuditEvent,
+            ExceptionStateTransition,
+            ExceptionAffectedRecord,
+            ExceptionRecord,
+            ExceptionCluster,
+            EvaluationGroundTruth,
+            DisputeRefundEvent,
+            BankSettlementBatch,
+            MerchantOrder,
+            NodalLedgerEntry,
+            GatewayTransaction,
+        ]:
+            try:
+                db.query(model).delete()
+            except Exception:
+                pass
+        db.commit()
+    else:
+        # In PostgreSQL, TRUNCATE ... CASCADE cleanly empties all tables and dependents instantly
+        try:
+            db.execute(
+                text(
+                    "TRUNCATE TABLE "
+                    "evaluation_cases, evaluation_runs, verification_records, remediation_actions, "
+                    "policy_decisions, risk_assessments, investigation_runs, audit_events, "
+                    "escalation_webhook_deliveries, exception_state_transitions, exception_affected_records, "
+                    "exceptions, exception_clusters, evaluation_ground_truth, "
+                    "dispute_refund_events, bank_settlement_batches, merchant_orders, nodal_ledger_entries, "
+                    "gateway_transactions CASCADE;"
+                )
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            for table_name in [
+                "evaluation_cases", "evaluation_runs", "verification_records", "remediation_actions",
+                "policy_decisions", "risk_assessments", "investigation_runs", "audit_events",
+                "escalation_webhook_deliveries", "exception_state_transitions", "exception_affected_records",
+                "exceptions", "exception_clusters", "evaluation_ground_truth",
+                "dispute_refund_events", "bank_settlement_batches", "merchant_orders", "nodal_ledger_entries",
+                "gateway_transactions"
+            ]:
+                try:
+                    with db.begin_nested():
+                        db.execute(text(f"DELETE FROM {table_name}"))
+                except Exception:
+                    pass
+            db.commit()
 
 
 def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, Any]:

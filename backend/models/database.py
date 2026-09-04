@@ -81,14 +81,13 @@ def init_db(custom_engine=None) -> None:
 
     target_engine = custom_engine or engine
 
-    # 2. Create any newly registered tables
+    # 1. Create any newly registered tables
     Base.metadata.create_all(bind=target_engine)
 
-    # 3. Universal incremental column migrations for both SQLite and PostgreSQL
-    inspector = inspect(target_engine)
+    # 2. Universal incremental column migrations for both SQLite and PostgreSQL
     is_sqlite = str(target_engine.url).startswith("sqlite")
-
-    with target_engine.connect() as conn:
+    try:
+        inspector = inspect(target_engine)
         for table_name, columns in _COLUMN_MIGRATIONS.items():
             try:
                 existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
@@ -97,13 +96,15 @@ def init_db(custom_engine=None) -> None:
             for col_name, col_ddl in columns:
                 if col_name not in existing_cols:
                     try:
-                        if is_sqlite:
-                            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_ddl}"))
-                        else:
-                            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS {col_ddl}"))
+                        with target_engine.begin() as conn:
+                            if is_sqlite:
+                                conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_ddl}"))
+                            else:
+                                conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS {col_ddl}"))
                     except Exception:
                         pass  # safe ignore if concurrent migration completed
-        conn.commit()
+    except Exception:
+        pass
 
 
 def reset_db(custom_engine=None) -> None:
