@@ -1,7 +1,7 @@
 import React from "react";
 
 export interface SectionHeadingProps {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   title: string;
   badge?: {
     text: string;
@@ -23,33 +23,37 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
 }) => {
   return (
     <div
-      className={`flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-800 ${className}`}
+      className={`flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-800/80 ${className}`}
     >
       <div>
         {badge && (
           <div
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono mb-2 border ${
-              badge.color || "bg-teal-500/10 border-teal-500/30 text-teal-300"
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono mb-2 border ${
+              badge.color || "bg-sky-950/30 border-sky-800/40 text-sky-300"
             }`}
           >
             {badge.icon}
             <span>{badge.text}</span>
           </div>
         )}
-        <h2 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3 tracking-tight">
-          <span className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-teal-400 shrink-0">
-            {icon}
-          </span>
-          <span>{title}</span>
-        </h2>
+        <div className="flex items-center gap-2.5">
+          {icon && (
+            <span className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-sky-400 shrink-0">
+              {icon}
+            </span>
+          )}
+          <h2 className="text-xl sm:text-2xl font-semibold text-white tracking-tight font-sans">
+            {title}
+          </h2>
+        </div>
         {description && (
-          <p className="text-sm text-slate-400 mt-2 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-400 mt-1.5 max-w-2xl leading-relaxed">
             {description}
           </p>
         )}
       </div>
 
-      {action && <div className="flex items-center gap-3 shrink-0">{action}</div>}
+      {action && <div className="flex items-center gap-2.5 shrink-0">{action}</div>}
     </div>
   );
 };

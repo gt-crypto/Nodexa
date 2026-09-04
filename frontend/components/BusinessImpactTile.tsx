@@ -11,11 +11,11 @@ import {
   CheckCircle2,
   HelpCircle,
   DollarSign,
+  ShieldCheck,
 } from "lucide-react";
 import { BusinessImpactData, fetchBusinessImpact } from "../lib/api";
 import { formatPaiseOrUnavailable } from "../lib/formatters";
 import { Button } from "./ui/Button";
-import { SectionHeading } from "./ui/SectionHeading";
 
 export function BusinessImpactTile() {
   const [data, setData] = useState<BusinessImpactData | null>(null);
@@ -40,35 +40,27 @@ export function BusinessImpactTile() {
     }
   };
 
-  const formatRupees = (paise: number) => {
-    return formatPaiseOrUnavailable(paise, "₹0.00");
-  };
-
   return (
     <section id="impact" className="w-full">
-      <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl relative overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Standardized Main Card Header (Issues 1, 2, 6) */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/60 mb-6">
+      <div className="rounded-xl p-5 sm:p-6 border border-slate-800/80 bg-[#0d121d] shadow-sm relative overflow-hidden">
+        {/* Main Card Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80 mb-5">
           <div className="flex items-start sm:items-center gap-3 min-w-0">
-            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-teal-400 shrink-0">
-              <TrendingUp className="w-5 h-5" />
+            <div className="p-2 rounded-lg bg-[#111726] border border-slate-800 text-sky-400 shrink-0">
+              <TrendingUp className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight">
-                  Business Impact & Value Surfaced
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-semibold text-white tracking-tight font-sans">
+                  Business Impact &amp; Value Surfaced
                 </h2>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-teal-500/10 border border-teal-500/30 text-teal-300">
-                  <DollarSign className="w-3 h-3 text-teal-400" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono bg-sky-950/30 border border-sky-800/40 text-sky-300">
+                  <DollarSign className="w-3 h-3 text-sky-400" />
                   <span>Tier-2 Business Impact</span>
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5 max-w-2xl leading-relaxed">
-                Auditable, transparent operational metrics measuring potential risk exposure identified and governance value delivered across nodal accounts.
+                Auditable operational metrics measuring potential risk exposure identified and governance value delivered across nodal accounts.
               </p>
             </div>
           </div>
@@ -78,7 +70,7 @@ export function BusinessImpactTile() {
               variant="secondary"
               size="sm"
               onClick={() => setShowMethodology(!showMethodology)}
-              icon={<Info className="w-3.5 h-3.5 text-cyan-400" />}
+              icon={<Info className="w-3.5 h-3.5 text-sky-400" />}
               title="View deterministic calculation methodology"
             >
               <span>Methodology</span>
@@ -96,7 +88,7 @@ export function BusinessImpactTile() {
               disabled={loading}
               title="Refresh business impact"
               aria-label="Refresh business impact"
-              icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
+              icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-sky-400" : ""}`} />}
             >
               Refresh
             </Button>
@@ -104,157 +96,153 @@ export function BusinessImpactTile() {
         </header>
 
         {/* Main Content Area */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {error && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 shrink-0 text-rose-400" />
+            <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Primary Hero Metric: Financial Exposure Identified */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950 border border-teal-500/30 p-6 flex flex-col justify-between relative overflow-hidden shadow-inner">
-              <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-                <TrendingUp className="w-48 h-48 text-teal-400" />
-              </div>
-
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-5 rounded-xl bg-[#090d16] border border-sky-800/40 p-5 flex flex-col justify-between relative shadow-sm">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-mono font-semibold text-slate-400">
-                    Financial exposure identified
+                  <span className="text-xs font-medium text-slate-300 font-sans">
+                    Financial Exposure Identified
                   </span>
-                  <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-teal-500/15 text-teal-300 border border-teal-500/30">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold font-sans bg-sky-950/50 text-sky-300 border border-sky-800/50 tracking-wide">
                     POTENTIAL
                   </span>
                 </div>
 
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-xl sm:text-2xl font-bold text-teal-400">₹</span>
-                  <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight font-mono">
+                <div className="mt-2 flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold text-sky-400 font-sans">₹</span>
+                  <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight financial-num">
                     {data ? (data.financial_exposure_identified / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "—"}
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-300 mt-2 flex items-center gap-1.5 leading-relaxed">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5 leading-relaxed font-sans font-normal">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                   Potential financial risk surfaced for governance and policy review
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-400">Realized savings:</span>
-                <span className="text-slate-300 font-medium">
+              <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-sans">Realized savings:</span>
+                <span className="text-slate-200 font-semibold num-tabular">
                   {formatPaiseOrUnavailable(data?.realized_savings, "N/A")}
                 </span>
               </div>
             </div>
 
             {/* Secondary Operational Metrics Grid */}
-            <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-2 gap-4">
-              <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 flex flex-col justify-between">
+            <div className="lg:col-span-7 grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-[#090d16] border border-slate-800/80 p-4 flex flex-col justify-between">
                 <div>
-                  <span className="text-xs font-mono text-slate-400 block mb-1">Actionable cases</span>
-                  <span className="text-2xl sm:text-3xl font-bold text-white font-mono">
+                  <span className="text-xs font-medium text-slate-400 block mb-1 font-sans">Actionable Cases</span>
+                  <span className="text-2xl font-bold text-white financial-num">
                     {data?.actionable_case_count ?? "—"}
                   </span>
                 </div>
-                <div className="text-xs text-slate-400 mt-3 pt-2 border-t border-slate-800/60">
-                  Exceptions with quantifiable exposure
+                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
+                  Quantifiable exposure &gt; 0
                 </div>
               </div>
 
-              <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 flex flex-col justify-between">
+              <div className="rounded-xl bg-[#090d16] border border-slate-800/80 p-4 flex flex-col justify-between">
                 <div>
-                  <span className="text-xs font-mono text-slate-400 block mb-1">High-risk cases</span>
-                  <span className="text-2xl sm:text-3xl font-bold text-amber-300 font-mono">
+                  <span className="text-xs font-medium text-slate-400 block mb-1 font-sans">High-Risk Cases</span>
+                  <span className="text-2xl font-bold text-amber-400 financial-num">
                     {data?.high_risk_case_count ?? "—"}
                   </span>
                 </div>
-                <div className="text-xs text-slate-400 mt-3 pt-2 border-t border-slate-800/60">
-                  Severity: HIGH or CRITICAL
+                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
+                  Severity: HIGH / CRITICAL
                 </div>
               </div>
 
-              <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 flex flex-col justify-between">
+              <div className="rounded-xl bg-[#090d16] border border-slate-800/80 p-4 flex flex-col justify-between">
                 <div>
-                  <span className="text-xs font-mono text-slate-400 block mb-1">Recurring patterns</span>
-                  <span className="text-2xl sm:text-3xl font-bold text-cyan-300 font-mono">
+                  <span className="text-xs font-medium text-slate-400 block mb-1 font-sans">Recurring Patterns</span>
+                  <span className="text-2xl font-bold text-sky-400 financial-num">
                     {data?.recurring_pattern_count ?? "—"}
                   </span>
                 </div>
-                <div className="text-xs text-slate-400 mt-3 pt-2 border-t border-slate-800/60">
+                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
                   Identified by pattern miner
                 </div>
               </div>
 
-              <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 flex flex-col justify-between">
+              <div className="rounded-xl bg-[#090d16] border border-slate-800/80 p-4 flex flex-col justify-between">
                 <div>
-                  <span className="text-xs font-mono text-slate-400 block mb-1">Merchants impacted</span>
-                  <span className="text-2xl sm:text-3xl font-bold text-purple-300 font-mono">
+                  <span className="text-xs font-medium text-slate-400 block mb-1 font-sans">Merchants Impacted</span>
+                  <span className="text-2xl font-bold text-purple-400 financial-num">
                     {data?.merchants_impacted ?? "—"}
                   </span>
                 </div>
-                <div className="text-xs text-slate-400 mt-3 pt-2 border-t border-slate-800/60">
-                  Distinct merchant accounts protected
+                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-sans">
+                  Distinct merchant accounts
                 </div>
               </div>
             </div>
           </div>
 
           {/* Transparent Classification Disclaimer */}
-          <div className="rounded-xl bg-slate-900/50 border border-slate-800 p-4 text-xs text-slate-300 flex items-start gap-3 not-italic">
-            <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-            <div className="leading-relaxed not-italic space-y-1">
-              <strong className="text-white font-semibold block text-xs not-italic">
-                Classification guarantee:
+          <div className="rounded-lg bg-[#090d16] border border-slate-800/80 p-3 text-xs text-slate-300 flex items-start gap-2.5">
+            <Info className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed space-y-0.5">
+              <strong className="text-white font-medium block text-xs">
+                Classification Guarantee:
               </strong>
-              <p className="text-xs text-slate-300 font-normal leading-relaxed not-italic">
+              <p className="text-xs text-slate-400 font-normal leading-relaxed">
                 {data?.disclaimer ||
                   "Exposure identified for review; not equivalent to recovered savings. No post-remediation realized savings are fabricated without concrete financial recovery evidence."}
               </p>
             </div>
           </div>
 
-          {/* Expandable Traceability & Methodology Drawer (Issue 15: H3) */}
+          {/* Expandable Traceability & Methodology Drawer */}
           {showMethodology && (
-            <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-6 space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-cyan-400" />
-                <span>Deterministic calculation methodology & traceability</span>
+            <div className="rounded-xl bg-[#090d16] border border-slate-800 p-5 space-y-3 animate-in fade-in duration-150">
+              <h3 className="text-xs font-semibold text-white flex items-center gap-2 font-mono uppercase tracking-wider">
+                <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
+                <span>Deterministic Calculation Methodology &amp; Traceability</span>
               </h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-400 leading-relaxed">
                 Nodexa rejects black-box or hallucinated financial claims. All metrics displayed in this tile are computed directly from SQLite persisted application records without LLM interpolation.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-                <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <div className="text-cyan-400 font-bold mb-1">Financial exposure identified</div>
-                  <div className="text-slate-300">SUM(ExceptionRecord.exposure) over distinct exception records</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs font-mono pt-1">
+                <div className="p-2.5 rounded bg-[#0d121d] border border-slate-800">
+                  <div className="text-sky-400 font-medium mb-0.5">Financial exposure identified</div>
+                  <div className="text-slate-400">SUM(ExceptionRecord.exposure) over distinct exception records</div>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <div className="text-cyan-400 font-bold mb-1">Actionable cases</div>
-                  <div className="text-slate-300">COUNT(ExceptionRecord) WHERE exposure &gt; 0</div>
+                <div className="p-2.5 rounded bg-[#0d121d] border border-slate-800">
+                  <div className="text-sky-400 font-medium mb-0.5">Actionable cases</div>
+                  <div className="text-slate-400">COUNT(ExceptionRecord) WHERE exposure &gt; 0</div>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <div className="text-cyan-400 font-bold mb-1">High-risk cases</div>
-                  <div className="text-slate-300">COUNT(ExceptionRecord) WHERE severity IN (&apos;HIGH&apos;, &apos;CRITICAL&apos;)</div>
+                <div className="p-2.5 rounded bg-[#0d121d] border border-slate-800">
+                  <div className="text-sky-400 font-medium mb-0.5">High-risk cases</div>
+                  <div className="text-slate-400">COUNT(ExceptionRecord) WHERE severity IN (&apos;HIGH&apos;, &apos;CRITICAL&apos;)</div>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <div className="text-cyan-400 font-bold mb-1">Recurring patterns</div>
-                  <div className="text-slate-300">COUNT(ExceptionCluster) WHERE exception_count &ge; 2</div>
+                <div className="p-2.5 rounded bg-[#0d121d] border border-slate-800">
+                  <div className="text-sky-400 font-medium mb-0.5">Recurring patterns</div>
+                  <div className="text-slate-400">COUNT(ExceptionCluster) WHERE exception_count &ge; 2</div>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <div className="text-cyan-400 font-bold mb-1">Merchants impacted</div>
-                  <div className="text-slate-300">COUNT(DISTINCT GatewayTransaction.merchant_id)</div>
+                <div className="p-2.5 rounded bg-[#0d121d] border border-slate-800">
+                  <div className="text-sky-400 font-medium mb-0.5">Merchants impacted</div>
+                  <div className="text-slate-400">COUNT(DISTINCT GatewayTransaction.merchant_id)</div>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <div className="text-cyan-400 font-bold mb-1">Double-counting protection</div>
-                  <div className="text-slate-300">Deduplicated exception IDs eliminate join multiplication</div>
+                <div className="p-2.5 rounded bg-[#0d121d] border border-slate-800">
+                  <div className="text-sky-400 font-medium mb-0.5">Double-counting protection</div>
+                  <div className="text-slate-400">Deduplicated exception IDs eliminate join multiplication</div>
                 </div>
               </div>
 
-              <div className="text-xs text-slate-400 font-mono">
+              <div className="text-[11px] text-slate-400 font-mono pt-1">
                 API endpoint: <span className="text-slate-300">GET /impact/roi</span> | Engine version: <span className="text-slate-300">{data?.version || "v1.0.0"}</span>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React from "react";
 
-export type BadgeTone = "success" | "warning" | "danger" | "info" | "neutral" | "purple";
+export type BadgeTone = "success" | "warning" | "danger" | "info" | "neutral" | "orange";
 
 export interface StatusBadgeProps {
   status?: string;
@@ -14,11 +14,11 @@ export interface StatusBadgeProps {
 export function getStatusTone(status?: string): BadgeTone {
   if (!status) return "neutral";
   const s = status.toUpperCase();
-  if (["CRITICAL", "FAILED", "HIGH_DRIFT", "REJECTED", "SECURITY_ALERT"].includes(s)) return "danger";
-  if (["HIGH", "WARNING", "ELEVATED", "WATCH", "MANUAL_REVIEW"].includes(s)) return "warning";
-  if (["PASSED", "VERIFIED", "RESOLVED", "LOW", "STABLE", "NORMAL"].includes(s)) return "success";
-  if (["INFO", "INVESTIGATING", "AUTO_EXECUTED", "SEEDED"].includes(s)) return "info";
-  if (["LEGITIMATE", "EDGE_CASE", "PARTIAL_SETTLEMENT"].includes(s)) return "neutral";
+  if (["CRITICAL", "FAILED", "HIGH_DRIFT", "REJECTED", "SECURITY_ALERT", "HIGH RISK"].includes(s)) return "danger";
+  if (["ELEVATED", "ORANGE"].includes(s)) return "orange";
+  if (["HIGH", "WARNING", "WATCH", "MANUAL_REVIEW", "PENDING_APPROVAL"].includes(s)) return "warning";
+  if (["PASSED", "VERIFIED", "RESOLVED", "LOW", "STABLE", "NORMAL", "VERIFIED_CLOSED"].includes(s)) return "success";
+  if (["INFO", "INVESTIGATING", "AUTO_EXECUTED", "SEEDED", "ACTIVE"].includes(s)) return "info";
   return "neutral";
 }
 
@@ -32,29 +32,29 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const resolvedTone = tone || getStatusTone(status);
 
+  // Semantic enterprise risk tones - restrained, high-contrast, no loud glare
   const toneMap: Record<BadgeTone, string> = {
-    success: "bg-emerald-500/15 border-emerald-500/30 text-emerald-300",
-    warning: "bg-amber-500/15 border-amber-500/30 text-amber-300",
-    danger: "bg-rose-500/15 border-rose-500/30 text-rose-300 font-semibold",
-    info: "bg-teal-500/15 border-teal-500/30 text-teal-300",
-    neutral: "bg-slate-800/80 border-slate-700/60 text-slate-300",
-    purple: "bg-purple-500/15 border-purple-500/30 text-purple-300",
+    success: "bg-emerald-950/30 border-emerald-800/40 text-emerald-300",
+    warning: "bg-amber-950/30 border-amber-800/40 text-amber-300",
+    orange: "bg-orange-950/30 border-orange-800/40 text-orange-300",
+    danger: "bg-rose-950/30 border-rose-800/40 text-rose-300 font-medium",
+    info: "bg-sky-950/30 border-sky-800/40 text-sky-300",
+    neutral: "bg-slate-900/90 border-slate-800 text-slate-300",
   };
 
   const sizeMap = {
     sm: "px-2 py-0.5 text-[11px]",
-    md: "px-2.5 py-1 text-xs",
+    md: "px-2.5 py-0.5 text-xs",
   };
 
   const content = children || status;
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md font-mono font-medium border ${toneMap[resolvedTone]} ${sizeMap[size]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded font-mono border ${toneMap[resolvedTone]} ${sizeMap[size]} ${className}`}
     >
       {icon && <span className="shrink-0">{icon}</span>}
       <span>{content}</span>
     </span>
   );
 };
-

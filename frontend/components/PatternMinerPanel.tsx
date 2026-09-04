@@ -16,8 +16,8 @@ import {
 } from "lucide-react";
 import { ClustersResponse, ExceptionCluster } from "../types";
 import { fetchClusters, refreshClusters } from "../lib/api";
+import { formatPaiseOrUnavailable } from "../lib/formatters";
 import { Button } from "./ui/Button";
-import { SectionHeading } from "./ui/SectionHeading";
 
 export function PatternMinerPanel() {
   const [clustersData, setClustersData] = useState<ClustersResponse | null>(null);
@@ -30,7 +30,7 @@ export function PatternMinerPanel() {
   const [selectedSource, setSelectedSource] = useState<string>("ALL");
   const [expandedClusterId, setExpandedClusterId] = useState<string | null>(null);
 
-  // Progressive disclosure (Issue 6: Wall of data fix)
+  // Progressive disclosure
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
@@ -58,47 +58,46 @@ export function PatternMinerPanel() {
     setRefreshing(true);
     setError(null);
     try {
-      const res = await refreshClusters();
-      setClustersData(res);
+      await refreshClusters();
+      await loadClusters();
     } catch (err: any) {
-      setError(err.message || "Failed to refresh pattern miner.");
+      setError(err.message || "Failed to mine clusters.");
     } finally {
       setRefreshing(false);
     }
   };
 
   const formatRupees = (paise: number) => {
-    const rupees = paise / 100.0;
-    return `₹${rupees.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return formatPaiseOrUnavailable(paise, "₹0.00");
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "FAMILY_SIGNATURE":
-        return <Layers className="w-5 h-5 text-cyan-400" />;
+        return <Network className="w-4 h-4 text-sky-400" />;
       case "MERCHANT_REPEATED_FAMILY":
-        return <Building2 className="w-5 h-5 text-purple-400" />;
+        return <Building2 className="w-4 h-4 text-purple-400" />;
       case "CONTROL_FINDING_SIGNATURE":
-        return <ShieldAlert className="w-5 h-5 text-amber-400" />;
+        return <ShieldAlert className="w-4 h-4 text-amber-400" />;
       case "TIMING_SLA_SIGNATURE":
-        return <Clock className="w-5 h-5 text-teal-400" />;
+        return <Clock className="w-4 h-4 text-cyan-400" />;
       default:
-        return <Network className="w-5 h-5 text-slate-400" />;
+        return <Network className="w-4 h-4 text-slate-400" />;
     }
   };
 
   const getTypeBadgeStyle = (type: string) => {
     switch (type) {
       case "FAMILY_SIGNATURE":
-        return "bg-cyan-500/10 border-cyan-500/30 text-cyan-300";
+        return "bg-sky-950/30 border-sky-800/40 text-sky-300";
       case "MERCHANT_REPEATED_FAMILY":
-        return "bg-purple-500/10 border-purple-500/30 text-purple-300";
+        return "bg-purple-950/30 border-purple-800/40 text-purple-300";
       case "CONTROL_FINDING_SIGNATURE":
-        return "bg-amber-500/10 border-amber-500/30 text-amber-300";
+        return "bg-amber-950/30 border-amber-800/40 text-amber-300";
       case "TIMING_SLA_SIGNATURE":
-        return "bg-teal-500/10 border-teal-500/30 text-teal-300";
+        return "bg-cyan-950/30 border-cyan-800/40 text-cyan-300";
       default:
-        return "bg-slate-500/10 border-slate-500/30 text-slate-300";
+        return "bg-slate-900 border-slate-800 text-slate-300";
     }
   };
 
@@ -123,26 +122,22 @@ export function PatternMinerPanel() {
   return (
     <section
       id="patterns"
-      className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl relative overflow-hidden"
+      className="rounded-xl p-5 sm:p-6 border border-slate-800/80 bg-[#0d121d] shadow-sm relative overflow-hidden"
     >
-      {/* Ambient glow */}
-      <div className="absolute -top-24 -right-24 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Subordinate Panel Header (Issue 11) */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/60 mb-6">
+      {/* Subordinate Panel Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80 mb-5">
         <div className="flex items-start sm:items-center gap-3 min-w-0">
-          <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-purple-400 shrink-0">
-            <Network className="w-5 h-5" />
+          <div className="p-2 rounded-lg bg-[#111726] border border-slate-800 text-sky-400 shrink-0">
+            <Network className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-lg sm:text-xl font-semibold text-slate-100 tracking-tight">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-semibold text-white tracking-tight font-sans">
                 Deterministic Exception Pattern Miner
               </h2>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-purple-500/10 border border-purple-500/30 text-purple-300">
-                <Network className="w-3 h-3 text-purple-400" />
-                <span>Tier-2 Pattern Miner Active (v2.0)</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono bg-sky-950/30 border border-sky-800/40 text-sky-300">
+                <Network className="w-3 h-3 text-sky-400" />
+                <span>Tier-2 Pattern Engine</span>
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5 max-w-2xl leading-relaxed">
@@ -165,50 +160,50 @@ export function PatternMinerPanel() {
       </header>
 
       {/* Top Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span className="text-xs font-mono text-slate-400 block mb-1">Discovered patterns</span>
-          <span className="text-2xl font-extrabold text-white font-mono">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div className="p-3.5 rounded-lg bg-[#090d16] border border-slate-800/80">
+          <span className="text-xs font-medium text-slate-400 font-sans block mb-0.5">Discovered Patterns</span>
+          <span className="text-2xl font-bold text-white financial-num">
             {clustersData?.total_clusters ?? "—"}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span className="text-xs font-mono text-slate-400 block mb-1">Clustered exceptions</span>
-          <span className="text-2xl font-extrabold text-teal-300 font-mono">
+        <div className="p-3.5 rounded-lg bg-[#090d16] border border-slate-800/80">
+          <span className="text-xs font-medium text-slate-400 font-sans block mb-0.5">Clustered Exceptions</span>
+          <span className="text-2xl font-bold text-sky-400 financial-num">
             {clustersData?.total_clustered_exceptions ?? "—"}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span className="text-xs font-mono text-slate-400 block mb-1">Total clustered exposure</span>
-          <span className="text-2xl font-extrabold text-emerald-400 font-mono">
+        <div className="p-3.5 rounded-lg bg-[#090d16] border border-slate-800/80">
+          <span className="text-xs font-medium text-slate-400 font-sans block mb-0.5">Total Clustered Exposure</span>
+          <span className="text-2xl font-bold text-emerald-400 financial-num">
             {clustersData ? formatRupees(clustersData.total_clustered_exposure) : "—"}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span className="text-xs font-mono text-slate-400 block mb-1">Min. cluster size</span>
-          <span className="text-2xl font-extrabold text-slate-200 font-mono">
-            ≥ {clustersData?.min_cluster_size ?? 2}
+        <div className="p-3.5 rounded-lg bg-[#090d16] border border-slate-800/80">
+          <span className="text-xs font-medium text-slate-400 font-sans block mb-0.5">Min. Cluster Size</span>
+          <span className="text-2xl font-bold text-slate-300 financial-num">
+            &ge; {clustersData?.min_cluster_size ?? 2}
           </span>
         </div>
       </div>
 
-      {/* Filters Bar (Issues 7, 8, 9: Vertically centered labels & unified pill style) */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 p-4 rounded-xl bg-slate-900/40 border border-slate-800/80">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <span className="h-9 min-h-[36px] flex items-center text-slate-300 mr-1 gap-1.5 font-semibold text-xs shrink-0">
-            <Filter className="w-3.5 h-3.5 text-teal-400" /> Pattern type:
+      {/* Filters Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-5 p-3 rounded-lg bg-[#090d16] border border-slate-800/80">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans">
+          <span className="h-8 flex items-center text-slate-300 mr-1 gap-1 text-[11px] font-medium shrink-0 font-sans">
+            <Filter className="w-3 h-3 text-sky-400" /> Pattern type:
           </span>
           {["ALL", "FAMILY_SIGNATURE", "MERCHANT_REPEATED_FAMILY", "CONTROL_FINDING_SIGNATURE", "TIMING_SLA_SIGNATURE"].map((t) => (
             <button
               key={t}
               onClick={() => setSelectedType(t)}
-              className={`h-9 min-h-[36px] px-3.5 rounded-lg border transition-all duration-150 cursor-pointer text-xs font-mono flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
+              className={`h-8 px-2.5 rounded border transition-colors cursor-pointer text-[11px] font-medium font-sans flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-sky-500/50 ${
                 selectedType === t
-                  ? "bg-teal-500/20 border-teal-500/50 text-teal-300 font-semibold shadow-sm shadow-teal-500/10"
-                  : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                  ? "bg-sky-950/40 border-sky-800/60 text-sky-300 font-semibold"
+                  : "bg-[#0d121d] border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
               }`}
             >
               {t === "ALL" ? "All types" : formatPatternType(t)}
@@ -216,18 +211,18 @@ export function PatternMinerPanel() {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <span className="h-9 min-h-[36px] flex items-center text-slate-300 font-semibold text-xs shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans">
+          <span className="h-8 flex items-center text-slate-300 text-[11px] font-medium shrink-0 font-sans">
             Source:
           </span>
           {["ALL", "seeded", "live-injected"].map((s) => (
             <button
               key={s}
               onClick={() => setSelectedSource(s)}
-              className={`h-9 min-h-[36px] px-3.5 rounded-lg border transition-all duration-150 cursor-pointer text-xs font-mono flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
+              className={`h-8 px-2.5 rounded border transition-colors cursor-pointer text-[11px] font-mono flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-sky-500/50 ${
                 selectedSource === s
-                  ? "bg-teal-500/20 border-teal-500/50 text-teal-300 font-semibold shadow-sm shadow-teal-500/10"
-                  : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                  ? "bg-sky-950/40 border-sky-800/60 text-sky-300 font-medium"
+                  : "bg-[#0d121d] border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
               }`}
             >
               {s === "ALL" ? "All" : s === "seeded" ? "Synthetic" : "Live rails"}
@@ -238,63 +233,63 @@ export function PatternMinerPanel() {
 
       {/* Error state */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-start gap-3 mb-6">
-          <AlertTriangle className="w-5 h-5 shrink-0 text-rose-400 mt-0.5" />
+        <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-start gap-2.5 mb-5">
+          <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
           <div>
             <p className="font-semibold">Pattern miner error</p>
-            <p className="text-xs text-rose-300/80 mt-0.5">{error}</p>
+            <p className="text-rose-300/80 mt-0.5">{error}</p>
           </div>
         </div>
       )}
 
-      {/* Clusters List with Progressive Disclosure (Issue 6 & Issue 18) */}
+      {/* Clusters List with Progressive Disclosure */}
       {loading && !clustersData ? (
-        <div className="py-12 text-center text-slate-500 font-mono text-sm">
-          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-400" />
+        <div className="py-12 text-center text-slate-400 font-mono text-xs">
+          <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-sky-400" />
           Mining exception patterns...
         </div>
       ) : visibleClusters.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {visibleClusters.map((cluster) => {
             const isExpanded = expandedClusterId === cluster.cluster_id;
             return (
               <div
                 key={cluster.cluster_id}
-                className="p-5 rounded-xl bg-slate-900/70 border border-slate-800 hover:border-slate-750 transition-all duration-200"
+                className="p-4 rounded-xl bg-[#090d16] border border-slate-800/80 hover:border-slate-700/80 transition-colors"
               >
-                {/* Cluster Card Header with Dominant Title Hierarchy (Issue 18) */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-2">
+                {/* Cluster Card Header */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-1.5">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700/60 mt-0.5 shrink-0">
+                    <div className="p-1.5 rounded-lg bg-[#0d121d] border border-slate-800 mt-0.5 shrink-0">
                       {getTypeIcon(cluster.pattern_type)}
                     </div>
                     <div>
-                      {/* PRIMARY: Strong Title (Issue 18) */}
+                      {/* PRIMARY: Strong Title */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                        <h3 className="text-sm sm:text-base font-semibold text-white tracking-tight font-sans">
                           {cluster.pattern_label}
                         </h3>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono border font-medium ${getTypeBadgeStyle(cluster.pattern_type)}`}>
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-mono border font-medium ${getTypeBadgeStyle(cluster.pattern_type)}`}>
                           {formatPatternType(cluster.pattern_type)}
                         </span>
                       </div>
 
-                      {/* SECONDARY: Description (Issue 18) */}
-                      <p className="text-sm text-slate-300 mt-1 leading-relaxed">
+                      {/* SECONDARY: Description */}
+                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                         {cluster.description}
                       </p>
 
-                      {/* METADATA: Unified Compact Line (Finding B7) */}
-                      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs font-mono text-slate-300 mt-2.5">
-                        <span className="text-white font-medium">{cluster.exception_count} cases</span>
-                        <span className="text-slate-600">·</span>
+                      {/* METADATA: Unified Compact Line */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono text-slate-400 mt-2">
+                        <span className="text-slate-200 font-medium">{cluster.exception_count} cases</span>
+                        <span className="text-slate-600">&bull;</span>
                         <span className="text-slate-300">{cluster.merchants.length} merchants</span>
-                        <span className="text-slate-600">·</span>
-                        <span className="text-emerald-400 font-semibold">{formatRupees(cluster.total_exposure)} exposure</span>
+                        <span className="text-slate-600">&bull;</span>
+                        <span className="text-emerald-400 font-medium">{formatRupees(cluster.total_exposure)} exposure</span>
                         {cluster.live_injected_count > 0 && (
                           <>
-                            <span className="text-slate-600">·</span>
-                            <span className="text-cyan-300 font-medium">
+                            <span className="text-slate-600">&bull;</span>
+                            <span className="text-sky-300 font-medium">
                               {cluster.live_injected_count} live-injected
                             </span>
                           </>
@@ -308,7 +303,7 @@ export function PatternMinerPanel() {
                       size="sm"
                       variant="secondary"
                       onClick={() => setExpandedClusterId(isExpanded ? null : cluster.cluster_id)}
-                      icon={isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      icon={isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       aria-label={isExpanded ? "Collapse cluster details" : "Expand cluster details"}
                     >
                       {isExpanded ? "Collapse" : "Details"}
@@ -318,31 +313,31 @@ export function PatternMinerPanel() {
 
                 {/* Expanded Details Section */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-slate-800 space-y-3">
+                  <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-3">
                     {/* Explainability / Grounding Block */}
-                    <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800 text-xs font-mono space-y-1.5">
-                      <div className="flex items-center gap-2 text-slate-300 font-semibold">
+                    <div className="p-3 rounded-lg bg-[#0d121d] border border-slate-800 text-xs font-mono space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-300 font-medium">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Clustering reason & matched dimensions:</span>
+                        <span>Clustering Reason &amp; Matched Dimensions:</span>
                       </div>
                       <p className="text-slate-400 pl-5 leading-relaxed">
                         {cluster.evidence.reason}
                       </p>
-                      <div className="pl-5 text-xs text-slate-500 flex flex-wrap gap-2 pt-1">
+                      <div className="pl-5 text-[11px] text-slate-400 flex flex-wrap gap-2 pt-0.5">
                         <span>Matched fields: [{cluster.evidence.matched_fields.join(", ")}]</span>
                       </div>
                     </div>
 
                     {/* Member Exception IDs */}
                     <div>
-                      <span className="text-xs font-mono text-slate-400 block mb-1.5 font-medium">
-                        Member exceptions ({cluster.exception_ids.length}):
+                      <span className="text-[11px] font-mono text-slate-400 block mb-1">
+                        Member Exceptions ({cluster.exception_ids.length}):
                       </span>
-                      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-slate-950/40 rounded-lg border border-slate-800/60">
+                      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-[#0d121d] rounded-lg border border-slate-800/80">
                         {cluster.exception_ids.map((id) => (
                           <span
                             key={id}
-                            className="px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700 text-slate-200 text-xs font-mono"
+                            className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-xs font-mono"
                           >
                             {id}
                           </span>
@@ -355,13 +350,14 @@ export function PatternMinerPanel() {
             );
           })}
 
-          {/* Progressive Disclosure Toggle Button (Issue 6) */}
+          {/* Progressive Disclosure Toggle Button */}
           {clusters.length > 6 && (
-            <div className="pt-3 text-center">
+            <div className="pt-2 text-center">
               <Button
                 variant="secondary"
+                size="sm"
                 onClick={() => setShowAll(!showAll)}
-                icon={showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                icon={showAll ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 className="w-full sm:w-auto"
               >
                 {showAll ? "Show fewer patterns" : `Show all patterns (${clusters.length})`}
@@ -370,10 +366,10 @@ export function PatternMinerPanel() {
           )}
         </div>
       ) : (
-        <div className="py-12 text-center rounded-xl bg-slate-900/40 border border-slate-800/60">
-          <Layers className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-          <p className="text-sm text-slate-400 font-medium">No recurring patterns detected.</p>
-          <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+        <div className="py-10 text-center rounded-xl bg-[#090d16] border border-slate-800/80">
+          <Layers className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+          <p className="text-xs text-slate-400 font-medium">No recurring patterns detected.</p>
+          <p className="text-[11px] text-slate-400 mt-1 max-w-md mx-auto">
             Exceptions in the current dataset are isolated or do not meet the minimum cluster threshold (≥ {clustersData?.min_cluster_size ?? 2}).
           </p>
         </div>

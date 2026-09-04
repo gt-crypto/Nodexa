@@ -1,72 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #090d16;
-  --foreground: #f1f5f9;
-  --card-bg: rgba(15, 23, 42, 0.65);
-  --card-border: rgba(51, 65, 85, 0.4);
+  --background: #080b11;
+  --foreground: #f8fafc;
+  --panel-bg: #0d121d;
+  --panel-border: rgba(255, 255, 255, 0.07);
 }
 
 body {
   color: var(--foreground);
-  background: radial-gradient(circle at 50% 0%, #0f2027 0%, #090d16 60%, #05070c 100%);
+  background-color: #080b11;
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   min-height: 100vh;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
 }
 
-/* Glassmorphic card styling */
+/* Enterprise panel styling - sleek, minimal, high-contrast readability */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background-color: #0d121d;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
 }
 
 .glass-panel-hover {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-panel-hover:hover {
-  background: rgba(30, 41, 59, 0.7);
-  border-color: rgba(45, 212, 191, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px 0 rgba(45, 212, 191, 0.1);
+  background-color: #111827;
+  border-color: rgba(56, 189, 248, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(56, 189, 248, 0.1);
 }
 
-/* Grid background pattern */
+/* Subtle financial grid pattern for backgrounds and login hero */
 .bg-grid-pattern {
-  background-size: 40px 40px;
+  background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
 }
 
-/* Glow effects */
+/* Restrained fintech accent glow */
 .sentinel-glow {
-  box-shadow: 0 0 30px -5px rgba(20, 184, 166, 0.25);
+  box-shadow: 0 0 20px -3px rgba(14, 165, 233, 0.18);
 }
 
 /* Dark Scrollbar - Standard CSS & Webkit */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1e293b #090d16;
+  scrollbar-color: #1e293b #080b11;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #080b11;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -74,7 +78,7 @@ body {
 }
 
 ::-webkit-scrollbar-corner {
-  background: #090d16;
+  background: #080b11;
 }
 
 /* Sleek Sidebar Dark Scrollbar */
@@ -84,7 +88,7 @@ body {
 }
 
 .sidebar-scrollbar::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 
 .sidebar-scrollbar::-webkit-scrollbar-track {
@@ -93,10 +97,66 @@ body {
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb {
   background: #1e293b;
-  border-radius: 9999px;
+  border-radius: 4px;
 }
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #2dd4bf;
+  background: #0ea5e9;
 }
 
+/* Table and financial number alignment utilities */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.financial-num {
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+/* Typography Hierarchy Standards */
+.text-page-title {
+  font-size: 1.625rem; /* ~26px */
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.text-section-title {
+  font-size: 1rem; /* ~16px */
+  line-height: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Subtle financial network SVG animation with reduced-motion protection */
+@media (prefers-reduced-motion: no-preference) {
+  .nodexa-path-flow {
+    animation: nodexaDash 35s linear infinite;
+  }
+  .nodexa-path-flow-slow {
+    animation: nodexaDash 50s linear infinite reverse;
+  }
+  .nodexa-node-pulse {
+    animation: nodexaNodePulse 8s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes nodexaDash {
+  to {
+    stroke-dashoffset: -200;
+  }
+}
+
+@keyframes nodexaNodePulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}

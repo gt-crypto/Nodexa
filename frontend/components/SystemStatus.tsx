@@ -33,21 +33,19 @@ export const SystemStatus: React.FC = () => {
 
   return (
     <section id="overview" className="w-full">
-      <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Standardized Main Card Header (Issues 1, 2, 6) */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/60 mb-6">
+      <div className="rounded-xl p-5 sm:p-6 border border-slate-800/80 bg-[#0d121d] shadow-sm relative overflow-hidden">
+        {/* Main Card Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80 mb-5">
           <div className="flex items-start sm:items-center gap-3 min-w-0">
-            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-teal-400 shrink-0">
-              <Server className="w-5 h-5" />
+            <div className="p-2 rounded-lg bg-[#111726] border border-slate-800 text-sky-400 shrink-0">
+              <Server className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight">
+              <h2 className="text-base font-semibold text-white tracking-tight font-sans">
                 Controller Engine Status
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Live monitoring of backend API endpoint: <code className="font-mono text-slate-300">GET /health</code>
+                Live operational health probe: <code className="font-mono text-slate-300">GET /health</code>
               </p>
             </div>
           </div>
@@ -59,53 +57,53 @@ export const SystemStatus: React.FC = () => {
               variant="secondary"
               size="sm"
               aria-label="Refresh controller engine status"
-              icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-sky-400" : ""}`} />}
             >
               {loading ? "Checking..." : "Refresh"}
             </Button>
           </div>
         </header>
 
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
-          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-            <span className="text-slate-400 text-xs block mb-1 font-medium">Service health</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="p-3 rounded-lg bg-[#090d16] border border-slate-800/80">
+            <span className="text-slate-400 text-[11px] font-medium block mb-1">Service Health</span>
             <div className="flex items-center gap-2">
               {health?.status === "healthy" ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400 font-semibold">Operational (200 OK)</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400 font-semibold font-sans">Operational (200 OK)</span>
                 </>
               ) : error ? (
                 <>
-                  <AlertCircle className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-400 font-semibold">Backend Offline</span>
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-amber-400 font-semibold font-sans">Backend Offline</span>
                 </>
               ) : (
                 <>
-                  <Radio className="w-4 h-4 text-teal-400 animate-pulse" />
-                  <span className="text-slate-400">Pinging...</span>
+                  <Radio className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+                  <span className="text-slate-400 font-sans">Pinging...</span>
                 </>
               )}
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-            <span className="text-slate-400 text-xs block mb-1 font-medium">Service identifier</span>
-            <span className="text-slate-200">
+          <div className="p-3 rounded-lg bg-[#090d16] border border-slate-800/80">
+            <span className="text-slate-400 text-[11px] font-medium block mb-1">Service Identifier</span>
+            <span className="text-slate-200 font-mono text-[12px] truncate block">
               {health?.service ?? "nodal-sentinel-backend"}
             </span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-            <span className="text-slate-400 text-xs block mb-1 font-medium">Last heartbeat</span>
-            <span className="text-slate-200">
+          <div className="p-3 rounded-lg bg-[#090d16] border border-slate-800/80">
+            <span className="text-slate-400 text-[11px] font-medium block mb-1">Last Heartbeat</span>
+            <span className="text-slate-200 font-mono text-[12px] block">
               {lastChecked ? lastChecked.toLocaleTimeString() : "Pending check"}
             </span>
           </div>
         </div>
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 font-mono flex items-center justify-between">
+          <div className="mt-4 p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/40 text-xs text-amber-300 font-mono flex items-center justify-between">
             <span>Note: Start FastAPI backend with <code className="text-amber-200">uvicorn backend.main:app --reload</code> to connect live.</span>
           </div>
         )}

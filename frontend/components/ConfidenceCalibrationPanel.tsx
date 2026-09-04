@@ -77,18 +77,18 @@ export function ConfidenceCalibrationPanel() {
 
   return (
     <section id="calibration" className="w-full">
-      <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/90 shadow-2xl relative overflow-hidden">
-        {/* Top Glow Accent */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-indigo-500 to-emerald-500" />
+      <div className="glass-panel rounded-xl p-5 sm:p-6 border border-slate-800/80 shadow-2xl relative overflow-hidden">
+        {/* Subtle Brand Accent Line */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-sky-500/80 via-cyan-400/60 to-transparent" />
 
-        {/* Section Header (Issue 3 & 14) */}
+        {/* Section Header */}
         <SectionHeading
-          icon={<Gauge className="w-6 h-6 text-cyan-400" />}
+          icon={<Gauge className="w-5 h-5 text-sky-400" />}
           title="Confidence Calibration Dashboard"
           badge={{
             text: "Tier-3 Empirical Calibration (v2.0 Judge Dashboard)",
-            icon: <Target className="w-3.5 h-3.5 text-cyan-400" />,
-            color: "bg-cyan-500/10 border-cyan-500/30 text-cyan-300",
+            icon: <Target className="w-3.5 h-3.5 text-sky-400" />,
+            color: "bg-sky-500/10 border-sky-500/30 text-sky-300",
           }}
           description="Empirical verification evaluating whether Nodexa's confidence labels correspond to observed correctness across genuine historical prediction outcomes without fabricating probabilities."
           action={
@@ -96,7 +96,7 @@ export function ConfidenceCalibrationPanel() {
               <select
                 value={predTypeFilter}
                 onChange={(e) => setPredTypeFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/90 text-slate-300 text-xs font-mono focus:outline-none focus:border-cyan-500"
+                className="px-2.5 py-1 rounded-lg border border-slate-800 bg-[#070b13] text-slate-300 text-xs font-mono focus:outline-none focus:border-sky-500"
               >
                 <option value="">All prediction types</option>
                 <option value="INVESTIGATION">Investigations</option>
@@ -107,7 +107,7 @@ export function ConfidenceCalibrationPanel() {
               <select
                 value={sourceFilter}
                 onChange={(e) => setSourceFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/90 text-slate-300 text-xs font-mono focus:outline-none focus:border-cyan-500"
+                className="px-2.5 py-1 rounded-lg border border-slate-800 bg-[#070b13] text-slate-300 text-xs font-mono focus:outline-none focus:border-sky-500"
               >
                 <option value="">All sources</option>
                 <option value="seeded">Seeded benchmark</option>
@@ -118,7 +118,7 @@ export function ConfidenceCalibrationPanel() {
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowMethodology(!showMethodology)}
-                icon={<Info className="w-3.5 h-3.5 text-cyan-400" />}
+                icon={<Info className="w-3.5 h-3.5 text-sky-400" />}
               >
                 <span>{showMethodology ? "Hide methodology" : "Methodology"}</span>
                 {showMethodology ? (
@@ -134,32 +134,32 @@ export function ConfidenceCalibrationPanel() {
                 disabled={loading}
                 title="Refresh calibration data"
                 aria-label="Refresh calibration data"
-                icon={<RefreshCcw className={`w-4 h-4 ${loading ? "animate-spin text-cyan-400" : ""}`} />}
+                icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-sky-400" : ""}`} />}
               />
             </div>
           }
         />
 
         {/* Panel Body */}
-        <div className="space-y-6">
+        <div className="space-y-5 mt-4">
           {error && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 shrink-0 text-rose-400" />
+            <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-3">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Key Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Status Card */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950 border border-slate-800 flex flex-col justify-between shadow-inner">
+            <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col justify-between">
               <div>
-                <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                  Calibration status
+                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-1 font-medium">
+                  Calibration Status
                 </div>
-                <div className="mt-2">
+                <div className="mt-1.5">
                   <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-mono font-bold border ${getStatusBadge(
+                    className={`inline-block px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${getStatusBadge(
                       data?.status || "INSUFFICIENT_DATA"
                     )}`}
                   >
@@ -167,7 +167,7 @@ export function ConfidenceCalibrationPanel() {
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+              <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
                 {data?.status === "INSUFFICIENT_DATA"
                   ? "Honest reporting: insufficient evaluated observations."
                   : "Empirical evaluation across historical outcomes."}
@@ -175,53 +175,53 @@ export function ConfidenceCalibrationPanel() {
             </div>
 
             {/* Total Predictions & Coverage */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+            <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col justify-between">
               <div>
-                <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                  Predictions surfaced
+                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-1 font-medium">
+                  Predictions Surfaced
                 </div>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-extrabold text-white font-mono">
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="text-2xl sm:text-3xl font-bold text-white font-mono num-tabular">
                     {data?.total_predictions ?? 0}
                   </span>
                   <span className="text-slate-500 font-mono text-xs">total</span>
                 </div>
               </div>
-              <div className="text-xs font-mono text-slate-400 mt-4 pt-3 border-t border-slate-800 flex justify-between">
-                <span>Evaluated: <strong className="text-emerald-400">{data?.evaluated_predictions ?? 0}</strong></span>
-                <span>Unevaluated: <strong className="text-slate-300">{data?.unevaluated_predictions ?? 0}</strong></span>
+              <div className="text-[11px] font-mono text-slate-400 mt-3 pt-2.5 border-t border-slate-800/80 flex justify-between">
+                <span>Evaluated: <strong className="text-emerald-400 num-tabular">{data?.evaluated_predictions ?? 0}</strong></span>
+                <span>Unevaluated: <strong className="text-slate-300 num-tabular">{data?.unevaluated_predictions ?? 0}</strong></span>
               </div>
             </div>
 
             {/* Overall Correctness */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+            <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col justify-between">
               <div>
-                <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                  Evaluated correctness
+                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-1 font-medium">
+                  Evaluated Correctness
                 </div>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-extrabold text-emerald-400 font-mono">
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="text-2xl sm:text-3xl font-bold text-emerald-400 font-mono num-tabular">
                     {data?.correctness_rate !== null && data?.correctness_rate !== undefined
                       ? `${(data.correctness_rate * 100).toFixed(1)}%`
                       : "—"}
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+              <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
                 Empirical agreement between prediction and verified outcome.
               </p>
             </div>
 
             {/* Numerical Calibration */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+            <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col justify-between">
               <div>
-                <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                  Brier & ECE scores
+                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-1 font-medium">
+                  Brier & ECE Scores
                 </div>
-                <div className="mt-2 text-xs font-mono space-y-1">
+                <div className="mt-1.5 text-xs font-mono space-y-1">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Brier score:</span>
-                    <span className="text-slate-300 font-bold">
+                    <span className="text-slate-400">Brier:</span>
+                    <span className="text-slate-200 font-bold num-tabular">
                       {data?.numerical_metrics?.brier_score !== null && data?.numerical_metrics?.brier_score !== undefined
                         ? data.numerical_metrics.brier_score.toFixed(4)
                         : "Unavailable"}
@@ -229,7 +229,7 @@ export function ConfidenceCalibrationPanel() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">ECE:</span>
-                    <span className="text-slate-300 font-bold">
+                    <span className="text-slate-200 font-bold num-tabular">
                       {data?.numerical_metrics?.ece !== null && data?.numerical_metrics?.ece !== undefined
                         ? data.numerical_metrics.ece.toFixed(4)
                         : "Unavailable"}
@@ -237,54 +237,54 @@ export function ConfidenceCalibrationPanel() {
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+              <p className="text-[11px] text-slate-400 mt-2.5 leading-relaxed">
                 {data?.numerical_metrics?.reason || "Requires genuine numerical probabilities."}
               </p>
             </div>
           </div>
 
           {/* Categorical Confidence Buckets Table */}
-          <div className="rounded-2xl bg-slate-900/40 border border-slate-800 p-6 space-y-4">
+          <div className="rounded-lg bg-slate-950/60 border border-slate-800/80 p-4 sm:p-5 space-y-3">
             <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center justify-between">
-              <span>Confidence level breakdown & observed correctness</span>
+              <span>Confidence Level Breakdown & Observed Correctness</span>
               <span className="text-slate-400 font-normal">HIGH &bull; MEDIUM &bull; LOW</span>
             </h3>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-mono">
+              <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 text-xs">
-                    <th className="py-3 px-4">Confidence level</th>
-                    <th className="py-3 px-4">Total count</th>
-                    <th className="py-3 px-4">Evaluated count</th>
-                    <th className="py-3 px-4">Observed correctness</th>
+                  <tr className="border-b border-slate-800/80 text-slate-400 text-[11px] uppercase tracking-wider bg-[#070b13] font-sans font-semibold">
+                    <th className="py-2.5 px-3">Confidence Level</th>
+                    <th className="py-2.5 px-3 text-right">Total Count</th>
+                    <th className="py-2.5 px-3 text-right">Evaluated Count</th>
+                    <th className="py-2.5 px-3">Observed Correctness</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-800/60 font-sans">
                   {data?.confidence_buckets &&
                     Object.entries(data.confidence_buckets).map(([level, b]) => {
                       const crPercent =
                         b.correctness_rate !== null ? (b.correctness_rate * 100).toFixed(1) : "—";
                       return (
                         <tr key={level} className="hover:bg-slate-900/40 transition">
-                          <td className="py-3 px-4">
+                          <td className="py-2.5 px-3">
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getConfidenceLevelStyle(
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${getConfidenceLevelStyle(
                                 b.confidence_level
                               )}`}
                             >
                               {b.confidence_level}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-white font-bold">{b.prediction_count}</td>
-                          <td className="py-3 px-4 text-slate-300">{b.evaluated_count}</td>
-                          <td className="py-3 px-4">
+                          <td className="py-2.5 px-3 text-white font-bold text-right num-tabular">{b.prediction_count}</td>
+                          <td className="py-2.5 px-3 text-slate-300 text-right num-tabular">{b.evaluated_count}</td>
+                          <td className="py-2.5 px-3">
                             {b.correctness_rate !== null ? (
                               <span className="text-slate-300">
-                                <span className="text-emerald-400 font-semibold">{b.correct_count} correct</span> ({crPercent}%)
+                                <span className="text-emerald-400 font-semibold num-tabular">{b.correct_count} correct</span> (<span className="num-tabular">{crPercent}%</span>)
                               </span>
                             ) : (
-                              <span className="text-slate-500 italic">No evaluated outcomes available</span>
+                              <span className="text-slate-400 italic">No evaluated outcomes available</span>
                             )}
                           </td>
                         </tr>
@@ -295,23 +295,23 @@ export function ConfidenceCalibrationPanel() {
             </div>
           </div>
 
-          {/* Reliability Diagram / Numerical Bins Drawer (Issue 15: H3) */}
+          {/* Reliability Diagram / Numerical Bins Drawer */}
           {data && data.numerical_metrics.status === "CALCULATED" && (
-            <div className="rounded-2xl bg-slate-950 border border-slate-800 p-6 space-y-4">
-              <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <span>Reliability diagram data (5 bins)</span>
+            <div className="rounded-lg bg-slate-950/70 border border-slate-800/80 p-4 space-y-3">
+              <h3 className="text-xs font-semibold text-white font-mono flex items-center gap-2 uppercase tracking-wider">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Reliability Diagram Data (5 Bins)</span>
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-xs font-mono">
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5 text-xs font-mono">
                 {data.numerical_metrics.reliability_bins.map((bin, i) => (
-                  <div key={i} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-                    <div className="text-cyan-400 font-bold">{bin.range}</div>
-                    <div className="text-slate-400">Count: {bin.count}</div>
-                    <div className="text-emerald-400">
-                      Acc: {bin.accuracy !== null ? `${(bin.accuracy * 100).toFixed(1)}%` : "—"}
+                  <div key={i} className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1">
+                    <div className="text-sky-400 font-bold">{bin.range}</div>
+                    <div className="text-slate-400 text-[11px]">Count: <span className="text-slate-200 num-tabular">{bin.count}</span></div>
+                    <div className="text-emerald-400 text-[11px]">
+                      Acc: <span className="num-tabular">{bin.accuracy !== null ? `${(bin.accuracy * 100).toFixed(1)}%` : "—"}</span>
                     </div>
-                    <div className="text-purple-300">
-                      Conf: {bin.confidence !== null ? `${(bin.confidence * 100).toFixed(1)}%` : "—"}
+                    <div className="text-sky-300 text-[11px]">
+                      Conf: <span className="num-tabular">{bin.confidence !== null ? `${(bin.confidence * 100).toFixed(1)}%` : "—"}</span>
                     </div>
                   </div>
                 ))}
@@ -319,12 +319,12 @@ export function ConfidenceCalibrationPanel() {
             </div>
           )}
 
-          {/* Methodology & Limitations Drawer (Issue 15: H3) */}
+          {/* Methodology & Limitations Drawer */}
           {showMethodology && (
-            <div className="rounded-2xl bg-slate-950 border border-slate-800 p-6 space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                <span>Calibration methodology & verification bounds</span>
+            <div className="rounded-lg bg-slate-950/80 border border-slate-800/80 p-4 sm:p-5 space-y-3 animate-in fade-in duration-200">
+              <h3 className="text-xs font-semibold text-white font-mono flex items-center gap-2 uppercase tracking-wider">
+                <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
+                <span>Calibration Methodology & Verification Bounds</span>
               </h3>
 
               <div className="text-xs text-slate-300 space-y-2 leading-relaxed">
@@ -332,25 +332,25 @@ export function ConfidenceCalibrationPanel() {
                   <strong>1. Empirical Correctness vs Probability:</strong> Nodexa makes a strict distinction between a confidence label (e.g. HIGH) and mathematical probability. A HIGH confidence prediction means the engine identified consistent supporting operational signals, not that it represents a 90% Bayesian failure probability.
                 </p>
                 <p>
-                  <strong>2. Evaluation Ground Truth Isolation:</strong> Evaluated outcomes are obtained strictly from benchmark ground truth comparisons (<code className="text-cyan-300">evaluation_cases</code>) and verified post-decision verification records (<code className="text-cyan-300">verification_records</code>). Live-injected anomalies without confirmed ground truth remain isolated in the unevaluated count and do not alter the evaluated correctness rate.
+                  <strong>2. Evaluation Ground Truth Isolation:</strong> Evaluated outcomes are obtained strictly from benchmark ground truth comparisons (<code className="text-sky-300">evaluation_cases</code>) and verified post-decision verification records (<code className="text-sky-300">verification_records</code>). Live-injected anomalies without confirmed ground truth remain isolated in the unevaluated count and do not alter the evaluated correctness rate.
                 </p>
                 <p>
                   <strong>3. Numerical Calibration Requirements:</strong> Brier Score and Expected Calibration Error (ECE) are only computed when genuine numerical probabilities exist with at least 5 evaluated outcomes. If observations are sparse or categorical-only, numerical metrics are explicitly marked unavailable rather than manufactured.
                 </p>
               </div>
 
-              <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-mono">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800">
-                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Seeded observations: {data?.source_breakdown.seeded_count || 0}</span>
+              <div className="pt-2 flex flex-wrap items-center gap-2 text-xs font-mono">
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">
+                  <Layers className="w-3 h-3 text-sky-400" />
+                  <span>Seeded observations: <strong className="text-white num-tabular">{data?.source_breakdown.seeded_count || 0}</strong></span>
                 </div>
                 {(data?.source_breakdown.live_injected_count || 0) > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
-                    <Bot className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Live-injected: {data?.source_breakdown.live_injected_count} (Unevaluated)</span>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-sky-950/30 text-sky-300 border border-sky-500/30">
+                    <Bot className="w-3 h-3 text-sky-400" />
+                    <span>Live-injected: <strong className="text-white num-tabular">{data?.source_breakdown.live_injected_count}</strong> (Unevaluated)</span>
                   </div>
                 )}
-                <span className="text-slate-400 ml-auto">
+                <span className="text-slate-400 ml-auto text-[11px]">
                   Version: {data?.methodology_version || "v1.0.0"} | Snapshot: {data?.snapshot_id || "—"}
                 </span>
               </div>

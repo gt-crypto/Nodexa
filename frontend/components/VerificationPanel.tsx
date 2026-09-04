@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   RefreshCw,
   Play,
-  ArrowRight,
   TrendingDown,
   Lock,
   Layers,
@@ -50,57 +49,56 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
         setRecord(res as VerificationRecord);
         setDryRunResult(null);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to execute verification");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification execution failed.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRetry = async () => {
-    if (!record || !record.verification_id) return;
+    if (!record) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await retryVerification(record.verification_id, "Operator manual retry");
+      const res = await retryVerification(record.verification_id);
       setRecord(res);
-    } catch (err: any) {
-      setError(err.message || "Retry failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification retry failed.");
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
     switch (status) {
-      case "VERIFIED":
-      case "PASSED":
+      case "VERIFIED_CLOSED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-medium bg-emerald-950/30 border border-emerald-800/40 text-emerald-300">
             <CheckCircle2 className="w-3.5 h-3.5" /> VERIFIED CLOSED
           </span>
         );
       case "FAILED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-400">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-medium bg-rose-950/30 border border-rose-800/40 text-rose-300">
             <XCircle className="w-3.5 h-3.5" /> VERIFICATION FAILED
           </span>
         );
       case "ESCALATED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-medium bg-amber-950/30 border border-amber-800/40 text-amber-300">
             <AlertTriangle className="w-3.5 h-3.5" /> ESCALATED TO RISK
           </span>
         );
       case "RUNNING":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 animate-pulse">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-medium bg-sky-950/30 border border-sky-800/40 text-sky-300 animate-pulse">
             <RefreshCw className="w-3.5 h-3.5 animate-spin" /> RUNNING CHECKS
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-medium bg-slate-900 text-slate-400 border border-slate-800">
             AWAITING VERIFICATION
           </span>
         );
@@ -116,21 +114,18 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
   });
 
   return (
-    <section className="py-8" id="verification">
-      <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800 relative overflow-hidden">
-        {/* Glow effect */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        {/* Header (Issue 14: H2) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+    <section className="py-2" id="verification">
+      <div className="rounded-xl p-5 sm:p-6 border border-slate-800/80 bg-[#0d121d] shadow-sm relative overflow-hidden">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck className="w-6 h-6 text-teal-400" />
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                Post-Remediation Verification & Self-Verification Engine
+              <ShieldCheck className="w-5 h-5 text-sky-400" />
+              <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight font-sans">
+                Post-Remediation Verification &amp; Self-Verification Engine
               </h2>
             </div>
-            <p className="text-sm text-slate-400">
+            <p className="text-xs text-slate-400">
               Deterministic mathematical verification of financial state changes with zero-trust execution.
             </p>
           </div>
@@ -142,15 +137,15 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
         </div>
 
         {/* Control Bar */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
+        <div className="mt-4 flex flex-col sm:flex-row items-center gap-2.5">
           <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={activeRemId}
               onChange={(e) => setActiveRemId(e.target.value)}
               placeholder="Remediation Plan ID (e.g. act_01)"
-              className="w-full bg-slate-900/90 border border-slate-700/80 rounded-lg pl-9 pr-3 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
+              className="w-full bg-[#090d16] border border-slate-700/80 rounded-lg pl-8 pr-3 h-8 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
             />
           </div>
 
@@ -160,7 +155,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
               variant="secondary"
               onClick={() => handleRunVerification(true)}
               disabled={loading || !activeRemId}
-              icon={<Play className="w-3.5 h-3.5 text-cyan-400" />}
+              icon={<Play className="w-3 h-3 text-sky-400" />}
             >
               Dry Run Verify
             </Button>
@@ -171,9 +166,9 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
               onClick={() => handleRunVerification(false)}
               disabled={loading || !activeRemId}
               loading={loading}
-              icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+              icon={<CheckCircle2 className="w-3 h-3" />}
             >
-              Verify & Close
+              Verify &amp; Close
             </Button>
 
             {record && record.verification_status === "FAILED" && (
@@ -182,7 +177,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                 variant="danger"
                 onClick={handleRetry}
                 disabled={loading}
-                icon={<RefreshCw className="w-3.5 h-3.5" />}
+                icon={<RefreshCw className="w-3 h-3" />}
               >
                 Retry ({record.attempt_number}/3)
               </Button>
@@ -191,7 +186,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
         </div>
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <div className="mt-3 p-2.5 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-center gap-2 font-mono">
             <XCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -199,55 +194,55 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
 
         {/* Metrics Overview */}
         {(record || dryRunResult) && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
             {/* Original Exposure */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span className="text-xs text-slate-400 block mb-1">Original Exposure</span>
-              <div className="text-lg sm:text-xl font-bold font-mono text-white">
+            <div className="p-3 rounded-lg bg-[#090d16] border border-slate-800/80">
+              <span className="text-xs font-medium text-slate-400 font-sans block mb-0.5">Original Exposure</span>
+              <div className="text-base font-bold financial-num text-white">
                 ₹{((record?.original_exposure ?? dryRunResult?.projected_exposure_reduction ?? 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </div>
-              <span className="text-[11px] text-slate-500">Recorded at anomaly diagnosis</span>
+              <span className="text-[10px] text-slate-500 font-sans">Recorded at diagnosis</span>
             </div>
 
             {/* Remaining Exposure */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span className="text-xs text-slate-400 block mb-1">Remaining Exposure</span>
-              <div className="text-lg sm:text-xl font-bold font-mono text-teal-400">
+            <div className="p-3 rounded-lg bg-[#090d16] border border-slate-800/80">
+              <span className="text-xs font-medium text-slate-400 font-sans block mb-0.5">Remaining Exposure</span>
+              <div className="text-base font-bold financial-num text-sky-400">
                 ₹{((record?.remaining_exposure ?? dryRunResult?.projected_remaining_exposure ?? 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </div>
-              <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-                <Lock className="w-3 h-3" /> Target: ₹0.00 minor units
+              <span className="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5 font-sans font-medium">
+                <Lock className="w-2.5 h-2.5" /> Target: ₹0.00 minor units
               </span>
             </div>
 
             {/* Exposure Reduction */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span className="text-xs text-slate-400 block mb-1">Exposure Reduction</span>
-              <div className="text-lg sm:text-xl font-bold font-mono text-emerald-400 flex items-center gap-2">
-                <TrendingDown className="w-5 h-5" />
+            <div className="p-3 rounded-lg bg-[#090d16] border border-slate-800/80">
+              <span className="text-xs font-medium text-slate-400 font-sans block mb-0.5">Exposure Reduction</span>
+              <div className="text-base font-bold text-emerald-400 flex items-center gap-1.5 financial-num">
+                <TrendingDown className="w-4 h-4" />
                 <span>
                   {(((record?.exposure_reduction_bps ?? dryRunResult?.projected_exposure_reduction_bps ?? 0) / 100)).toFixed(2)}%
                 </span>
-                <span className="text-xs font-normal text-slate-400 font-sans">
+                <span className="text-xs font-normal text-slate-400 font-sans num-tabular">
                   ({record?.exposure_reduction_bps ?? dryRunResult?.projected_exposure_reduction_bps ?? 0} bps)
                 </span>
               </div>
-              <span className="text-[11px] text-slate-500">Integer deterministic basis points</span>
+              <span className="text-[10px] text-slate-500 font-sans">Integer basis points</span>
             </div>
           </div>
         )}
 
-        {/* 8 Deterministic Checks Matrix (Issue 15: H3) */}
+        {/* 8 Deterministic Checks Matrix */}
         {(record || dryRunResult) && (
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2 font-mono">
-              <Layers className="w-4 h-4 text-teal-400" />
+          <div className="mt-5">
+            <h3 className="text-xs font-semibold text-white mb-2.5 flex items-center gap-1.5 font-mono uppercase tracking-wider">
+              <Layers className="w-3.5 h-3.5 text-sky-400" />
               <span>Automated check suite (8 deterministic gates)</span>
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
               {[
-                { name: "1. Execution Status", key: "CHECK-EXECUTION-STATUS", desc: "Remediation was executed with snapshots" },
+                { name: "1. Execution Status", key: "CHECK-EXECUTION-STATUS", desc: "Remediation executed with snapshots" },
                 { name: "2. Action State", key: "CHECK-REFUND-STATUS", desc: "Payment status, dispute, or linkage valid" },
                 { name: "3. Exposure Math", key: "CHECK-EXPOSURE-ZERO", desc: "Remaining exposure recalculated = 0" },
                 { name: "4. Invariant Suite", key: "CHECK-INVAR-PROGRESSION", desc: "Ledger progression & debit/credit sanity" },
@@ -262,21 +257,21 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                 return (
                   <div
                     key={gate.key}
-                    className={`p-3 rounded-xl border text-xs ${
+                    className={`p-2.5 rounded-lg border text-xs font-mono ${
                       isPassed
-                        ? "bg-emerald-500/5 border-emerald-500/30 text-slate-300"
-                        : "bg-rose-500/5 border-rose-500/30 text-rose-300"
+                        ? "bg-[#090d16] border-emerald-800/40 text-slate-300"
+                        : "bg-[#090d16] border-rose-800/40 text-rose-300"
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-white">{gate.name}</span>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-semibold text-white text-[11px]">{gate.name}</span>
                       {isPassed ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                       ) : (
-                        <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                        <XCircle className="w-3 h-3 text-rose-400" />
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-tight">{gate.desc}</p>
+                    <p className="text-[10px] text-slate-400 leading-tight">{gate.desc}</p>
                   </div>
                 );
               })}
@@ -284,23 +279,23 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
           </div>
         )}
 
-        {/* Evidence & Invariant Audit Breakdown (Issue 15: H3) */}
+        {/* Evidence & Invariant Audit Breakdown */}
         {evidenceItems.length > 0 && (
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2 font-mono">
-                <Database className="w-4 h-4 text-cyan-400" />
+          <div className="mt-5">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-white flex items-center gap-1.5 font-mono uppercase tracking-wider">
+                <Database className="w-3.5 h-3.5 text-sky-400" />
                 <span>Deterministic verification evidence trail ({filteredEvidence.length})</span>
               </h3>
 
-              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
+              <div className="flex items-center gap-1 bg-[#090d16] border border-slate-800 rounded-md p-0.5 text-xs font-mono">
                 {(["ALL", "PASS", "FAIL"] as const).map((f) => (
                   <button
                     key={f}
                     onClick={() => setSelectedFilter(f)}
-                    className={`px-2.5 py-1 rounded font-medium transition ${
+                    className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
                       selectedFilter === f
-                        ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
+                        ? "bg-sky-950/40 text-sky-300 border border-sky-800/50"
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
@@ -310,41 +305,41 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
+            <div className="overflow-x-auto rounded-lg border border-slate-800/80 bg-[#090d16]">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-mono text-xs bg-slate-950/40">
-                    <th className="py-2.5 px-3">Check ID</th>
-                    <th className="py-2.5 px-3">Source table</th>
-                    <th className="py-2.5 px-3">Expected</th>
-                    <th className="py-2.5 px-3">Actual</th>
-                    <th className="py-2.5 px-3">Status</th>
-                    <th className="py-2.5 px-3">Explanation</th>
+                  <tr className="border-b border-slate-800 text-slate-400 font-sans font-semibold text-[11px] uppercase tracking-wider bg-[#070a10]">
+                    <th className="py-2 px-3">Check ID</th>
+                    <th className="py-2 px-3">Source table</th>
+                    <th className="py-2 px-3">Expected</th>
+                    <th className="py-2 px-3">Actual</th>
+                    <th className="py-2 px-3">Status</th>
+                    <th className="py-2 px-3">Explanation</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
+                <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
                   {filteredEvidence.map((ev, idx) => (
-                    <tr key={idx} className="hover:bg-slate-800/30 transition">
-                      <td className="py-2 px-3 text-slate-300 font-medium">{ev.check_id}</td>
-                      <td className="py-2 px-3 text-slate-400">{ev.source_table}</td>
-                      <td className="py-2 px-3 text-slate-300">
+                    <tr key={idx} className="hover:bg-slate-800/20 transition-colors">
+                      <td className="py-1.5 px-3 text-slate-300 font-medium">{ev.check_id}</td>
+                      <td className="py-1.5 px-3 text-slate-400">{ev.source_table}</td>
+                      <td className="py-1.5 px-3 text-slate-300">
                         {typeof ev.expected_value === "object"
                           ? JSON.stringify(ev.expected_value)
                           : String(ev.expected_value)}
                       </td>
-                      <td className="py-2 px-3 text-slate-300">
+                      <td className="py-1.5 px-3 text-slate-300">
                         {typeof ev.actual_value === "object"
                           ? JSON.stringify(ev.actual_value)
                           : String(ev.actual_value)}
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-1.5 px-3">
                         {ev.result === "PASS" ? (
                           <span className="text-emerald-400 font-semibold">PASS</span>
                         ) : (
                           <span className="text-rose-400 font-semibold">FAIL</span>
                         )}
                       </td>
-                      <td className="py-2 px-3 font-sans text-slate-400 max-w-xs truncate">
+                      <td className="py-1.5 px-3 font-sans text-slate-400 max-w-xs truncate">
                         {ev.explanation}
                       </td>
                     </tr>

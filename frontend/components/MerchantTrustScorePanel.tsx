@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import {
   Building2,
   Shield,
-  ShieldAlert,
   AlertCircle,
   TrendingUp,
   RefreshCcw,
@@ -45,48 +44,37 @@ export function MerchantTrustScorePanel() {
     }
   };
 
-  const getBandColor = (band: string) => {
-    switch (band) {
-      case "EXCELLENT": return "text-emerald-400 bg-emerald-400/10 border-emerald-400/30";
-      case "HEALTHY": return "text-teal-400 bg-teal-400/10 border-teal-400/30";
-      case "WATCH": return "text-amber-400 bg-amber-400/10 border-amber-400/30";
-      case "HIGH_RISK": return "text-orange-400 bg-orange-400/10 border-orange-400/30";
-      case "CRITICAL": return "text-rose-400 bg-rose-400/10 border-rose-400/30";
-      default: return "text-slate-400 bg-slate-400/10 border-slate-400/30";
-    }
-  };
-
   const selectedScore = scores.find(s => s.merchant_id === selectedMerchantId);
 
   return (
     <section id="merchants" className="w-full">
-      <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl relative overflow-hidden">
-        {/* Section Header (Issue 3 & 14) */}
+      <div className="rounded-xl p-5 sm:p-6 border border-slate-800/80 bg-[#0d121d] shadow-sm relative overflow-hidden">
+        {/* Section Header */}
         <SectionHeading
-          icon={<Building2 className="w-6 h-6 text-teal-400" />}
-          title="Merchant Trust & Impact Scorecards"
+          icon={<Building2 className="w-5 h-5 text-sky-400" />}
+          title="Merchant Trust &amp; Impact Scorecards"
           badge={{
             text: "Tier-2 Merchant Intelligence",
-            icon: <Shield className="w-3.5 h-3.5 text-teal-400" />,
-            color: "bg-teal-500/10 border-teal-500/30 text-teal-300",
+            icon: <Shield className="w-3 h-3 text-sky-400" />,
+            color: "bg-sky-950/30 border-sky-800/40 text-sky-300",
           }}
-          description="Deterministic risk & operational impact analytics for merchants participating in nodal transaction clearing."
+          description="Deterministic risk &amp; operational impact analytics for merchants participating in nodal transaction clearing."
         />
 
         {error && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm mb-6">
+          <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs mb-5">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left: Merchant List */}
-          <div className="glass-panel border border-slate-800/80 rounded-xl overflow-hidden flex flex-col h-[520px]">
-            {/* Search and List Header (Issues 15 & 20: Sentence-case & Adjacent Refresh Button) */}
-            <div className="p-3.5 border-b border-slate-800/80 bg-slate-900/40 space-y-2.5">
+          <div className="border border-slate-800/80 bg-[#090d16] rounded-xl overflow-hidden flex flex-col h-[520px]">
+            {/* Search and List Header */}
+            <div className="p-3 border-b border-slate-800/80 bg-[#070a10] space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-2 font-mono">
-                  <Building2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-1.5 font-mono">
+                  <Building2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                   <span>Analyzed merchants ({scores.filter(s => s.merchant_id.toLowerCase().includes(searchQuery.toLowerCase())).length})</span>
                 </h3>
                 <Button
@@ -96,34 +84,34 @@ export function MerchantTrustScorePanel() {
                   disabled={loading}
                   title="Refresh analyzed merchant scores"
                   aria-label="Refresh analyzed merchant scores"
-                  icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />}
+                  icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-sky-400" : ""}`} />}
                 >
                   Refresh
                 </Button>
               </div>
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter merchants by ID..."
                   aria-label="Filter analyzed merchants by ID"
-                  className="w-full h-8 pl-8 pr-3 text-xs font-mono bg-slate-950/70 border border-slate-800 rounded-lg text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500/40 focus:border-teal-500/50"
+                  className="w-full h-8 pl-8 pr-2.5 text-xs font-mono bg-[#0d121d] border border-slate-800 rounded-lg text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500/50 focus:border-sky-500/50"
                 />
               </div>
             </div>
             
-            {/* Scrollable Merchant List Container (Issue 18: Visible scrollbar & discoverability) */}
+            {/* Scrollable Merchant List Container */}
             <div
-              className="flex-1 overflow-y-auto p-2 space-y-2 sidebar-scrollbar"
+              className="flex-1 overflow-y-auto p-2 space-y-1.5 sidebar-scrollbar"
               tabIndex={0}
               aria-label="Analyzed merchants scrollable list"
             >
               {loading && scores.length === 0 ? (
-                <div className="p-4 text-center text-sm text-slate-400">Loading merchant scores...</div>
+                <div className="p-4 text-center text-xs text-slate-400 font-mono">Loading merchant scores...</div>
               ) : scores.length === 0 ? (
-                <div className="p-4 text-center text-sm text-slate-400">No merchant activity found.</div>
+                <div className="p-4 text-center text-xs text-slate-400 font-mono">No merchant activity found.</div>
               ) : (
                 scores
                   .filter((s) => s.merchant_id.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -131,19 +119,19 @@ export function MerchantTrustScorePanel() {
                     <button
                       key={score.merchant_id}
                       onClick={() => setSelectedMerchantId(score.merchant_id)}
-                      className={`w-full text-left p-3 rounded-xl border transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${
+                      className={`w-full text-left p-2.5 rounded-lg border transition-colors cursor-pointer focus:outline-none ${
                         selectedMerchantId === score.merchant_id
-                          ? "bg-teal-500/15 border-teal-500/50 shadow-sm ring-1 ring-teal-500/30"
-                          : "bg-slate-900/40 border-slate-800/60 hover:bg-slate-800/60"
+                          ? "bg-sky-950/40 border-sky-800/60 shadow-sm"
+                          : "bg-[#0d121d] border-slate-800/80 hover:border-slate-700"
                       }`}
                     >
-                      <div className="flex justify-between items-start mb-2 gap-2">
+                      <div className="flex justify-between items-start mb-1.5 gap-2">
                         <div className="min-w-0 flex-1">
                           <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
                             Merchant ID
                           </span>
                           <span
-                            className="font-mono text-xs font-bold text-white truncate block select-all"
+                            className="font-mono text-xs font-medium text-white truncate block select-all"
                             title={score.merchant_id}
                           >
                             {score.merchant_id}
@@ -151,24 +139,24 @@ export function MerchantTrustScorePanel() {
                         </div>
                         <StatusBadge status={score.score_band} size="sm" />
                       </div>
-                      {/* Compact Grouped Metrics with Prominent Scores (Finding C7) */}
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 font-mono">
-                        <div className="bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex flex-col justify-center">
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-0.5">
-                            <Shield className="w-3 h-3 text-teal-400 shrink-0" />
+                      {/* Compact Grouped Metrics with Prominent Scores */}
+                      <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-slate-800/60 font-mono">
+                        <div className="bg-[#090d16] px-2 py-1 rounded border border-slate-800 flex flex-col justify-center">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
+                            <Shield className="w-2.5 h-2.5 text-sky-400 shrink-0" />
                             <span>Trust</span>
                           </div>
-                          <div className="text-sm font-bold text-white">
-                            {score.trust_score}<span className="text-[11px] text-slate-400 font-normal">/100</span>
+                          <div className="text-xs font-bold text-white num-tabular">
+                            {score.trust_score}<span className="text-[10px] text-slate-400 font-normal">/100</span>
                           </div>
                         </div>
-                        <div className="bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex flex-col justify-center">
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-0.5">
-                            <TrendingUp className="w-3 h-3 text-amber-400 shrink-0" />
+                        <div className="bg-[#090d16] px-2 py-1 rounded border border-slate-800 flex flex-col justify-center">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
+                            <TrendingUp className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                             <span>Impact</span>
                           </div>
-                          <div className="text-sm font-bold text-white">
-                            {score.impact_score}<span className="text-[11px] text-slate-400 font-normal">/100</span>
+                          <div className="text-xs font-bold text-white num-tabular">
+                            {score.impact_score}<span className="text-[10px] text-slate-400 font-normal">/100</span>
                           </div>
                         </div>
                       </div>
@@ -179,17 +167,17 @@ export function MerchantTrustScorePanel() {
           </div>
 
           {/* Right: Selected Merchant Detail */}
-          <div className="lg:col-span-2 glass-panel border border-slate-800/80 rounded-xl overflow-hidden flex flex-col h-[520px]">
+          <div className="lg:col-span-2 border border-slate-800/80 bg-[#090d16] rounded-xl overflow-hidden flex flex-col h-[520px]">
             {selectedScore ? (
               <>
                 {/* Header */}
-                <div className="p-6 border-b border-slate-800/80 bg-slate-900/40 flex flex-wrap justify-between items-center gap-4">
+                <div className="p-4 border-b border-slate-800/80 bg-[#070a10] flex flex-wrap justify-between items-center gap-3">
                   <div>
-                    <span className="text-xs font-mono text-slate-400 block mb-0.5">Merchant profile</span>
+                    <span className="text-[10px] font-mono text-slate-400 block mb-0.5">Merchant profile</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Merchant ID:</span>
+                      <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">ID:</span>
                       <h3
-                        className="text-lg font-bold text-white font-mono select-all truncate max-w-md"
+                        className="text-base font-bold text-white font-mono select-all truncate max-w-md"
                         title={selectedScore.merchant_id}
                       >
                         {selectedScore.merchant_id}
@@ -197,65 +185,65 @@ export function MerchantTrustScorePanel() {
                     </div>
                   </div>
 
-                  <div className="flex gap-4">
-                    {/* Trust Score Box (Issue 17: Prominent readable labels) */}
-                    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-center min-w-[110px]">
-                      <div className="text-sm font-semibold text-slate-200 mb-1 font-mono">Trust score</div>
-                      <div className="text-2xl font-mono font-bold text-white mb-1.5">{selectedScore.trust_score}</div>
+                  <div className="flex gap-2.5">
+                    {/* Trust Score Box */}
+                    <div className="bg-[#0d121d] border border-slate-800 rounded-lg p-2.5 text-center min-w-[95px]">
+                      <div className="text-xs font-medium text-slate-300 mb-0.5 font-mono">Trust score</div>
+                      <div className="text-xl font-mono font-bold text-white mb-1 num-tabular">{selectedScore.trust_score}</div>
                       <StatusBadge status={selectedScore.score_band} size="sm" />
                     </div>
 
-                    {/* Impact Score Box (Issues 8 & 17: Unified TrendingUp icon & prominent labels) */}
-                    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-center min-w-[110px]">
-                      <div className="text-sm font-semibold text-slate-200 mb-1 font-mono">Impact score</div>
-                      <div className="text-2xl font-mono font-bold text-white mb-1.5">{selectedScore.impact_score}</div>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 inline-flex items-center gap-1 font-mono font-medium">
-                        <TrendingUp className="w-3 h-3 text-amber-400" />
-                        Operational impact
+                    {/* Impact Score Box */}
+                    <div className="bg-[#0d121d] border border-slate-800 rounded-lg p-2.5 text-center min-w-[95px]">
+                      <div className="text-xs font-medium text-slate-300 mb-0.5 font-mono">Impact score</div>
+                      <div className="text-xl font-mono font-bold text-amber-400 mb-1 num-tabular">{selectedScore.impact_score}</div>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/30 border border-amber-800/40 text-amber-300 inline-flex items-center gap-1 font-mono font-medium">
+                        <TrendingUp className="w-2.5 h-2.5 text-amber-400" />
+                        Impact
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Body */}
-                <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Metrics (Issue 15: H3) */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 font-mono">
+                <div className="p-4 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 sidebar-scrollbar">
+                  {/* Metrics */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-semibold text-slate-200 border-b border-slate-800 pb-1.5 font-sans uppercase tracking-wider">
                       Operational metrics
                     </h3>
                     
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-slate-900/50 rounded-xl p-3.5 border border-slate-800/60">
-                        <div className="text-xs text-slate-400 mb-1 font-mono">Total exceptions</div>
-                        <div className="text-lg font-bold text-slate-200 font-mono">{selectedScore.metrics.exception_count}</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-[#0d121d] rounded-lg p-3 border border-slate-800/80">
+                        <div className="text-[11px] text-slate-400 mb-0.5 font-sans font-medium">Total exceptions</div>
+                        <div className="text-base font-bold text-slate-200 financial-num">{selectedScore.metrics.exception_count}</div>
                       </div>
-                      <div className="bg-slate-900/50 rounded-xl p-3.5 border border-slate-800/60">
-                        <div className="text-xs text-slate-400 mb-1 font-mono">High-risk cases</div>
-                        <div className="text-lg font-bold text-rose-400 font-mono">{selectedScore.metrics.high_risk_exception_count}</div>
+                      <div className="bg-[#0d121d] rounded-lg p-3 border border-slate-800/80">
+                        <div className="text-[11px] text-slate-400 mb-0.5 font-sans font-medium">High-risk cases</div>
+                        <div className="text-base font-bold text-rose-400 financial-num">{selectedScore.metrics.high_risk_exception_count}</div>
                       </div>
-                      <div className="bg-slate-900/50 rounded-xl p-3.5 border border-slate-800/60">
-                        <div className="text-xs text-slate-400 mb-1 font-mono">Pattern clusters</div>
-                        <div className="text-lg font-bold text-amber-400 font-mono">{selectedScore.metrics.recurring_pattern_count}</div>
+                      <div className="bg-[#0d121d] rounded-lg p-3 border border-slate-800/80">
+                        <div className="text-[11px] text-slate-400 mb-0.5 font-sans font-medium">Pattern clusters</div>
+                        <div className="text-base font-bold text-amber-400 financial-num">{selectedScore.metrics.recurring_pattern_count}</div>
                       </div>
-                      <div className="bg-slate-900/50 rounded-xl p-3.5 border border-slate-800/60">
-                        <div className="text-xs text-slate-400 mb-1 font-mono">Total exposure</div>
-                        <div className="text-lg font-bold text-teal-400 font-mono">
+                      <div className="bg-[#0d121d] rounded-lg p-3 border border-slate-800/80">
+                        <div className="text-[11px] text-slate-400 mb-0.5 font-sans font-medium">Total exposure</div>
+                        <div className="text-base font-bold text-emerald-400 financial-num">
                           ₹{(selectedScore.metrics.total_exposure / 100).toLocaleString("en-IN", {minimumFractionDigits: 2})}
                         </div>
                       </div>
 
-                      {/* Integrated Base Volume Metric Card (Issue 21) */}
+                      {/* Integrated Base Volume Metric Card */}
                       {selectedScore.metrics.total_transaction_count > 0 && (
-                        <div className="col-span-2 bg-slate-900/50 rounded-xl p-3.5 border border-slate-800/60 flex items-center justify-between">
+                        <div className="col-span-2 bg-[#0d121d] rounded-lg p-3 border border-slate-800/80 flex items-center justify-between">
                           <div>
-                            <div className="text-xs text-slate-400 font-mono">Base volume</div>
+                            <div className="text-[11px] text-slate-400 font-mono">Base volume</div>
                             <div className="text-xs font-mono text-slate-200 mt-0.5">
                               {selectedScore.metrics.total_transaction_count.toLocaleString("en-US")} transactions
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-bold text-slate-100 font-mono">
+                            <div className="text-xs font-bold text-slate-100 font-mono num-tabular">
                               ₹{(selectedScore.metrics.total_transaction_volume / 100).toLocaleString("en-IN", {minimumFractionDigits: 2})}
                             </div>
                             <div className="text-[10px] text-slate-400 font-mono">Clearing volume</div>
@@ -265,37 +253,36 @@ export function MerchantTrustScorePanel() {
                     </div>
                   </div>
 
-                  {/* Factors (Issue 15: H3) */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 font-mono">
+                  {/* Factors */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-semibold text-slate-200 border-b border-slate-800 pb-1.5 font-mono uppercase tracking-wider">
                       Determinant factors
                     </h3>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {selectedScore.factors.map((factor, idx) => (
-                        <div key={idx} className="flex gap-3 items-start bg-slate-900/40 p-3 rounded-lg border border-slate-800/40">
+                        <div key={idx} className="flex gap-2.5 items-start bg-[#0d121d] p-2.5 rounded-lg border border-slate-800/80">
                           {factor.factor === "FINANCIAL_EXPOSURE" ? (
-                            <Activity className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                            <Activity className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
                           ) : factor.direction === "POSITIVE" ? (
-                            <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
                           ) : factor.direction === "NEGATIVE" ? (
-                            <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
+                            <AlertCircle className="w-3.5 h-3.5 text-rose-400 mt-0.5 shrink-0" />
                           ) : (
-                            <Activity className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                            <Activity className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
                           )}
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              {/* Sentence case determinant factors (Issue 19) */}
-                              <span className="text-xs font-semibold text-slate-200">{toSentenceCase(factor.factor)}</span>
-                              <span className={`text-xs font-mono px-2 py-0.5 rounded ${
-                                factor.contribution < 0 ? 'bg-rose-500/10 text-rose-400' :
-                                factor.contribution > 0 ? 'bg-amber-500/10 text-amber-400' :
-                                'bg-slate-500/10 text-slate-400'
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-xs font-medium text-slate-200">{toSentenceCase(factor.factor)}</span>
+                              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                                factor.contribution < 0 ? 'bg-rose-950/30 text-rose-400 border border-rose-900/40' :
+                                factor.contribution > 0 ? 'bg-amber-950/30 text-amber-400 border border-amber-900/40' :
+                                'bg-slate-800 text-slate-400 border border-slate-700'
                               }`}>
                                 {factor.contribution > 0 ? '+' : ''}{factor.contribution} pts
                               </span>
                             </div>
-                            <p className="text-xs text-slate-400 leading-relaxed">{factor.explanation}</p>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">{factor.explanation}</p>
                           </div>
                         </div>
                       ))}
@@ -304,9 +291,9 @@ export function MerchantTrustScorePanel() {
                 </div>
               </>
             ) : (
-              <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center h-full">
-                <Building2 className="w-12 h-12 text-slate-600 mb-2" />
-                <p>Select a merchant from the list to view trust & impact scorecard.</p>
+              <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center h-full font-mono text-xs">
+                <Building2 className="w-8 h-8 text-slate-600 mb-2" />
+                <p>Select a merchant from the list to view trust &amp; impact scorecard.</p>
               </div>
             )}
           </div>

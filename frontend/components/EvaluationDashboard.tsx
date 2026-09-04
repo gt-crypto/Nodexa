@@ -167,14 +167,14 @@ export const EvaluationDashboard: React.FC = () => {
             {/* Overall Score */}
             <div className="bg-slate-950/70 border border-slate-800 p-4 rounded-xl relative overflow-hidden">
               <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-sans">
                   Overall Benchmark Score
                 </span>
-                <Sparkles className="w-4 h-4 text-indigo-400" />
+                <Sparkles className="w-4 h-4 text-sky-400" />
               </div>
               <div className="mt-2 flex items-baseline gap-2">
                 <span
-                  className={`text-3xl font-extrabold ${
+                  className={`text-3xl font-bold financial-num ${
                     report.run.overall_score >= 80
                       ? "text-emerald-400"
                       : report.run.overall_score >= 60
@@ -184,11 +184,11 @@ export const EvaluationDashboard: React.FC = () => {
                 >
                   {report.run.overall_score}
                 </span>
-                <span className="text-xs text-slate-500">/ 100</span>
+                <span className="text-xs text-slate-400 font-sans">/ 100</span>
               </div>
               <div className="mt-2.5 w-full bg-slate-900 border border-slate-700/60 rounded-full h-2.5 overflow-hidden p-0.5">
                 <div
-                  className="bg-gradient-to-r from-indigo-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-sky-500 to-cyan-400 h-full rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(report.run.overall_score, 100)}%` }}
                 />
               </div>
@@ -197,20 +197,20 @@ export const EvaluationDashboard: React.FC = () => {
             {/* Precision & Recall */}
             <div className="bg-slate-950/70 border border-slate-800 p-4 rounded-xl">
               <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-sans">
                   Precision / Recall
                 </span>
-                <Target className="w-4 h-4 text-blue-400" />
+                <Target className="w-4 h-4 text-sky-400" />
               </div>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-blue-400">
+                <span className="text-2xl font-bold text-sky-400 financial-num">
                   {(report.run.precision * 100).toFixed(1)}%
                 </span>
                 <span className="text-xs text-slate-500">
-                  / {(report.run.recall * 100).toFixed(1)}%
+                  / <span className="financial-num">{(report.run.recall * 100).toFixed(1)}%</span>
                 </span>
               </div>
-              <div className="mt-1 text-xs text-slate-400 font-mono">
+              <div className="mt-1 text-xs text-slate-400 font-sans num-tabular">
                 {report.run.precision_bps} bps / {report.run.recall_bps} bps
               </div>
             </div>
@@ -218,20 +218,20 @@ export const EvaluationDashboard: React.FC = () => {
             {/* F1 Score */}
             <div className="bg-slate-950/70 border border-slate-800 p-4 rounded-xl">
               <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-sans">
                   F1 Metric
                 </span>
-                <BarChart3 className="w-4 h-4 text-purple-400" />
+                <BarChart3 className="w-4 h-4 text-cyan-400" />
               </div>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-purple-400">
+                <span className="text-2xl font-bold text-cyan-300 financial-num">
                   {(report.run.f1_score * 100).toFixed(1)}%
                 </span>
-                <span className="text-xs text-purple-300/70 font-mono">
+                <span className="text-xs text-cyan-300/70 font-sans num-tabular">
                   ({report.run.f1_score_bps} bps)
                 </span>
               </div>
-              <div className="mt-1 text-xs text-slate-400">
+              <div className="mt-1 text-xs text-slate-400 font-sans num-tabular">
                 TP: {report.run.true_positives} | FP: {report.run.false_positives} | FN:{" "}
                 {report.run.false_negatives}
               </div>
@@ -240,20 +240,20 @@ export const EvaluationDashboard: React.FC = () => {
             {/* Financial Exposure Accuracy */}
             <div className="bg-slate-950/70 border border-slate-800 p-4 rounded-xl">
               <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-sans">
                   Exposure Exact Match
                 </span>
                 <Coins className="w-4 h-4 text-amber-400" />
               </div>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-amber-400">
+                <span className="text-2xl font-bold text-amber-400 financial-num">
                   {(report.exposure_accuracy.exact_match_rate * 100).toFixed(1)}%
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 num-tabular font-sans">
                   ({report.exposure_accuracy.exact_matches}/{report.exposure_accuracy.total_evaluated})
                 </span>
               </div>
-              <div className="mt-1 text-xs text-slate-400 font-mono">
+              <div className="mt-1 text-xs text-slate-400 font-sans num-tabular">
                 MAE: {formatPaise(report.exposure_accuracy.mean_absolute_error)}
               </div>
             </div>
@@ -267,7 +267,7 @@ export const EvaluationDashboard: React.FC = () => {
               }`}
             >
               <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold uppercase tracking-wider">
+                <span className="text-[11px] font-semibold uppercase tracking-wider font-sans">
                   Critical Safety Gate
                 </span>
                 {report.run.safety_status === "PASSED" ? (
@@ -276,10 +276,10 @@ export const EvaluationDashboard: React.FC = () => {
                   <ShieldAlert className="w-5 h-5 text-rose-400" />
                 )}
               </div>
-              <div className="mt-2 text-xl font-bold tracking-wider">
+              <div className="mt-2 text-xl font-bold font-sans tracking-wide">
                 {report.run.safety_status}
               </div>
-              <div className="mt-1 text-xs opacity-80">
+              <div className="mt-1 text-xs opacity-80 font-sans num-tabular">
                 False Closures: {report.false_closure_count} (0 Required)
               </div>
             </div>
@@ -463,38 +463,38 @@ export const EvaluationDashboard: React.FC = () => {
           {/* Tab 2: Detection by Type */}
           {activeTab === "detection" && (
             <div className="bg-slate-950/60 border border-slate-800 rounded-xl overflow-hidden">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-900/80 text-xs uppercase text-slate-400 border-b border-slate-800 font-mono">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-900/80 text-[11px] uppercase text-slate-400 border-b border-slate-800 font-semibold font-sans tracking-wider">
                   <tr>
-                    <th className="px-4 py-3">Anomaly Category</th>
-                    <th className="px-4 py-3">Expected</th>
-                    <th className="px-4 py-3">Predicted</th>
-                    <th className="px-4 py-3">TP</th>
-                    <th className="px-4 py-3">FP</th>
-                    <th className="px-4 py-3">FN</th>
-                    <th className="px-4 py-3">Precision</th>
-                    <th className="px-4 py-3">Recall</th>
-                    <th className="px-4 py-3">F1 Score</th>
+                    <th className="px-4 py-3 text-left">Anomaly Category</th>
+                    <th className="px-4 py-3 text-right">Expected</th>
+                    <th className="px-4 py-3 text-right">Predicted</th>
+                    <th className="px-4 py-3 text-right">TP</th>
+                    <th className="px-4 py-3 text-right">FP</th>
+                    <th className="px-4 py-3 text-right">FN</th>
+                    <th className="px-4 py-3 text-right">Precision</th>
+                    <th className="px-4 py-3 text-right">Recall</th>
+                    <th className="px-4 py-3 text-right">F1 Score</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {Object.entries(report.detection_by_type || {}).map(([name, m]) => (
                     <tr key={name} className="hover:bg-slate-900/40">
-                      <td className="px-4 py-3 font-medium text-slate-200 font-mono text-xs">
+                      <td className="px-4 py-3 font-medium text-slate-200 font-mono text-xs text-left">
                         {name}
                       </td>
-                      <td className="px-4 py-3 text-slate-400">{m.expected_count}</td>
-                      <td className="px-4 py-3 text-slate-400">{m.predicted_count}</td>
-                      <td className="px-4 py-3 text-emerald-400 font-semibold">{m.true_positives}</td>
-                      <td className="px-4 py-3 text-rose-400">{m.false_positives}</td>
-                      <td className="px-4 py-3 text-amber-400">{m.false_negatives}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-blue-300">
+                      <td className="px-4 py-3 text-slate-400 text-right num-tabular">{m.expected_count}</td>
+                      <td className="px-4 py-3 text-slate-400 text-right num-tabular">{m.predicted_count}</td>
+                      <td className="px-4 py-3 text-emerald-400 font-semibold text-right num-tabular">{m.true_positives}</td>
+                      <td className="px-4 py-3 text-rose-400 text-right num-tabular">{m.false_positives}</td>
+                      <td className="px-4 py-3 text-amber-400 text-right num-tabular">{m.false_negatives}</td>
+                      <td className="px-4 py-3 text-xs text-sky-300 text-right font-medium num-tabular">
                         {(m.precision * 100).toFixed(1)}%
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-blue-300">
+                      <td className="px-4 py-3 text-xs text-sky-300 text-right font-medium num-tabular">
                         {(m.recall * 100).toFixed(1)}%
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs font-bold text-purple-300">
+                      <td className="px-4 py-3 text-xs font-semibold text-purple-300 text-right num-tabular">
                         {(m.f1_score * 100).toFixed(1)}%
                       </td>
                     </tr>
@@ -624,15 +624,15 @@ export const EvaluationDashboard: React.FC = () => {
 
               <div className="bg-slate-950/60 border border-slate-800 rounded-xl overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900/80 uppercase text-slate-400 border-b border-slate-800 font-mono">
+                  <thead className="bg-slate-900/80 uppercase text-slate-400 border-b border-slate-800 font-semibold font-sans tracking-wider text-[11px]">
                     <tr>
                       <th className="px-3 py-2.5">Case ID</th>
                       <th className="px-3 py-2.5">Predicted Exception</th>
                       <th className="px-3 py-2.5">Status</th>
                       <th className="px-3 py-2.5">Matched By</th>
-                      <th className="px-3 py-2.5">Expected Exposure</th>
-                      <th className="px-3 py-2.5">Predicted Exposure</th>
-                      <th className="px-3 py-2.5">Error Delta</th>
+                      <th className="px-3 py-2.5 text-right">Expected Exposure</th>
+                      <th className="px-3 py-2.5 text-right">Predicted Exposure</th>
+                      <th className="px-3 py-2.5 text-right">Error Delta</th>
                       <th className="px-3 py-2.5">Error Tags</th>
                     </tr>
                   </thead>
@@ -661,14 +661,14 @@ export const EvaluationDashboard: React.FC = () => {
                         <td className="px-3 py-2.5 text-slate-400 font-mono text-xs">
                           {c.matched_by}
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-slate-300">
+                        <td className="px-3 py-2.5 text-right text-slate-300 font-medium num-tabular">
                           {formatPaise(c.expected_exposure)}
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-slate-300">
+                        <td className="px-3 py-2.5 text-right text-slate-300 font-medium num-tabular">
                           {formatPaise(c.predicted_exposure)}
                         </td>
                         <td
-                          className={`px-3 py-2.5 font-mono font-semibold ${
+                          className={`px-3 py-2.5 text-right font-semibold num-tabular ${
                             c.exposure_error === 0 ? "text-emerald-400" : "text-amber-400"
                           }`}
                         >

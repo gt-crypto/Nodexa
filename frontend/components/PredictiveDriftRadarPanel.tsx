@@ -71,14 +71,17 @@ export function PredictiveDriftRadarPanel() {
   const getRiskBandBadge = (band: string) => {
     switch (band) {
       case "CRITICAL":
-        return "bg-rose-500/15 border-rose-500/40 text-rose-300";
+        return "bg-rose-950/40 border-rose-800/50 text-rose-300";
       case "HIGH":
-        return "bg-orange-500/15 border-orange-500/40 text-orange-300";
-      case "MODERATE":
-        return "bg-amber-500/15 border-amber-500/40 text-amber-300";
+        return "bg-rose-950/30 border-rose-800/40 text-rose-300";
+      case "ELEVATED":
+        return "bg-orange-950/30 border-orange-800/40 text-orange-300";
+      case "WATCH":
+        return "bg-amber-950/30 border-amber-800/40 text-amber-300";
       case "LOW":
+      case "STABLE":
       default:
-        return "bg-emerald-500/15 border-emerald-500/40 text-emerald-300";
+        return "bg-emerald-950/30 border-emerald-800/40 text-emerald-300";
     }
   };
 
@@ -86,37 +89,34 @@ export function PredictiveDriftRadarPanel() {
     switch (dir) {
       case "DETERIORATING":
         return {
-          icon: <ArrowUpRight className="w-4 h-4 text-rose-400" />,
-          style: "bg-rose-500/15 border-rose-500/40 text-rose-300",
+          icon: <ArrowUpRight className="w-3.5 h-3.5 text-rose-400" />,
+          style: "bg-rose-950/40 border-rose-800/50 text-rose-300",
         };
       case "IMPROVING":
         return {
-          icon: <ArrowDownRight className="w-4 h-4 text-emerald-400" />,
-          style: "bg-emerald-500/15 border-emerald-500/40 text-emerald-300",
+          icon: <ArrowDownRight className="w-3.5 h-3.5 text-emerald-400" />,
+          style: "bg-emerald-950/30 border-emerald-800/40 text-emerald-300",
         };
       case "STABLE":
       default:
         return {
-          icon: <Minus className="w-4 h-4 text-slate-400" />,
-          style: "bg-slate-800 border-slate-700 text-slate-300",
+          icon: <Minus className="w-3.5 h-3.5 text-slate-400" />,
+          style: "bg-slate-900 border-slate-800 text-slate-300",
         };
     }
   };
 
   return (
-    <section id="drift" className="w-full">
-      <div className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800/90 shadow-2xl relative overflow-hidden">
-        {/* Glow Accent */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Section Header (Issue 3 & 14) */}
+    <section id="drift-radar" className="w-full">
+      <div className="rounded-xl p-5 sm:p-6 border border-slate-800/80 bg-[#0d121d] shadow-sm relative overflow-hidden">
+        {/* Section Header */}
         <SectionHeading
-          icon={<Radar className="w-6 h-6 text-rose-400 animate-pulse" />}
+          icon={<Radar className="w-5 h-5 text-sky-400" />}
           title="Predictive Nodal Drift Radar"
           badge={{
-            text: "Tier-3 Predictive Analytics (v2.0 Early-Warning Radar)",
-            icon: <Activity className="w-3.5 h-3.5 text-rose-400" />,
-            color: "bg-rose-500/10 border-rose-500/30 text-rose-300",
+            text: "Tier-2 Predictive Control",
+            icon: <Activity className="w-3 h-3 text-sky-400" />,
+            color: "bg-sky-950/30 border-sky-800/40 text-sky-300",
           }}
           description="Deterministic early-warning detection monitoring leading signals of operational and control deterioration across nodal accounts before SLA breaches occur."
           action={
@@ -125,7 +125,7 @@ export function PredictiveDriftRadarPanel() {
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowDetails(!showDetails)}
-                icon={<Info className="w-3.5 h-3.5 text-cyan-400" />}
+                icon={<Info className="w-3.5 h-3.5 text-sky-400" />}
               >
                 <span>{showDetails ? "Hide details" : "Window details"}</span>
                 {showDetails ? (
@@ -141,49 +141,49 @@ export function PredictiveDriftRadarPanel() {
                 disabled={loading}
                 title="Refresh drift radar"
                 aria-label="Refresh drift radar"
-                icon={<RefreshCcw className={`w-4 h-4 ${loading ? "animate-spin text-rose-400" : ""}`} />}
+                icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-sky-400" : ""}`} />}
               />
             </div>
           }
         />
 
         {/* Panel Body */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {error && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 shrink-0 text-rose-400" />
+            <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Insufficient Data State */}
           {data && data.direction === "INSUFFICIENT_DATA" ? (
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-amber-500/30 text-center space-y-3">
-              <HelpCircle className="w-12 h-12 text-amber-400 mx-auto opacity-75" />
-              <h3 className="text-lg font-bold text-white">Insufficient temporal baseline observations</h3>
-              <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+            <div className="p-6 rounded-xl bg-[#090d16] border border-amber-800/40 text-center space-y-2.5">
+              <HelpCircle className="w-8 h-8 text-amber-400 mx-auto opacity-75" />
+              <h3 className="text-sm font-bold text-white font-sans">Insufficient temporal baseline observations</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
                 Predictive drift estimation requires multiple historical observation windows. As continuous operational transactions flow into the nodal account, the radar will activate automatically.
               </p>
             </div>
           ) : (
             <>
               {/* Radar Hero Metrics Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {/* Score Card */}
-                <div className="md:col-span-1 p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950 border border-slate-800 flex flex-col justify-between shadow-inner">
+                <div className="md:col-span-1 p-4 rounded-xl bg-[#090d16] border border-slate-800/80 flex flex-col justify-between">
                   <div>
-                    <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                      Nodal drift score
+                    <div className="text-[11px] font-sans font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                      Nodal Drift Score
                     </div>
-                    <div className="flex items-baseline gap-2 mt-2">
-                      <span className="text-4xl sm:text-5xl font-extrabold text-white font-mono">
+                    <div className="flex items-baseline gap-1.5 mt-1.5">
+                      <span className="text-3xl sm:text-4xl font-bold text-white financial-num">
                         {data?.drift_score ?? 0}
                       </span>
-                      <span className="text-slate-500 font-mono text-xs">/ 100</span>
+                      <span className="text-slate-400 font-sans text-xs">/ 100</span>
                     </div>
-                    <div className="mt-3">
+                    <div className="mt-2.5">
                       <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-mono font-bold border ${getRiskBandBadge(
+                        className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-medium font-sans border ${getRiskBandBadge(
                           data?.risk_band || "LOW"
                         )}`}
                       >
@@ -192,21 +192,21 @@ export function PredictiveDriftRadarPanel() {
                     </div>
                   </div>
 
-                  <div className="text-xs text-slate-400 mt-4 pt-3 border-t border-slate-800">
-                    Confidence: <strong className="text-slate-300 font-mono">{data?.confidence || "MEDIUM"}</strong>
+                  <div className="text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-slate-800/80 font-sans">
+                    Confidence: <strong className="text-slate-200">{data?.confidence || "MEDIUM"}</strong>
                   </div>
                 </div>
 
                 {/* Direction Card */}
-                <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+                <div className="p-4 rounded-xl bg-[#090d16] border border-slate-800/80 flex flex-col justify-between">
                   <div>
-                    <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2 font-semibold">
-                      Observed trajectory
+                    <div className="text-[11px] font-sans font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                      Observed Trajectory
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       {data && (
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-mono font-medium ${
                             getDirectionBadge(data.direction).style
                           }`}
                         >
@@ -217,34 +217,34 @@ export function PredictiveDriftRadarPanel() {
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-400 mt-4 leading-relaxed">
-                    Comparison between baseline and current observation windows.
+                  <p className="text-[11px] text-slate-400 mt-3 leading-relaxed font-sans">
+                    Baseline vs current observation window comparison.
                   </p>
                 </div>
 
                 {/* Leading Indicators Summary */}
-                <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+                <div className="p-4 rounded-xl bg-[#090d16] border border-slate-800/80 flex flex-col justify-between">
                   <div>
-                    <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                      Leading signals active
+                    <div className="text-[11px] font-sans font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                      Leading Signals Active
                     </div>
-                    <div className="text-3xl font-extrabold text-white font-mono mt-2">
+                    <div className="text-2xl font-bold text-white financial-num mt-1.5">
                       {data?.signals?.filter((s) => s.contribution > 0).length ?? 0}
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-400 mt-4 leading-relaxed">
-                    Weighted operational signals monitoring SLA, exceptions & controls.
+                  <p className="text-[11px] text-slate-400 mt-3 leading-relaxed font-sans">
+                    Weighted operational signals monitoring SLA, exceptions &amp; controls.
                   </p>
                 </div>
 
                 {/* Action Urgency */}
-                <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+                <div className="p-4 rounded-xl bg-[#090d16] border border-slate-800/80 flex flex-col justify-between">
                   <div>
-                    <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                      Suggested action
+                    <div className="text-[11px] font-sans font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                      Suggested Action
                     </div>
-                    <div className="text-base font-bold text-teal-300 mt-2 font-mono">
+                    <div className="text-xs font-semibold text-sky-300 mt-2 font-sans tracking-wide">
                       {data?.risk_band === "HIGH_DRIFT"
                         ? "IMMEDIATE RECONCILIATION AUDIT"
                         : data?.risk_band === "ELEVATED"
@@ -255,49 +255,48 @@ export function PredictiveDriftRadarPanel() {
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+                  <p className="text-[11px] text-slate-400 mt-3 leading-relaxed font-sans">
                     Deterministic recommendations derived from leading signals.
                   </p>
                 </div>
               </div>
 
-              {/* Signals Breakdown Table (Issue 15: H3) */}
-              <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 space-y-4">
-                <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center justify-between">
-                  <span>Deterministic leading signals breakdown</span>
-                  <span className="text-slate-500 font-normal">Weights normalized to 100</span>
+              {/* Signals Breakdown Table */}
+              <div className="p-4 rounded-xl bg-[#090d16] border border-slate-800/80 space-y-3">
+                <h3 className="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center justify-between">
+                  <span>Deterministic Leading Signals Breakdown</span>
+                  <span className="text-slate-500 font-normal">Weights Normalized to 100</span>
                 </h3>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {data?.signals && data.signals.length > 0 ? (
                     data.signals.map((sig, i) => (
                       <div
                         key={i}
-                        className="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3"
+                        className="p-3 rounded-lg bg-[#0d121d] border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-2.5"
                       >
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-white">
+                            <span className="text-xs font-semibold text-white">
                               {sig.name || sig.signal.replace(/_/g, " ")}
                             </span>
-                            <span className="text-xs font-mono text-slate-400">({sig.signal})</span>
+                            <span className="text-[10px] font-mono text-slate-500">({sig.signal})</span>
                           </div>
                           <p className="text-xs text-slate-400">{sig.explanation}</p>
                         </div>
 
                         <div className="flex items-center gap-4 shrink-0 text-xs font-mono">
                           <div className="text-right">
-                            <span className="text-slate-400 block text-xs">Observed delta</span>
-                            {/* Formatted large signed number (Issue 26) */}
-                            <span className="font-bold text-white font-mono">
+                            <span className="text-slate-500 block text-[10px]">Observed delta</span>
+                            <span className="font-bold text-white font-mono num-tabular">
                               {formatSignedNumber(sig.delta)}
                             </span>
                           </div>
 
-                          <div className="text-right pl-4 border-l border-slate-800">
-                            <span className="text-slate-400 block text-xs">Score contribution</span>
+                          <div className="text-right pl-3 border-l border-slate-800">
+                            <span className="text-slate-500 block text-[10px]">Contribution</span>
                             <span
-                              className={`font-bold ${
+                              className={`font-bold num-tabular ${
                                 sig.contribution > 0 ? "text-amber-400" : "text-slate-400"
                               }`}
                             >
@@ -308,25 +307,25 @@ export function PredictiveDriftRadarPanel() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-xs text-slate-400 py-4 text-center">
+                    <div className="text-xs text-slate-400 py-3 text-center font-mono">
                       No deteriorating operational signals detected.
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Baseline vs Current Comparison Drawer (Issue 15: H3) */}
+              {/* Baseline vs Current Comparison Drawer */}
               {showDetails && data && (
-                <div className="rounded-2xl bg-slate-950 border border-slate-800 p-6 space-y-4 animate-in fade-in duration-200">
-                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-cyan-400" />
-                    <span>Temporal observation windows & metrics delta</span>
+                <div className="rounded-xl bg-[#090d16] border border-slate-800 p-4 space-y-3 animate-in fade-in duration-150">
+                  <h3 className="text-xs font-semibold text-white flex items-center gap-1.5 font-mono uppercase tracking-wider">
+                    <Clock className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Temporal Observation Windows &amp; Metrics Delta</span>
                   </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                      <div className="text-cyan-400 font-bold mb-2">Baseline window</div>
-                      <div className="text-slate-400">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+                    <div className="p-3 rounded-lg bg-[#0d121d] border border-slate-800">
+                      <div className="text-sky-400 font-medium mb-1.5 text-xs">Baseline Window</div>
+                      <div className="text-slate-400 text-[11px]">
                         {data.observation_window.baseline_start
                           ? new Date(data.observation_window.baseline_start).toLocaleString()
                           : "—"}{" "}
@@ -335,7 +334,7 @@ export function PredictiveDriftRadarPanel() {
                           ? new Date(data.observation_window.baseline_end).toLocaleString()
                           : "—"}
                       </div>
-                      <div className="mt-3 pt-3 border-t border-slate-800 space-y-1 text-slate-300">
+                      <div className="mt-2.5 pt-2.5 border-t border-slate-800 space-y-1 text-slate-300 text-[11px]">
                         <div>Exceptions: {formatNumber(data.baseline_metrics.exception_count)}</div>
                         <div>Exposure: ₹{formatRupees(data.baseline_metrics.exposure_minor_units || 0)}</div>
                         <div>High-risk cases: {formatNumber(data.baseline_metrics.high_risk_count)}</div>
@@ -343,9 +342,9 @@ export function PredictiveDriftRadarPanel() {
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                      <div className="text-rose-400 font-bold mb-2">Current window</div>
-                      <div className="text-slate-400">
+                    <div className="p-3 rounded-lg bg-[#0d121d] border border-slate-800">
+                      <div className="text-rose-400 font-medium mb-1.5 text-xs">Current Window</div>
+                      <div className="text-slate-400 text-[11px]">
                         {data.observation_window.current_start
                           ? new Date(data.observation_window.current_start).toLocaleString()
                           : "—"}{" "}
@@ -354,7 +353,7 @@ export function PredictiveDriftRadarPanel() {
                           ? new Date(data.observation_window.current_end).toLocaleString()
                           : "—"}
                       </div>
-                      <div className="mt-3 pt-3 border-t border-slate-800 space-y-1 text-slate-300">
+                      <div className="mt-2.5 pt-2.5 border-t border-slate-800 space-y-1 text-slate-300 text-[11px]">
                         <div>Exceptions: {formatNumber(data.current_metrics.exception_count)}</div>
                         <div>Exposure: ₹{formatRupees(data.current_metrics.exposure_minor_units || 0)}</div>
                         <div>High-risk cases: {formatNumber(data.current_metrics.high_risk_count)}</div>
@@ -363,13 +362,13 @@ export function PredictiveDriftRadarPanel() {
                     </div>
                   </div>
 
-                  <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-mono">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800">
-                      <Shield className="w-3.5 h-3.5 text-teal-400" />
+                  <div className="pt-1 flex flex-wrap items-center gap-2 text-xs font-mono">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#0d121d] text-slate-300 border border-slate-800 text-[11px]">
+                      <Shield className="w-3 h-3 text-sky-400" />
                       <span>Zero ML hallucination guarantee</span>
                     </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800">
-                      <Activity className="w-3.5 h-3.5 text-rose-400" />
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#0d121d] text-slate-300 border border-slate-800 text-[11px]">
+                      <Activity className="w-3 h-3 text-rose-400" />
                       <span>Deterministic delta calculation</span>
                     </div>
                   </div>
