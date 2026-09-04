@@ -38,6 +38,7 @@ from backend.api.impact import router as impact_router
 from backend.api.predictions import router as predictions_router
 from backend.api.calibration import router as calibration_router
 from backend.api.escalation import router as escalation_router
+from backend.api.sandbox import router as sandbox_router
 
 load_dotenv()
 
@@ -248,6 +249,7 @@ app.include_router(impact_router)
 app.include_router(predictions_router)
 app.include_router(calibration_router)
 app.include_router(escalation_router)
+app.include_router(sandbox_router)
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ import {
   Lock,
   Layers,
   ShieldAlert,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { NodexaLogo, NodexaMark } from "./brand/NodexaLogo";
@@ -52,6 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     name: "Operations",
     items: [
+      { id: "sandbox", href: "/sandbox", label: "Test New Dataset", icon: FileSpreadsheet },
       { id: "verifier", href: "/verifier", label: "Verifier", icon: Scale },
       { id: "escalations", href: "/escalations", label: "Escalations", icon: Send },
       { id: "injection", href: "/injection", label: "Data Injection", icon: Zap },

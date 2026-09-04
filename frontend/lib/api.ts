@@ -742,4 +742,155 @@ export async function askCopilot(payload: {
   return await response.json();
 }
 
+/**
+ * Sandbox Models & API Clients
+ */
+export interface SandboxValidationIssue {
+  row_number: number;
+  field: string;
+  error: string;
+  raw_value?: string | null;
+}
+
+export interface SandboxValidationResult {
+  is_valid: boolean;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  columns_detected: string[];
+  missing_required_columns: string[];
+  errors: SandboxValidationIssue[];
+  preview_rows: Record<string, any>[];
+  message: string;
+}
+
+export interface SandboxExceptionItem {
+  exception_id: string;
+  exception_type: string;
+  severity: string;
+  exposure_minor_units: number;
+  exposure_inr_formatted: string;
+  primary_payment_id?: string | null;
+  primary_order_id?: string | null;
+  description?: string | null;
+  is_legitimate_observation: boolean;
+  evidence: Record<string, any>[];
+  recommended_action: string;
+}
+
+export interface SandboxPatternItem {
+  cluster_id: string;
+  pattern_type: string;
+  exception_count: number;
+  total_exposure_minor_units: number;
+  total_exposure_inr_formatted: string;
+  signature: Record<string, any>;
+  description: string;
+}
+
+export interface SandboxDatasetSummary {
+  total_records: number;
+  gateway_transactions: number;
+  merchant_orders: number;
+  settlement_batches: number;
+  dispute_events: number;
+  ledger_entries: number;
+  merchants_impacted: number;
+}
+
+export interface SandboxAnalysisReport {
+  status: string;
+  dataset_name: string;
+  evaluated_at: string;
+  isolation_mode: string;
+  production_database_modified: boolean;
+  dataset_summary: SandboxDatasetSummary;
+  exceptions_detected: number;
+  high_risk_cases: number;
+  total_exposure_minor_units: number;
+  total_exposure_inr_formatted: string;
+  recurring_patterns_count: number;
+  ground_truth_available: boolean;
+  ground_truth_status: string;
+  accuracy_metrics_message: string;
+  exceptions: SandboxExceptionItem[];
+  patterns: SandboxPatternItem[];
+  disclaimer: string;
+}
+
+/**
+ * Validates a candidate CSV file or text before sandbox analysis.
+ */
+export async function validateSandboxCsv(
+  file?: File,
+  csvContent?: string
+): Promise<SandboxValidationResult> {
+  const url = `${BACKEND_URL}/sandbox/validate`;
+  const formData = new FormData();
+  if (file) {
+    formData.append("file", file);
+  } else if (csvContent) {
+    formData.append("csv_content", csvContent);
+  } else {
+    throw new Error("Either a file or csvContent must be provided.");
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Validation failed" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Runs isolated, in-memory finance control analysis on the uploaded dataset.
+ */
+export async function analyzeSandboxCsv(
+  file?: File,
+  csvContent?: string,
+  datasetName: string = "uploaded_dataset.csv"
+): Promise<SandboxAnalysisReport> {
+  const url = `${BACKEND_URL}/sandbox/analyze`;
+  const formData = new FormData();
+  if (file) {
+    formData.append("file", file);
+    formData.append("dataset_name", file.name || datasetName);
+  } else if (csvContent) {
+    formData.append("csv_content", csvContent);
+    formData.append("dataset_name", datasetName);
+  } else {
+    throw new Error("Either a file or csvContent must be provided.");
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Sandbox analysis failed" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Fetches the canonical anomaly sample CSV text.
+ */
+export async function fetchSampleSandboxCsv(): Promise<string> {
+  const url = `${BACKEND_URL}/sandbox/sample-csv`;
+  const response = await fetch(url, {
+    method: "GET",
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch sample CSV: HTTP ${response.status}`);
+  }
+  return await response.text();
+}
+
 
