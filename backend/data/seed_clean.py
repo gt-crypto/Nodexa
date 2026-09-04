@@ -176,12 +176,11 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
     det_report = detection_service.detect_exceptions(session=db, dataset_id=dataset_id)
     db.commit()
 
-    # 3. AI Investigation on Detected Exceptions (with savepoint isolation)
+    # 3. AI Investigation on Detected Exceptions
     agent_service = InvestigationService()
     for exc in det_report.exceptions:
         try:
-            with db.begin_nested():
-                agent_service.investigate_exception(session=db, exception_id=exc["exception_id"])
+            agent_service.investigate_exception(session=db, exception_id=exc["exception_id"])
         except Exception as e:
             logger.warning(operation="INVESTIGATION_SKIP", message=f"Investigation skipped for {exc['exception_id']}: {e}")
     db.commit()
@@ -191,16 +190,15 @@ def ensure_canonical_seed(db: Session, force_reset: bool = False) -> Dict[str, A
     risk_service.assess_all_open_exceptions(session=db)
     db.commit()
 
-    # 5. Policy Gating (with savepoint isolation)
+    # 5. Policy Gating
     policy_service = PolicyService()
     for exc in det_report.exceptions:
         try:
-            with db.begin_nested():
-                policy_service.evaluate_policy(
-                    session=db,
-                    exception_id=exc["exception_id"],
-                    requested_action="INVESTIGATE",
-                )
+            policy_service.evaluate_policy(
+                session=db,
+                exception_id=exc["exception_id"],
+                requested_action="INVESTIGATE",
+            )
         except Exception:
             pass
     db.commit()
