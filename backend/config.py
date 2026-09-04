@@ -135,10 +135,14 @@ class Settings(BaseModel):
             data["escalation_webhook_secret"] = f"***{sec[-4:]}" if len(sec) >= 8 else "***REDACTED***"
         return data
 
-
 def load_settings() -> Settings:
     """Loads settings from environment variables with safe defaults."""
-    raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+    raw_origins = os.getenv("ALLOWED_ORIGINS")
+    if not raw_origins:
+        if os.getenv("ENVIRONMENT") == "production":
+            raw_origins = "https://nodexa-frontend.onrender.com,https://nodexa.onrender.com,https://nodexa-api.onrender.com,*"
+        else:
+            raw_origins = "http://localhost:3000,http://127.0.0.1:3000"
     origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
 
     raw_db = (
