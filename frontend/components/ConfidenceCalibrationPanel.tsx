@@ -86,7 +86,7 @@ export function ConfidenceCalibrationPanel() {
           icon={<Gauge className="w-5 h-5 text-sky-400" />}
           title="Confidence Calibration Dashboard"
           badge={{
-            text: "Tier-3 Empirical Calibration (v2.0 Judge Dashboard)",
+            text: "Tier-3 Empirical Calibration (Judge Dashboard)",
             icon: <Target className="w-3.5 h-3.5 text-sky-400" />,
             color: "bg-sky-500/10 border-sky-500/30 text-sky-300",
           }}

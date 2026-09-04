@@ -80,7 +80,7 @@ export function AskSentinelPanel() {
         icon={<Sparkles className="w-5 h-5 text-sky-400" />}
         title="Ask Nodexa Grounded Copilot"
         badge={{
-          text: "Tier-1 Copilot Active (v2.0)",
+          text: "Tier-1 Copilot Active",
           icon: <MessageSquare className="w-3 h-3 text-sky-400" />,
           color: "bg-sky-950/30 border-sky-800/40 text-sky-300",
         }}

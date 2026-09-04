@@ -149,7 +149,7 @@ export function VerifierPanel() {
         icon={<Scale className="w-5 h-5 text-sky-400" />}
         title="Adversarial Second-Opinion Safety Layer"
         badge={{
-          text: "Tier-1 Adversarial Verifier Active (v2.0)",
+          text: "Tier-1 Adversarial Verifier Active",
           icon: <Scale className="w-3 h-3 text-sky-400" />,
           color: "bg-sky-950/30 border-sky-800/40 text-sky-300",
         }}

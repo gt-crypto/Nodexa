@@ -541,7 +541,7 @@ export const LiveInjectionConsole: React.FC = () => {
           icon={<Zap className="w-5 h-5 text-sky-400" />}
           title="Digital-Twin Live Anomaly Injection"
           badge={{
-            text: "Tier-1 Digital Twin Active (v2.0)",
+            text: "Tier-1 Digital Twin Active",
             icon: <Radio className="w-3.5 h-3.5 text-sky-400" />,
             color: "bg-sky-500/10 border-sky-500/30 text-sky-300",
           }}

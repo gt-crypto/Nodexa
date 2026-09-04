@@ -117,7 +117,7 @@ export function EscalationWebhookPanel() {
           icon={<Send className="w-5 h-5 text-sky-400" />}
           title="Escalation Webhook Dispatcher"
           badge={{
-            text: "Tier-3 Incident Delivery (v2.0 HMAC Signed)",
+            text: "Tier-3 Incident Delivery (HMAC Signed)",
             icon: <Bell className="w-3.5 h-3.5 text-sky-400" />,
             color: "bg-sky-500/10 border-sky-500/30 text-sky-300",
           }}

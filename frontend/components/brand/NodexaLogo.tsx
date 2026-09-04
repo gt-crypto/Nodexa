@@ -137,12 +137,9 @@ export const NodexaLogo: React.FC<NodexaLogoProps> = ({
         <NodexaMark size={size} />
       </div>
       <div className="flex flex-col">
-        <div className="flex items-center gap-1.5 leading-none">
+        <div className="flex items-center leading-none">
           <span className="font-bold tracking-tight text-white font-sans text-base">
             NODEXA
-          </span>
-          <span className="text-[9px] font-mono font-medium px-1 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700/60">
-            v2.0
           </span>
         </div>
         {showSubtitle && (

@@ -105,9 +105,6 @@ export const Navbar: React.FC = () => {
               NODEXA
             </span>
           </div>
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-teal-950/80 text-teal-300 border border-teal-800/60 font-mono">
-            v2.0
-          </span>
         </div>
 
         {/* Grouped Scroll Spy Navigation (Issue 22 & Finding #8) */}

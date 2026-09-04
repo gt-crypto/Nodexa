@@ -222,7 +222,7 @@ export default function LoginPage() {
                 <span className="text-[11px] font-semibold text-sky-400 tracking-wider uppercase">
                   ENTERPRISE ACCESS
                 </span>
-                <span className="text-[11px] font-mono text-slate-500">v2.0 Mainnet</span>
+                <span className="text-[11px] font-mono text-slate-500">Mainnet</span>
               </div>
               <h2 className="text-xl font-bold text-white tracking-tight font-sans">Sign in to console</h2>
               <p className="text-xs text-slate-400 mt-1 font-sans">

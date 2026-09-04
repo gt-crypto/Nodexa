@@ -203,7 +203,7 @@ export const Sidebar: React.FC = () => {
             <Lock className="w-3 h-3 text-sky-400" />
             Audit Protected
           </span>
-          <span>Mainnet v2.0</span>
+          <span>Mainnet</span>
         </div>
       </div>
     </div>
@@ -217,9 +217,6 @@ export const Sidebar: React.FC = () => {
           <NodexaMark size={22} />
           <span className="font-bold text-sm tracking-tight text-white font-sans">
             NODEXA
-          </span>
-          <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-slate-800 text-sky-400 border border-slate-700">
-            v2.0
           </span>
         </Link>
 
