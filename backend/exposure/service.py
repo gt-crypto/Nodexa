@@ -103,7 +103,8 @@ class RiskAssessmentService:
         )
 
         # 5. Persist RiskAssessment
-        assessment_id = f"RA-{exc.exception_id}-{uuid.uuid4().hex[:8]}"
+        clean_exc_id = exc.exception_id.replace("EXC-", "")
+        assessment_id = f"RA-{clean_exc_id[:28]}-{uuid.uuid4().hex[:8]}"
         assessment = RiskAssessment(
             assessment_id=assessment_id,
             exception_id=exc.exception_id,

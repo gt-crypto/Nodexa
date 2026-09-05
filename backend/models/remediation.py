@@ -26,7 +26,7 @@ class RemediationAction(Base):
     __tablename__ = "remediation_actions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    action_id = Column(String(64), unique=True, nullable=False, index=True)
+    action_id = Column(String(128), unique=True, nullable=False, index=True)
     exception_id = Column(
         String(64),
         ForeignKey("exceptions.exception_id", ondelete="CASCADE"),
@@ -38,7 +38,7 @@ class RemediationAction(Base):
     
     # Financial and Policy context
     action_payload = Column(Text, nullable=False)  # JSON-encoded parameters
-    policy_decision_id = Column(String(64), nullable=True, index=True)
+    policy_decision_id = Column(String(128), nullable=True, index=True)
     risk_assessment_id = Column(String(64), nullable=True, index=True)
     investigation_id = Column(String(64), nullable=True, index=True)
     deterministic_exposure = Column(BigInteger, nullable=True, default=0)
@@ -108,7 +108,7 @@ class RemediationApproval(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     approval_id = Column(String(64), unique=True, nullable=False, index=True)
     action_id = Column(
-        String(64),
+        String(128),
         ForeignKey("remediation_actions.action_id", ondelete="CASCADE"),
         nullable=False,
         index=True,

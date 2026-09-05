@@ -64,10 +64,11 @@ class AskSentinelService:
             [m.strip() for m in set(merchants)],
         )
 
-    def _format_minor_units(self, paise: int) -> str:
-        """Formats integer minor unit paise into readable Rupee representation."""
-        rupees = paise / 100.0
-        return f"₹{rupees:,.2f} ({paise} paise)"
+    def _format_minor_units(self, paise: Any) -> str:
+        """Formats integer or Decimal minor unit paise into readable Rupee representation."""
+        numeric_paise = float(paise or 0)
+        rupees = numeric_paise / 100.0
+        return f"₹{rupees:,.2f} ({int(numeric_paise)} paise)"
 
     def ask(
         self,

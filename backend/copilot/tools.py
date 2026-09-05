@@ -521,7 +521,7 @@ class AskSentinelToolRegistry:
         )
         row_open = session.execute(stmt_open).fetchone()
         open_count = row_open[0] if row_open else 0
-        open_exposure = row_open[1] if row_open and row_open[1] is not None else 0
+        open_exposure = int(row_open[1]) if row_open and row_open[1] is not None else 0
 
         # Breakdown by family
         stmt_fam = select(
@@ -534,7 +534,7 @@ class AskSentinelToolRegistry:
 
         fam_rows = session.execute(stmt_fam).fetchall()
         family_breakdown = [
-            {"family": r[0], "open_count": r[1], "exposure_minor_units": r[2] or 0}
+            {"family": r[0], "open_count": r[1], "exposure_minor_units": int(r[2]) if r[2] else 0}
             for r in fam_rows
         ]
 

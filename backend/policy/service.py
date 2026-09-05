@@ -43,8 +43,9 @@ class PolicyService:
 
         # Simulation mode: do not persist to database
         if simulation:
+            clean_exc_id = exc.exception_id.replace("EXC-", "")
             return PolicyDecisionRecord(
-                decision_id=f"SIM-{exc.exception_id}-{uuid.uuid4().hex[:8]}",
+                decision_id=f"SIM-{clean_exc_id[:28]}-{uuid.uuid4().hex[:8]}",
                 exception_id=exc.exception_id,
                 requested_action=requested_action,
                 decision=result["decision"],
@@ -84,7 +85,8 @@ class PolicyService:
         if existing:
             return existing
 
-        decision_id = f"PD-{exc.exception_id}-{requested_action}-{uuid.uuid4().hex[:8]}"
+        clean_exc_id = exc.exception_id.replace("EXC-", "")
+        decision_id = f"PD-{clean_exc_id[:24]}-{requested_action[:12]}-{uuid.uuid4().hex[:8]}"
         record = PolicyDecisionRecord(
             decision_id=decision_id,
             exception_id=exc.exception_id,

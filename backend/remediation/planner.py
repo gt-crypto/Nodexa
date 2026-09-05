@@ -93,7 +93,8 @@ class RemediationPlanner:
             initial_status = RemediationStatus.APPROVED.value
 
         now = datetime.now(timezone.utc)
-        action_id = f"REM-{exc.exception_id}-{action}-{uuid.uuid4().hex[:8]}"
+        clean_exc_id = exc.exception_id.replace("EXC-", "")
+        action_id = f"REM-{clean_exc_id[:24]}-{action[:12]}-{uuid.uuid4().hex[:8]}"
 
         plan = RemediationAction(
             action_id=action_id,

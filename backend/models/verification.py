@@ -110,7 +110,7 @@ class VerificationResult(Base):
         index=True,
     )
     action_id = Column(
-        String(64),
+        String(128),
         ForeignKey("remediation_actions.action_id", ondelete="SET NULL"),
         nullable=True,
         index=True,

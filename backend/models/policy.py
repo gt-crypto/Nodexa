@@ -25,7 +25,7 @@ class PolicyDecisionRecord(Base):
     __tablename__ = "policy_decisions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    decision_id = Column(String(64), unique=True, nullable=False, index=True)
+    decision_id = Column(String(128), unique=True, nullable=False, index=True)
     exception_id = Column(
         String(64),
         ForeignKey("exceptions.exception_id", ondelete="CASCADE"),

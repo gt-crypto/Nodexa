@@ -96,6 +96,11 @@ _TYPE_MIGRATIONS: list = [
     ("evaluation_cases", "predicted_resolution_class", "VARCHAR(128)", 128),
     ("investigation_runs", "recommended_action", "VARCHAR(512)", 512),
     ("investigation_runs", "final_classification", "VARCHAR(128)", 128),
+    ("policy_decisions", "decision_id", "VARCHAR(128)", 128),
+    ("remediation_actions", "action_id", "VARCHAR(128)", 128),
+    ("remediation_actions", "policy_decision_id", "VARCHAR(128)", 128),
+    ("remediation_approvals", "action_id", "VARCHAR(128)", 128),
+    ("verification_results", "action_id", "VARCHAR(128)", 128),
 ]
 
 
