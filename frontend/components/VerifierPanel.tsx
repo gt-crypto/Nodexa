@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Scale,
   ShieldCheck,
@@ -22,14 +23,16 @@ import { Button } from "./ui/Button";
 import { SectionHeading } from "./ui/SectionHeading";
 
 export function VerifierPanel() {
-  const [exceptionId, setExceptionId] = useState<string>("");
+  const searchParams = useSearchParams();
+  const queryId = searchParams?.get("id") || searchParams?.get("exception_id") || "";
+  const [exceptionId, setExceptionId] = useState<string>(queryId);
   const [opinion, setOpinion] = useState<VerifierOpinion | null>(null);
   const [loading, setLoading] = useState(false);
   const [wakingState, setWakingState] = useState<{ attempt: number; isTimeout: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentExceptions, setRecentExceptions] = useState<Array<{ exception_id: string; source_flag?: string }>>([]);
 
-  // Auto-fetch seeded or injected exceptions on mount to populate picker
+  // Auto-fetch seeded or injected exceptions on mount to populate picker, prioritizing queryId
   useEffect(() => {
     async function loadRecent() {
       try {
@@ -43,20 +46,22 @@ export function VerifierPanel() {
         const items = Array.isArray(data) ? data : (data as any)?.items || [];
         if (Array.isArray(items) && items.length > 0) {
           setRecentExceptions(items);
-          if (!exceptionId && items[0]?.exception_id) {
-            setExceptionId(items[0].exception_id);
-            handleFetchOpinion(items[0].exception_id);
-          }
+        }
+
+        const targetId = queryId || (Array.isArray(items) && items.length > 0 ? items[0]?.exception_id : "");
+        if (targetId) {
+          setExceptionId(targetId);
+          handleFetchOpinion(targetId);
         }
         setWakingState(null);
       } catch {
-        const fallback = "EXC-GHOST-001";
+        const fallback = queryId || "EXC-GHOST-001";
         setExceptionId(fallback);
         handleFetchOpinion(fallback);
       }
     }
     loadRecent();
-  }, []);
+  }, [queryId]);
 
   const handleFetchOpinion = async (idToFetch?: string, fresh?: boolean) => {
     const targetId = (idToFetch || exceptionId).trim();

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { VerifierPanel } from "../../components/VerifierPanel";
 import { VerificationPanel } from "../../components/VerificationPanel";
 
@@ -11,10 +11,13 @@ export default function VerifierPage() {
   return (
     <div className="space-y-10">
       {/* Adversarial Verifier Safety Layer */}
-      <VerifierPanel />
+      <Suspense fallback={<div className="p-8 text-center text-slate-400 font-mono text-xs">Connecting to Adversarial Verifier…</div>}>
+        <VerifierPanel />
+      </Suspense>
 
       {/* Post-Remediation Verification Engine & Audit Trail */}
       <VerificationPanel />
     </div>
   );
 }
+

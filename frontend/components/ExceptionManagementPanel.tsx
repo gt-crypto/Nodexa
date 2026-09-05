@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   ShieldAlert,
   Search,
@@ -43,6 +44,7 @@ interface ExceptionItem {
 }
 
 export function ExceptionManagementPanel() {
+  const router = useRouter();
   const [exceptions, setExceptions] = useState<ExceptionItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -422,7 +424,11 @@ export function ExceptionManagementPanel() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => window.open(`/verifier?id=${selectedException.exception_id}`, "_self")}
+                    onClick={() => {
+                      if (selectedException?.exception_id) {
+                        router.push(`/verifier?id=${encodeURIComponent(selectedException.exception_id)}`);
+                      }
+                    }}
                     icon={<ExternalLink className="w-3.5 h-3.5" />}
                   >
                     Inspect in Verifier
