@@ -23,7 +23,7 @@ const EXAMPLE_QUESTIONS = [
   "Explain why settlement SET-000014 is unallocated.",
   "Which merchants currently have anomalous settlement discrepancies?",
   "What is the total financial risk exposure identified across all exceptions?",
-  "Why was payment TXN_SANDBOX_GHOST_105 flagged as a ghost settlement?",
+  "Why was payment PAY-000001 flagged as a ghost settlement?",
 ];
 
 export function AskSentinelPanel() {

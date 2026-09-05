@@ -46,6 +46,7 @@ class AskSentinelToolRegistry:
         "get_escalation_status",
         "get_audit_events",
         "get_aggregate_summary",
+        "get_merchant_discrepancies",
     ]
 
     def __init__(self, max_tool_calls: int = 15):
@@ -71,6 +72,7 @@ class AskSentinelToolRegistry:
             "get_escalation_status": self.get_escalation_status,
             "get_audit_events": self.get_audit_events,
             "get_aggregate_summary": self.get_aggregate_summary,
+            "get_merchant_discrepancies": self.get_merchant_discrepancies,
         }
 
     def reset_call_counter(self):
@@ -565,3 +567,29 @@ class AskSentinelToolRegistry:
             "recent_deliveries_count": len(recent),
             "recent_deliveries": recent[:5],
         }
+
+    def get_merchant_discrepancies(self, session: Session) -> Dict[str, Any]:
+        """Retrieves deterministic merchant anomaly profiles and settlement discrepancy summaries."""
+        from backend.models.merchant_score import MerchantScore
+        from backend.merchants.scoring import MerchantScoringService
+        from backend.api.merchants import _format_merchant_response
+
+        scores = session.query(MerchantScore).all()
+        if not scores:
+            scoring_service = MerchantScoringService()
+            scores = scoring_service.calculate_all_scores(session)
+
+        # Filter merchants with active exceptions or elevated risk bands
+        anomalous_merchants = [
+            _format_merchant_response(s) for s in scores
+            if s.exception_count > 0 or s.score_band in ("WATCH", "HIGH_RISK", "CRITICAL")
+        ]
+        # Sort by total exposure descending
+        anomalous_merchants.sort(key=lambda m: m["metrics"]["total_exposure"], reverse=True)
+
+        return {
+            "total_merchants_with_anomalies": len(anomalous_merchants),
+            "merchants": anomalous_merchants,
+            "total_merchants_evaluated": len(scores),
+        }
+

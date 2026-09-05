@@ -3,10 +3,12 @@ import json
 import re
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from backend.models.copilot import CopilotQuery
 from backend.models.audit import AuditEvent
+from backend.models.exceptions import ExceptionRecord
 from backend.copilot.tools import AskSentinelToolRegistry
 
 
@@ -46,15 +48,17 @@ class AskSentinelService:
 
     def _extract_identifiers(self, text: str) -> Tuple[List[str], List[str], List[str], List[str], List[str]]:
         """Extracts exception_id, payment_id, settlement_id, order_id, merchant_id patterns from user input."""
-        exceptions = re.findall(r"EXC-[A-Z0-9_-]+", text, re.IGNORECASE)
-        payments = re.findall(r"PAY-[A-Z0-9_-]+", text, re.IGNORECASE)
-        settlements = re.findall(r"SET-[A-Z0-9_-]+", text, re.IGNORECASE)
-        orders = re.findall(r"ORD-[A-Z0-9_-]+", text, re.IGNORECASE)
+        exceptions = re.findall(r"EXC-[A-Za-z0-9_-]+", text, re.IGNORECASE)
+        payments = re.findall(r"(?:PAY|TXN)[-_][A-Za-z0-9_-]+", text, re.IGNORECASE)
+        settlements = re.findall(r"(?:SET|STL)[-_][A-Za-z0-9_-]+", text, re.IGNORECASE)
+        orders = re.findall(r"(?:ORD|ORDER)[-_][A-Za-z0-9_-]+", text, re.IGNORECASE)
         
         # Look for "merchant <ID>" or "merchant M123"
         merchants = []
         merch_matches = re.findall(r"merchant\s+([A-Za-z0-9_-]+)", text, re.IGNORECASE)
-        merchants.extend(merch_matches)
+        stop_words = {"id", "ids", "discrepancies", "anomalies", "accounts", "names", "currently", "with", "having", "status", "risk"}
+        merchants.extend([m for m in merch_matches if m.lower() not in stop_words])
+        merchants.extend(re.findall(r"(?:MERCH|MERCHANT)[-_][A-Za-z0-9_-]+", text, re.IGNORECASE))
         
         return (
             [e.upper() for e in set(exceptions)],
@@ -202,7 +206,53 @@ class AskSentinelService:
                 if led_res.get("status") == "success":
                     retrieved_data["ledger"] = led_res["data"]
 
-        # Merchant Trust Score questions
+            # Also check if there is an exception linked to this payment
+            stmt_exc = select(ExceptionRecord).where(
+                or_(
+                    ExceptionRecord.primary_payment_id == target_pay_id,
+                    ExceptionRecord.exception_id.contains(target_pay_id),
+                    ExceptionRecord.description.contains(target_pay_id),
+                )
+            )
+            linked_exc = session.scalars(stmt_exc).first()
+            if linked_exc:
+                retrieved_data["linked_exception"] = {
+                    "exception_id": linked_exc.exception_id,
+                    "type": linked_exc.exception_type,
+                    "state": linked_exc.state,
+                    "exposure": linked_exc.exposure,
+                    "description": linked_exc.description,
+                }
+                evidence_refs.append(linked_exc.exception_id)
+
+        # Settlement lookup question (e.g. SET-000014)
+        elif set_ids:
+            target_set_id = set_ids[0]
+            set_res = self.tool_registry.execute_tool("get_settlement", session=session, settlement_id=target_set_id)
+            tools_used.append("get_settlement")
+            if set_res.get("status") == "success" and set_res.get("data", {}).get("found"):
+                retrieved_data["settlement_lookup"] = set_res["data"]
+                evidence_refs.append(target_set_id)
+
+            # Check if there is an exception linked to this settlement ID
+            stmt_exc = select(ExceptionRecord).where(
+                or_(
+                    ExceptionRecord.description.contains(target_set_id),
+                    ExceptionRecord.exception_id.contains(target_set_id),
+                )
+            )
+            linked_exc = session.scalars(stmt_exc).first()
+            if linked_exc:
+                retrieved_data["linked_exception"] = {
+                    "exception_id": linked_exc.exception_id,
+                    "type": linked_exc.exception_type,
+                    "state": linked_exc.state,
+                    "exposure": linked_exc.exposure,
+                    "description": linked_exc.description,
+                }
+                evidence_refs.append(linked_exc.exception_id)
+
+        # Specific Merchant Trust Score question
         elif merch_ids:
             target_merch_id = merch_ids[0]
             m_res = self.tool_registry.execute_tool("get_merchant_trust_score", session=session, merchant_id=target_merch_id)
@@ -211,6 +261,15 @@ class AskSentinelService:
                 m_data = m_res["data"]["score"]
                 retrieved_data["merchant_score"] = m_data
                 evidence_refs.append(f"MERCHANT_SCORE_{target_merch_id}")
+
+        # General Merchant Discrepancy questions (e.g. "Which merchants currently have anomalous settlement discrepancies?")
+        elif any(k in q_lower for k in ["merchant", "merchants", "vendor", "vendors"]):
+            md_res = self.tool_registry.execute_tool("get_merchant_discrepancies", session=session)
+            tools_used.append("get_merchant_discrepancies")
+            if md_res.get("status") == "success":
+                retrieved_data["merchant_discrepancies"] = md_res["data"]
+                for m in md_res["data"].get("merchants", [])[:3]:
+                    evidence_refs.append(f"MERCHANT_{m['merchant_id']}")
 
         # Business Impact & ROI questions
         elif any(k in q_lower for k in [
@@ -298,8 +357,40 @@ class AskSentinelService:
                     for exc_id in cl.get("exception_ids", [])[:2]:
                         evidence_refs.append(exc_id)
 
+        # Specific Exception Family questions (e.g. ghost settlement, SLA breach, etc.)
+        elif any(k in q_lower for k in ["ghost", "double dip", "double-dip", "chargeback", "sla breach", "sla", "breach", "partial settlement", "unallocated", "missing settlement", "timing exception"]):
+            matched_family = None
+            if "ghost" in q_lower:
+                matched_family = "GHOST_SETTLEMENT"
+            elif any(k in q_lower for k in ["double dip", "double-dip", "chargeback"]):
+                matched_family = "REFUND_CHARGEBACK_DOUBLE_DIP"
+            elif any(k in q_lower for k in ["sla", "breach"]):
+                matched_family = "SETTLEMENT_SLA_BREACH"
+            elif "partial" in q_lower:
+                matched_family = "PARTIAL_SETTLEMENT"
+            elif any(k in q_lower for k in ["unallocated", "missing"]):
+                matched_family = "MISSING_UNALLOCATED_SETTLEMENT"
+            elif "timing" in q_lower:
+                matched_family = "LEGITIMATE_TIMING_EXCEPTION"
+
+            if matched_family:
+                search_res = self.tool_registry.execute_tool("search_exceptions", session=session, family=matched_family, limit=5)
+                tools_used.append("search_exceptions")
+                if search_res.get("status") == "success":
+                    retrieved_data["search_exceptions"] = search_res["data"]
+                    retrieved_data["searched_family"] = matched_family
+                    for e in search_res["data"].get("exceptions", [])[:3]:
+                        evidence_refs.append(e["exception_id"])
+
         # Aggregate / Overview questions
-        elif any(k in q_lower for k in ["exposure", "how much", "summary", "overview", "total", "open exceptions", "unresolved", "families"]):
+        elif any(k in q_lower for k in ["exposure", "how much", "summary", "overview", "total", "open exceptions", "unresolved", "families", "exception", "exceptions", "anomaly", "anomalies", "issues", "status", "health"]):
+            agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
+            tools_used.append("get_aggregate_summary")
+            if agg_res.get("status") == "success":
+                retrieved_data["aggregate"] = agg_res["data"]
+
+        # Universal fallback for general operational queries where no specific entity ID was queried
+        if not retrieved_data and not exc_ids and not pay_ids and not set_ids and not merch_ids:
             agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
             tools_used.append("get_aggregate_summary")
             if agg_res.get("status") == "success":
@@ -404,6 +495,18 @@ class AskSentinelService:
                 f"Payment **{pay_id}** status is **{status}** with gross amount of **{amt_str}**."
             ]
 
+            if "linked_exception" in data:
+                exc = data["linked_exception"]
+                exc_id = exc["exception_id"]
+                exc_type = exc["type"]
+                exc_state = exc["state"]
+                exc_exp = self._format_minor_units(exc["exposure"])
+                answer_parts.append(
+                    f"**Operational Exception**: Associated with exception **{exc_id}** (**{exc_type}**) in state **{exc_state}** with financial exposure of **{exc_exp}**."
+                )
+                if exc.get("description"):
+                    answer_parts.append(f"**Anomaly Reason**: {exc['description']}")
+
             if "settlement" in data and data["settlement"].get("found"):
                 sets = data["settlement"].get("settlements", [])
                 answer_parts.append(f"Linked bank settlement batches found: **{len(sets)}**.")
@@ -418,6 +521,54 @@ class AskSentinelService:
             confidence = "HIGH"
             limitations = None
             return answer, reasoning, confidence, limitations
+
+        elif "linked_exception" in data and "payment" not in data:
+            exc = data["linked_exception"]
+            exc_id = exc["exception_id"]
+            exc_type = exc["type"]
+            exc_state = exc["state"]
+            exp_str = self._format_minor_units(exc["exposure"])
+            desc = exc.get("description", "Identified anomalous reconciliation state.")
+            answer = (
+                f"Transaction is linked to exception **{exc_id}** (**{exc_type}**) in state **{exc_state}** "
+                f"with financial exposure of **{exp_str}**.\n\n"
+                f"**Anomaly Cause**: {desc}"
+            )
+            reasoning = f"Correlated operational exception record {exc_id} identified for requested transaction."
+            return answer, reasoning, "HIGH", None
+
+        elif "settlement_lookup" in data:
+            s_data = data["settlement_lookup"]
+            settlements = s_data.get("settlements", [])
+            target_id = evidence_refs[0] if evidence_refs else "Settlement"
+            if not settlements:
+                answer = f"Settlement **{target_id}** was not located in the bank settlement clearing records."
+                reasoning = "Query returned zero matching bank settlement batch records."
+                return answer, reasoning, "LOW", "Record not present."
+
+            s = settlements[0]
+            net_amt = self._format_minor_units(s.get("net_amount_minor_units", 0))
+            utr = s.get("utr_number") or "N/A"
+            acq = s.get("acquirer_id") or "N/A"
+
+            lines = [
+                f"Settlement batch **{s.get('settlement_id')}** (UTR: `{utr}`) was processed via acquirer **{acq}** with net cleared amount of **{net_amt}**."
+            ]
+            if "linked_exception" in data:
+                exc = data["linked_exception"]
+                lines.append(
+                    f"**Operational Exception**: Associated with exception **{exc['exception_id']}** (**{exc['type']}**) in state **{exc['state']}** with exposure of **{self._format_minor_units(exc['exposure'])}**."
+                )
+                if exc.get("description"):
+                    lines.append(f"**Anomaly / Unallocated Reason**: {exc['description']}")
+            else:
+                lines.append(
+                    "**Allocation Status**: Settlement is present in the bank clearing batch but unallocated to a corresponding authorized merchant gateway payment or nodal ledger entry."
+                )
+
+            answer = "\n\n".join(lines)
+            reasoning = f"Operational settlement records retrieved for {s.get('settlement_id')}."
+            return answer, reasoning, "HIGH", None
 
         elif "merchant_score" in data:
             ms = data["merchant_score"]
@@ -632,6 +783,65 @@ class AskSentinelService:
             if breakdown:
                 b_lines = [f"- **{b['family']}**: {b['open_count']} open ({self._format_minor_units(b['exposure_minor_units'])})" for b in breakdown]
                 answer += "\n\n**Breakdown by Exception Family**:\n" + "\n".join(b_lines)
+
+            reasoning = "Deterministic aggregation of active unresolved exceptions and cumulative exposure."
+            return answer, reasoning, "HIGH", None
+
+        elif "merchant_discrepancies" in data:
+            md = data["merchant_discrepancies"]
+            merchants = md.get("merchants", [])
+            total = md.get("total_merchants_with_anomalies", 0)
+
+            if not merchants:
+                answer = "Currently, no merchants have anomalous settlement discrepancies. All active merchants are within normal operating thresholds."
+                reasoning = "Queried operational merchant trust scores; 0 anomalous merchants found."
+                return answer, reasoning, "HIGH", None
+
+            lines = [
+                f"Currently, **{total} merchant(s)** have active settlement discrepancies or elevated risk profiles:\n"
+            ]
+            for i, m in enumerate(merchants[:5], 1):
+                m_id = m["merchant_id"]
+                band = m["score_band"]
+                exc_cnt = m["metrics"]["exception_count"]
+                exp = self._format_minor_units(m["metrics"]["total_exposure"])
+                trust = m["trust_score"]
+                lines.append(
+                    f"**{i}. Merchant `{m_id}`** (Band: **{band}** | Trust Score: {trust}/100)\n"
+                    f"- **Exceptions**: {exc_cnt} | **Total Exposure**: {exp}"
+                )
+                if m.get("factors"):
+                    top_factors = [f["explanation"] for f in m["factors"] if f.get("direction") == "NEGATIVE"][:2]
+                    if top_factors:
+                        lines.append(f"- **Key Drivers**: {'; '.join(top_factors)}")
+                lines.append("")
+
+            answer = "\n".join(lines)
+            reasoning = f"Compiled deterministic discrepancy metrics from {total} merchant trust score profiles."
+            return answer, reasoning, "HIGH", None
+
+        elif "search_exceptions" in data:
+            se = data["search_exceptions"]
+            excs = se.get("exceptions", [])
+            cnt = se.get("count", 0)
+            fam = data.get("searched_family", "requested")
+            if not excs:
+                answer = f"No active exceptions were found for family **{fam}** in the operational repository."
+                reasoning = f"Exception repository search returned 0 matching records for {fam}."
+                return answer, reasoning, "HIGH", None
+
+            lines = [f"Found **{cnt} active exception(s)** for family **{fam}**:\n"]
+            for i, e in enumerate(excs[:5], 1):
+                exp = self._format_minor_units(e.get("exposure_minor_units", 0))
+                lines.append(
+                    f"**{i}. {e['exception_id']}**\n"
+                    f"- **Type**: {e['type']} | **State**: {e['state']} | **Severity**: {e['severity']}\n"
+                    f"- **Exposure**: {exp} | **Primary Payment**: `{e.get('primary_payment_id') or 'N/A'}`"
+                )
+                lines.append("")
+            answer = "\n".join(lines)
+            reasoning = f"Direct query results from operational exception repository for {fam}."
+            return answer, reasoning, "HIGH", None
 
         elif "clusters" in data:
             clusters = data["clusters"]
