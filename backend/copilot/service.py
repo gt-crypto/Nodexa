@@ -10,6 +10,7 @@ from backend.models.copilot import CopilotQuery
 from backend.models.audit import AuditEvent
 from backend.models.exceptions import ExceptionRecord
 from backend.copilot.tools import AskSentinelToolRegistry
+from backend.copilot.intent import CopilotIntent, CopilotIntentClassifier
 
 
 MUTATION_KEYWORDS = [
@@ -142,8 +143,113 @@ class AskSentinelService:
         evidence_refs: List[str] = []
         retrieved_data: Dict[str, Any] = {}
 
-        # Exception investigation question
-        if exc_ids:
+        # Classify intent using deterministic & semantic classifier
+        intent = CopilotIntentClassifier.classify(
+            question=question,
+            exc_ids=exc_ids,
+            pay_ids=pay_ids,
+            set_ids=set_ids,
+            ord_ids=ord_ids,
+            merch_ids=merch_ids,
+        )
+
+        # 1. SALES_SUMMARY
+        if intent == CopilotIntent.SALES_SUMMARY:
+            merchant_param = merch_ids[0] if merch_ids else None
+            sales_res = self.tool_registry.execute_tool("get_sales_summary", session=session, merchant_id=merchant_param)
+            tools_used.append("get_sales_summary")
+            if sales_res.get("status") == "success":
+                retrieved_data["sales_summary"] = sales_res["data"]
+                evidence_refs.append("GATEWAY_TRANSACTIONS_SALES")
+
+        # 2. NET_SALES_SUMMARY
+        elif intent == CopilotIntent.NET_SALES_SUMMARY:
+            merchant_param = merch_ids[0] if merch_ids else None
+            sales_res = self.tool_registry.execute_tool("get_sales_summary", session=session, merchant_id=merchant_param)
+            tools_used.append("get_sales_summary")
+            refunds_res = self.tool_registry.execute_tool("get_refunds_summary", session=session, merchant_id=merchant_param)
+            tools_used.append("get_refunds_summary")
+            if sales_res.get("status") == "success" and refunds_res.get("status") == "success":
+                retrieved_data["net_sales_summary"] = {
+                    "sales": sales_res["data"],
+                    "refunds": refunds_res["data"],
+                }
+                evidence_refs.extend(["GATEWAY_TRANSACTIONS_SALES", "DISPUTE_REFUND_EVENTS"])
+
+        # 3. REFUND_SUMMARY
+        elif intent == CopilotIntent.REFUND_SUMMARY:
+            merchant_param = merch_ids[0] if merch_ids else None
+            refunds_res = self.tool_registry.execute_tool("get_refunds_summary", session=session, merchant_id=merchant_param)
+            tools_used.append("get_refunds_summary")
+            if refunds_res.get("status") == "success":
+                retrieved_data["refunds_summary"] = refunds_res["data"]
+                evidence_refs.append("DISPUTE_REFUND_EVENTS")
+
+        # 4. VERIFICATION_STATUS
+        elif intent == CopilotIntent.VERIFICATION_STATUS:
+            if exc_ids:
+                target_exc_id = exc_ids[0]
+                exc_res = self.tool_registry.execute_tool("get_exception", session=session, exception_id=target_exc_id)
+                tools_used.append("get_exception")
+                if exc_res.get("status") == "success" and exc_res.get("data", {}).get("found"):
+                    retrieved_data["exception"] = exc_res["data"]
+                    evidence_refs.append(target_exc_id)
+
+                ver_res = self.tool_registry.execute_tool("get_verifier_opinion", session=session, exception_id=target_exc_id)
+                tools_used.append("get_verifier_opinion")
+                if ver_res.get("status") == "success" and ver_res.get("data", {}).get("found"):
+                    retrieved_data["verifier_opinion"] = ver_res["data"]
+                    if ver_res["data"].get("opinion_id"):
+                        evidence_refs.append(ver_res["data"]["opinion_id"])
+
+                retrieved_data["verification_status_query"] = {
+                    "target_id": target_exc_id,
+                    "target_type": "exception",
+                }
+            elif pay_ids:
+                target_pay_id = pay_ids[0]
+                pay_res = self.tool_registry.execute_tool("get_payment", session=session, payment_id=target_pay_id)
+                tools_used.append("get_payment")
+                if pay_res.get("status") == "success" and pay_res.get("data", {}).get("found"):
+                    retrieved_data["payment"] = pay_res["data"]
+                    evidence_refs.append(target_pay_id)
+
+                stmt_exc = select(ExceptionRecord).where(
+                    or_(
+                        ExceptionRecord.primary_payment_id == target_pay_id,
+                        ExceptionRecord.exception_id.contains(target_pay_id),
+                        ExceptionRecord.description.contains(target_pay_id),
+                    )
+                )
+                linked_exc = session.scalars(stmt_exc).first()
+                if linked_exc:
+                    retrieved_data["linked_exception"] = {
+                        "exception_id": linked_exc.exception_id,
+                        "type": linked_exc.exception_type,
+                        "state": linked_exc.state,
+                        "exposure": linked_exc.exposure,
+                        "description": linked_exc.description,
+                    }
+                    evidence_refs.append(linked_exc.exception_id)
+                    ver_res = self.tool_registry.execute_tool("get_verifier_opinion", session=session, exception_id=linked_exc.exception_id)
+                    tools_used.append("get_verifier_opinion")
+                    if ver_res.get("status") == "success" and ver_res.get("data", {}).get("found"):
+                        retrieved_data["verifier_opinion"] = ver_res["data"]
+                        if ver_res["data"].get("opinion_id"):
+                            evidence_refs.append(ver_res["data"]["opinion_id"])
+
+                retrieved_data["verification_status_query"] = {
+                    "target_id": target_pay_id,
+                    "target_type": "payment",
+                }
+            else:
+                agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
+                tools_used.append("get_aggregate_summary")
+                if agg_res.get("status") == "success":
+                    retrieved_data["aggregate"] = agg_res["data"]
+
+        # 5. Exception investigation question
+        elif exc_ids:
             target_exc_id = exc_ids[0]
             exc_res = self.tool_registry.execute_tool("get_exception", session=session, exception_id=target_exc_id)
             tools_used.append("get_exception")
@@ -183,7 +289,7 @@ class AskSentinelService:
                     if ver_res["data"].get("opinion_id"):
                         evidence_refs.append(ver_res["data"]["opinion_id"])
 
-        # Payment lookup question
+        # 6. Payment lookup question
         elif pay_ids:
             target_pay_id = pay_ids[0]
             pay_res = self.tool_registry.execute_tool("get_payment", session=session, payment_id=target_pay_id)
@@ -225,7 +331,7 @@ class AskSentinelService:
                 }
                 evidence_refs.append(linked_exc.exception_id)
 
-        # Settlement lookup question (e.g. SET-000014)
+        # 7. Settlement lookup question (e.g. SET-000014)
         elif set_ids:
             target_set_id = set_ids[0]
             set_res = self.tool_registry.execute_tool("get_settlement", session=session, settlement_id=target_set_id)
@@ -252,102 +358,26 @@ class AskSentinelService:
                 }
                 evidence_refs.append(linked_exc.exception_id)
 
-        # Specific Merchant Trust Score question
-        elif merch_ids:
-            target_merch_id = merch_ids[0]
-            m_res = self.tool_registry.execute_tool("get_merchant_trust_score", session=session, merchant_id=target_merch_id)
-            tools_used.append("get_merchant_trust_score")
-            if m_res.get("status") == "success" and m_res.get("data", {}).get("found"):
-                m_data = m_res["data"]["score"]
-                retrieved_data["merchant_score"] = m_data
-                evidence_refs.append(f"MERCHANT_SCORE_{target_merch_id}")
+        # 8. Specific Merchant Trust Score or Merchant Discrepancy questions
+        elif merch_ids or intent == CopilotIntent.MERCHANT_SUMMARY:
+            if merch_ids:
+                target_merch_id = merch_ids[0]
+                m_res = self.tool_registry.execute_tool("get_merchant_trust_score", session=session, merchant_id=target_merch_id)
+                tools_used.append("get_merchant_trust_score")
+                if m_res.get("status") == "success" and m_res.get("data", {}).get("found"):
+                    m_data = m_res["data"]["score"]
+                    retrieved_data["merchant_score"] = m_data
+                    evidence_refs.append(f"MERCHANT_SCORE_{target_merch_id}")
+            else:
+                md_res = self.tool_registry.execute_tool("get_merchant_discrepancies", session=session)
+                tools_used.append("get_merchant_discrepancies")
+                if md_res.get("status") == "success":
+                    retrieved_data["merchant_discrepancies"] = md_res["data"]
+                    for m in md_res["data"].get("merchants", [])[:3]:
+                        evidence_refs.append(f"MERCHANT_{m['merchant_id']}")
 
-        # General Merchant Discrepancy questions (e.g. "Which merchants currently have anomalous settlement discrepancies?")
-        elif any(k in q_lower for k in ["merchant", "merchants", "vendor", "vendors"]):
-            md_res = self.tool_registry.execute_tool("get_merchant_discrepancies", session=session)
-            tools_used.append("get_merchant_discrepancies")
-            if md_res.get("status") == "success":
-                retrieved_data["merchant_discrepancies"] = md_res["data"]
-                for m in md_res["data"].get("merchants", [])[:3]:
-                    evidence_refs.append(f"MERCHANT_{m['merchant_id']}")
-
-        # Business Impact & ROI questions
-        elif any(k in q_lower for k in [
-            "roi",
-            "business impact",
-            "money saved",
-            "saved",
-            "how much money",
-            "save",
-            "recovered",
-            "recovery",
-            "financial exposure has sentinel",
-            "exposure has sentinel identified",
-            "exposure is associated with live-injected",
-            "how much financial exposure",
-            "actionable cases has sentinel",
-            "what business impact",
-        ]):
-            imp_res = self.tool_registry.execute_tool("get_business_impact", session=session)
-            tools_used.append("get_business_impact")
-            if imp_res.get("status") == "success" and imp_res.get("data", {}).get("found"):
-                retrieved_data["business_impact"] = imp_res["data"]["impact"]
-                evidence_refs.append("BUSINESS_IMPACT_ROI")
-
-        # Predictive Nodal Drift Radar questions
-        elif any(k in q_lower for k in [
-            "drift",
-            "deteriorating",
-            "early warning",
-            "drift risk",
-            "nodal health deteriorating",
-            "predictive",
-            "radar",
-            "leading indicator",
-            "leading signal",
-            "drift score",
-        ]):
-            drift_res = self.tool_registry.execute_tool("get_drift_prediction", session=session)
-            tools_used.append("get_drift_prediction")
-            if drift_res.get("status") == "success" and drift_res.get("data", {}).get("found"):
-                retrieved_data["drift_prediction"] = drift_res["data"]["drift"]
-                evidence_refs.append(drift_res["data"]["drift"]["prediction_id"])
-
-        # Confidence Calibration / Reliability questions
-        elif any(k in q_lower for k in [
-            "calibration",
-            "calibrated",
-            "confidence reliable",
-            "how reliable is confidence",
-            "historical correctness",
-            "confidence calibration",
-            "brier",
-            "ece",
-        ]):
-            calib_res = self.tool_registry.execute_tool("get_confidence_calibration", session=session)
-            tools_used.append("get_confidence_calibration")
-            if calib_res.get("status") == "success" and calib_res.get("data", {}).get("found"):
-                retrieved_data["confidence_calibration"] = calib_res["data"]["calibration"]
-                evidence_refs.append(calib_res["data"]["calibration"]["snapshot_id"])
-
-        # Escalation Webhook questions
-        elif any(k in q_lower for k in [
-            "webhook",
-            "escalation webhook",
-            "escalate webhook",
-            "downstream alert",
-            "escalation status",
-            "did we escalate",
-            "escalations delivered",
-        ]):
-            exc_id_param = exc_ids[0] if exc_ids else None
-            esc_res = self.tool_registry.execute_tool("get_escalation_status", session=session, exception_id=exc_id_param)
-            tools_used.append("get_escalation_status")
-            if esc_res.get("status") == "success":
-                retrieved_data["escalation_status"] = esc_res.get("data", {})
-
-        # Pattern Miner / Recurring cluster questions
-        elif any(k in q_lower for k in ["pattern", "cluster", "recurring", "repeated", "clustering", "largest pattern"]):
+        # 9. Pattern Miner / Recurring cluster questions
+        elif intent == CopilotIntent.PATTERN_SUMMARY:
             cl_res = self.tool_registry.execute_tool("get_clusters", session=session)
             tools_used.append("get_clusters")
             if cl_res.get("status") == "success":
@@ -357,8 +387,40 @@ class AskSentinelService:
                     for exc_id in cl.get("exception_ids", [])[:2]:
                         evidence_refs.append(exc_id)
 
-        # Specific Exception Family questions (e.g. ghost settlement, SLA breach, etc.)
-        elif any(k in q_lower for k in ["ghost", "double dip", "double-dip", "chargeback", "sla breach", "sla", "breach", "partial settlement", "unallocated", "missing settlement", "timing exception"]):
+        # 10. Business Impact & ROI questions
+        elif intent == CopilotIntent.BUSINESS_IMPACT:
+            imp_res = self.tool_registry.execute_tool("get_business_impact", session=session)
+            tools_used.append("get_business_impact")
+            if imp_res.get("status") == "success" and imp_res.get("data", {}).get("found"):
+                retrieved_data["business_impact"] = imp_res["data"]["impact"]
+                evidence_refs.append("BUSINESS_IMPACT_ROI")
+
+        # 11. Predictive Nodal Drift Radar questions
+        elif intent == CopilotIntent.DRIFT_PREDICTION:
+            drift_res = self.tool_registry.execute_tool("get_drift_prediction", session=session)
+            tools_used.append("get_drift_prediction")
+            if drift_res.get("status") == "success" and drift_res.get("data", {}).get("found"):
+                retrieved_data["drift_prediction"] = drift_res["data"]["drift"]
+                evidence_refs.append(drift_res["data"]["drift"]["prediction_id"])
+
+        # 12. Confidence Calibration / Reliability questions
+        elif intent == CopilotIntent.CONFIDENCE_CALIBRATION:
+            calib_res = self.tool_registry.execute_tool("get_confidence_calibration", session=session)
+            tools_used.append("get_confidence_calibration")
+            if calib_res.get("status") == "success" and calib_res.get("data", {}).get("found"):
+                retrieved_data["confidence_calibration"] = calib_res["data"]["calibration"]
+                evidence_refs.append(calib_res["data"]["calibration"]["snapshot_id"])
+
+        # 13. Escalation Webhook questions
+        elif intent == CopilotIntent.ESCALATION_STATUS:
+            exc_id_param = exc_ids[0] if exc_ids else None
+            esc_res = self.tool_registry.execute_tool("get_escalation_status", session=session, exception_id=exc_id_param)
+            tools_used.append("get_escalation_status")
+            if esc_res.get("status") == "success":
+                retrieved_data["escalation_status"] = esc_res.get("data", {})
+
+        # 14. Specific Exception Family questions (e.g. ghost settlement, SLA breach, etc.)
+        elif intent == CopilotIntent.EXCEPTION_FAMILY_SEARCH:
             matched_family = None
             if "ghost" in q_lower:
                 matched_family = "GHOST_SETTLEMENT"
@@ -382,15 +444,15 @@ class AskSentinelService:
                     for e in search_res["data"].get("exceptions", [])[:3]:
                         evidence_refs.append(e["exception_id"])
 
-        # Aggregate / Overview questions
-        elif any(k in q_lower for k in ["exposure", "how much", "summary", "overview", "total", "open exceptions", "unresolved", "families", "exception", "exceptions", "anomaly", "anomalies", "issues", "status", "health"]):
+        # 15. Aggregate / Overview questions
+        elif intent == CopilotIntent.EXCEPTION_SUMMARY:
             agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
             tools_used.append("get_aggregate_summary")
             if agg_res.get("status") == "success":
                 retrieved_data["aggregate"] = agg_res["data"]
 
-        # Universal fallback for general operational queries where no specific entity ID was queried
-        if not retrieved_data and not exc_ids and not pay_ids and not set_ids and not merch_ids:
+        # Universal fallback ONLY for general operational or unclassified overview queries
+        if not retrieved_data and intent in (CopilotIntent.EXCEPTION_SUMMARY, CopilotIntent.GENERAL_OPERATIONAL_QUERY):
             agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
             tools_used.append("get_aggregate_summary")
             if agg_res.get("status") == "success":
@@ -442,7 +504,122 @@ class AskSentinelService:
 
     def _synthesize_answer(self, question: str, data: Dict[str, Any]) -> Tuple[str, str, str, Optional[str]]:
         """Synthesizes factual grounded response from structured tool results."""
-        if "exception" in data:
+        if "sales_summary" in data:
+            sales = data["sales_summary"]
+            inr = sales["total_sales_inr"]
+            paise = sales["total_sales_paise"]
+            count = sales["transaction_count"]
+            m_id = sales.get("merchant_id")
+
+            merchant_clause = f" for merchant `{m_id}`" if m_id else ""
+            answer = (
+                f"Total sales{merchant_clause}: **₹{inr:,.2f}** ({paise:,} paise) across **{count}** successful transactions.\n\n"
+                f"Source: Gateway transactions (`{sales['source']}`).\n"
+                f"Definition: {sales['definition']}.\n"
+                f"Calculated from the current Nodexa dataset."
+            )
+            reasoning = f"Deterministic aggregation of captured payment transactions (status = CAPTURED) across {count} records."
+            return answer, reasoning, "HIGH", None
+
+        elif "net_sales_summary" in data:
+            net_data = data["net_sales_summary"]
+            sales = net_data["sales"]
+            refunds = net_data["refunds"]
+            gross_paise = sales["total_sales_paise"]
+            refund_paise = refunds["total_refunds_paise"]
+            net_paise = gross_paise - refund_paise
+            net_inr = round(net_paise / 100.0, 2)
+            gross_inr = sales["total_sales_inr"]
+            refund_inr = refunds["total_refunds_inr"]
+
+            answer = (
+                f"Net sales: **₹{net_inr:,.2f}** ({net_paise:,} paise).\n\n"
+                f"**Calculation Formula**:\n"
+                f"- Gross Captured Sales: ₹{gross_inr:,.2f} ({sales['transaction_count']} transactions)\n"
+                f"- Less Customer Refunds: ₹{refund_inr:,.2f} ({refunds['refund_count']} refund events)\n"
+                f"- Net Total: ₹{gross_inr:,.2f} - ₹{refund_inr:,.2f} = **₹{net_inr:,.2f}**\n\n"
+                f"Source: Combined gateway transactions and dispute refund records."
+            )
+            reasoning = "Deterministic calculation of net sales (Gross Captured Sales minus Settled Refunds)."
+            return answer, reasoning, "HIGH", None
+
+        elif "refunds_summary" in data:
+            refunds = data["refunds_summary"]
+            inr = refunds["total_refunds_inr"]
+            paise = refunds["total_refunds_paise"]
+            count = refunds["refund_count"]
+            m_id = refunds.get("merchant_id")
+
+            merchant_clause = f" for merchant `{m_id}`" if m_id else ""
+            answer = (
+                f"Total refunds{merchant_clause}: **₹{inr:,.2f}** ({paise:,} paise) across **{count}** refund events.\n\n"
+                f"Source: Dispute and refund events (`{refunds['source']}`).\n"
+                f"Definition: {refunds['definition']}.\n"
+                f"Calculated from the current Nodexa dataset."
+            )
+            reasoning = f"Deterministic aggregation of customer refund events across {count} records."
+            return answer, reasoning, "HIGH", None
+
+        elif "verification_status_query" in data:
+            v_info = data["verification_status_query"]
+            target_id = v_info["target_id"]
+            target_type = v_info["target_type"]
+
+            if target_type == "payment":
+                pay = data.get("payment", {})
+                linked_exc = data.get("linked_exception")
+                vop = data.get("verifier_opinion")
+
+                if linked_exc:
+                    exc_state = linked_exc["state"]
+                    is_verified_closed = exc_state == "VERIFIED_CLOSED"
+                    verdict_text = "VERIFIED CLOSED" if is_verified_closed else f"UNRESOLVED ({exc_state})"
+                    lines = [
+                        f"Payment `{target_id}` is linked to exception **{linked_exc['exception_id']}** ({linked_exc['type']}), which is currently in state **{exc_state}**."
+                    ]
+                    if vop:
+                        lines.append(
+                            f"Adversarial Verifier Opinion: **{vop.get('verdict')}** (Confidence: {vop.get('confidence')}, Policy: {vop.get('final_policy_decision')})."
+                        )
+                    if is_verified_closed:
+                        lines.append("Verification status: **PASSED / VERIFIED CLOSED**.")
+                    else:
+                        lines.append(f"Verification status: **PENDING / {verdict_text}**.")
+                    answer = "\n\n".join(lines)
+                    reasoning = f"Verification and reconciliation status retrieved for payment {target_id} and linked exception {linked_exc['exception_id']}."
+                    return answer, reasoning, "HIGH", None
+                else:
+                    status = pay.get("status", "UNKNOWN")
+                    amt = self._format_minor_units(pay.get("amount_minor_units", 0))
+                    answer = (
+                        f"Payment `{target_id}` has status **{status}** with amount {amt}.\n\n"
+                        f"No active reconciliation exceptions or dispute holds are associated with this payment. "
+                        f"The transaction completed within expected operational boundaries."
+                    )
+                    reasoning = f"Operational payment query for {target_id} with zero linked exceptions."
+                    return answer, reasoning, "HIGH", None
+
+            elif target_type == "exception":
+                exc = data.get("exception", {})
+                vop = data.get("verifier_opinion")
+                exc_state = exc.get("state", "UNKNOWN")
+                lines = [
+                    f"Exception **{target_id}** is currently in state **{exc_state}**."
+                ]
+                if vop:
+                    lines.append(
+                        f"Adversarial Verifier Opinion: **{vop.get('verdict')}** (Confidence: {vop.get('confidence')}, "
+                        f"Final Policy: {vop.get('final_policy_decision')}). Rationale: {vop.get('reasoning_summary')}."
+                    )
+                if exc_state == "VERIFIED_CLOSED":
+                    lines.append("Verification status: **PASSED / VERIFIED CLOSED**.")
+                else:
+                    lines.append(f"Verification status: **PENDING / NOT VERIFIED CLOSED**.")
+                answer = "\n\n".join(lines)
+                reasoning = f"Verification assessment retrieved for exception {target_id}."
+                return answer, reasoning, "HIGH", None
+
+        elif "exception" in data:
             exc = data["exception"]
             exc_id = exc["exception_id"]
             exc_type = exc["exception_type"]

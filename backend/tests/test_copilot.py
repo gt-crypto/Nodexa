@@ -153,3 +153,95 @@ def test_copilot_api_endpoint(client, setup_db):
     assert "answer" in data
     assert "confidence" in data
     assert data["abstained"] is False
+
+
+def test_sales_queries_route_to_get_sales_summary(setup_db):
+    """Verifies that sales and payment volume queries route to get_sales_summary and never return exceptions."""
+    service = AskSentinelService()
+
+    sales_queries = [
+        "total amount of sales?",
+        "what are my total sales?",
+        "how much did we sell?",
+        "total payment volume",
+        "total sales",
+        "sales amount",
+        "what is the total transaction value?",
+        "how much money was processed?",
+        "total GMV",
+    ]
+
+    for q in sales_queries:
+        res = service.ask(session=setup_db, question=q)
+        assert res["abstained"] is False
+        assert res["confidence"] == "HIGH"
+        # Tool routing check: MUST execute get_sales_summary and MUST NOT execute get_aggregate_summary
+        assert "get_sales_summary" in res["tools_used"], f"Failed for query: {q}"
+        assert "get_aggregate_summary" not in res["tools_used"], f"Failed for query: {q}"
+        
+        # Grounding check: MUST NOT answer with exception summary
+        ans_lower = res["answer"].lower()
+        assert "total sales" in ans_lower, f"Failed for query: {q}"
+        assert "unresolved open exceptions" not in ans_lower, f"Failed for query: {q}"
+        assert "exception family" not in ans_lower, f"Failed for query: {q}"
+        assert "gateway_transactions" in ans_lower, f"Failed for query: {q}"
+
+
+def test_exception_queries_route_to_get_aggregate_summary(setup_db):
+    """Verifies that exception questions route to get_aggregate_summary and not sales."""
+    service = AskSentinelService()
+
+    exc_queries = [
+        "how many unresolved exceptions?",
+        "what is the unresolved exposure?",
+        "how many exceptions?",
+        "what is the open exposure?",
+        "show me unresolved cases",
+    ]
+
+    for q in exc_queries:
+        res = service.ask(session=setup_db, question=q)
+        assert res["abstained"] is False
+        assert "get_aggregate_summary" in res["tools_used"], f"Failed for query: {q}"
+        assert "get_sales_summary" not in res["tools_used"], f"Failed for query: {q}"
+        ans_lower = res["answer"].lower()
+        assert "unresolved" in ans_lower or "exposure" in ans_lower
+
+
+def test_refund_and_net_sales_queries(setup_db):
+    """Verifies that refund and net sales queries route to dedicated tools with formula transparency."""
+    service = AskSentinelService()
+
+    # Refund query
+    res_ref = service.ask(session=setup_db, question="total refunds?")
+    assert res_ref["abstained"] is False
+    assert "get_refunds_summary" in res_ref["tools_used"]
+    assert "get_aggregate_summary" not in res_ref["tools_used"]
+    assert "total refunds" in res_ref["answer"].lower()
+
+    # Net sales query
+    res_net = service.ask(session=setup_db, question="net sales")
+    assert res_net["abstained"] is False
+    assert "get_sales_summary" in res_net["tools_used"]
+    assert "get_refunds_summary" in res_net["tools_used"]
+    assert "net sales" in res_net["answer"].lower()
+    assert "calculation formula" in res_net["answer"].lower()
+
+
+def test_transaction_pattern_and_verification_queries(setup_db):
+    """Verifies target queries 8, 9, 10 for transaction investigation, patterns, and verification."""
+    service = AskSentinelService()
+
+    # Query 8: Transaction lookup
+    res_tx = service.ask(session=setup_db, question="why was PAY-000001 flagged?")
+    assert "get_payment" in res_tx["tools_used"]
+
+    # Query 9: Pattern miner
+    res_pat = service.ask(session=setup_db, question="show me recurring patterns")
+    assert "get_clusters" in res_pat["tools_used"]
+
+    # Query 10: Verification status
+    res_ver = service.ask(session=setup_db, question="is PAY-000001 verified?")
+    assert "get_payment" in res_ver["tools_used"]
+    assert "get_verifier_opinion" in res_ver["tools_used"]
+

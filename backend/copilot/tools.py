@@ -20,6 +20,7 @@ from backend.models.exceptions import ExceptionRecord, ExceptionStateTransition,
 from backend.models.risk import RiskAssessment
 from backend.models.policy import PolicyDecisionRecord
 from backend.models.audit import AuditEvent
+from backend.models.enums import PaymentStatus, DisputeEventType
 from backend.agent.tools.control_findings import lookup_control_findings
 
 
@@ -47,6 +48,8 @@ class AskSentinelToolRegistry:
         "get_audit_events",
         "get_aggregate_summary",
         "get_merchant_discrepancies",
+        "get_sales_summary",
+        "get_refunds_summary",
     ]
 
     def __init__(self, max_tool_calls: int = 15):
@@ -73,6 +76,8 @@ class AskSentinelToolRegistry:
             "get_audit_events": self.get_audit_events,
             "get_aggregate_summary": self.get_aggregate_summary,
             "get_merchant_discrepancies": self.get_merchant_discrepancies,
+            "get_sales_summary": self.get_sales_summary,
+            "get_refunds_summary": self.get_refunds_summary,
         }
 
     def reset_call_counter(self):
@@ -592,4 +597,63 @@ class AskSentinelToolRegistry:
             "merchants": anomalous_merchants,
             "total_merchants_evaluated": len(scores),
         }
+
+    def get_sales_summary(self, session: Session, merchant_id: Optional[str] = None) -> Dict[str, Any]:
+        """Retrieves deterministic sales metrics aggregated from completed gateway transactions.
+
+        Strictly aggregates captured transactions (PaymentStatus.CAPTURED) using integer paise.
+        Excludes failed, uncaptured authorized, refunds, bank settlements, and exception exposure.
+        """
+        stmt = select(
+            func.count(GatewayTransaction.id),
+            func.sum(GatewayTransaction.amount)
+        ).where(
+            GatewayTransaction.status == PaymentStatus.CAPTURED.value
+        )
+        if merchant_id:
+            stmt = stmt.where(GatewayTransaction.merchant_id == merchant_id)
+
+        row = session.execute(stmt).fetchone()
+        tx_count = row[0] if row and row[0] is not None else 0
+        total_paise = int(row[1]) if row and row[1] is not None else 0
+        total_inr = round(total_paise / 100.0, 2)
+
+        return {
+            "total_sales_paise": total_paise,
+            "total_sales_inr": total_inr,
+            "transaction_count": tx_count,
+            "currency": "INR",
+            "definition": "Gross captured payment transactions recorded at gateway",
+            "source": "gateway_transactions",
+            "merchant_id": merchant_id,
+        }
+
+    def get_refunds_summary(self, session: Session, merchant_id: Optional[str] = None) -> Dict[str, Any]:
+        """Retrieves deterministic refund metrics aggregated from dispute and refund events."""
+        stmt = select(
+            func.count(DisputeRefundEvent.id),
+            func.sum(DisputeRefundEvent.amount)
+        ).where(
+            DisputeRefundEvent.event_type == DisputeEventType.REFUND.value
+        )
+        if merchant_id:
+            stmt = stmt.join(GatewayTransaction, DisputeRefundEvent.payment_id == GatewayTransaction.payment_id).where(
+                GatewayTransaction.merchant_id == merchant_id
+            )
+
+        row = session.execute(stmt).fetchone()
+        refund_count = row[0] if row and row[0] is not None else 0
+        total_paise = int(row[1]) if row and row[1] is not None else 0
+        total_inr = round(total_paise / 100.0, 2)
+
+        return {
+            "total_refunds_paise": total_paise,
+            "total_refunds_inr": total_inr,
+            "refund_count": refund_count,
+            "currency": "INR",
+            "definition": "Customer refund events recorded in dispute/refund records",
+            "source": "dispute_refund_events",
+            "merchant_id": merchant_id,
+        }
+
 
