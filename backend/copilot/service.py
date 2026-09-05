@@ -57,7 +57,10 @@ class AskSentinelService:
         # Look for "merchant <ID>" or "merchant M123"
         merchants = []
         merch_matches = re.findall(r"merchant\s+([A-Za-z0-9_-]+)", text, re.IGNORECASE)
-        stop_words = {"id", "ids", "discrepancies", "anomalies", "accounts", "names", "currently", "with", "having", "status", "risk"}
+        stop_words = {
+            "id", "ids", "discrepancies", "anomalies", "accounts", "names", "currently", "with", "having",
+            "status", "risk", "processed", "has", "had", "have", "the", "that", "most", "highest", "sold", "is", "are"
+        }
         merchants.extend([m for m in merch_matches if m.lower() not in stop_words])
         merchants.extend(re.findall(r"(?:MERCH|MERCHANT)[-_][A-Za-z0-9_-]+", text, re.IGNORECASE))
         
@@ -143,8 +146,8 @@ class AskSentinelService:
         evidence_refs: List[str] = []
         retrieved_data: Dict[str, Any] = {}
 
-        # Classify intent using deterministic & semantic classifier
-        intent = CopilotIntentClassifier.classify(
+        # Formulate structured multi-tool QueryPlan
+        plan = CopilotIntentClassifier.plan_query(
             question=question,
             exc_ids=exc_ids,
             pay_ids=pay_ids,
@@ -152,9 +155,68 @@ class AskSentinelService:
             ord_ids=ord_ids,
             merch_ids=merch_ids,
         )
+        intent = plan.intent
 
-        # 1. SALES_SUMMARY
-        if intent == CopilotIntent.SALES_SUMMARY:
+        # 1. TRANSACTION_METRICS (Averages, counts, min/max, thresholds)
+        if intent == CopilotIntent.TRANSACTION_METRICS:
+            tx_params = plan.params
+            tx_res = self.tool_registry.execute_tool(
+                "get_transaction_metrics",
+                session=session,
+                status=tx_params.get("status"),
+                min_amount_paise=tx_params.get("min_amount_paise"),
+                merchant_id=merch_ids[0] if merch_ids else None,
+            )
+            tools_used.append("get_transaction_metrics")
+            if tx_res.get("status") == "success":
+                retrieved_data["transaction_metrics"] = tx_res["data"]
+                evidence_refs.append("GATEWAY_TRANSACTIONS")
+
+            # Also execute sales summary for captured totals
+            sales_res = self.tool_registry.execute_tool("get_sales_summary", session=session)
+            tools_used.append("get_sales_summary")
+            if sales_res.get("status") == "success":
+                retrieved_data["sales_summary"] = sales_res["data"]
+
+        # 2. CROSS_SOURCE_RECONCILIATION (Gateway vs Bank Settlement, SLA, Ledger)
+        elif intent == CopilotIntent.CROSS_SOURCE_RECONCILIATION:
+            cr_res = self.tool_registry.execute_tool("get_cross_source_reconciliation", session=session)
+            tools_used.append("get_cross_source_reconciliation")
+            if cr_res.get("status") == "success":
+                retrieved_data["cross_source_reconciliation"] = cr_res["data"]
+                evidence_refs.extend(["GATEWAY_TRANSACTIONS", "BANK_SETTLEMENT_BATCHES", "NODAL_LEDGER"])
+
+            st_res = self.tool_registry.execute_tool("get_settlements_summary", session=session)
+            tools_used.append("get_settlements_summary")
+            if st_res.get("status") == "success":
+                retrieved_data["settlements_summary"] = st_res["data"]
+
+        # 3. MERCHANT_ANALYTICS (Rankings, top merchants by sales, exposure, refunds vs sales)
+        elif intent == CopilotIntent.MERCHANT_ANALYTICS:
+            mo_res = self.tool_registry.execute_tool("get_merchants_overview", session=session)
+            tools_used.append("get_merchants_overview")
+            if mo_res.get("status") == "success":
+                retrieved_data["merchants_overview"] = mo_res["data"]
+                evidence_refs.append("MERCHANT_SCORES")
+
+        # 4. SETTLEMENT_SUMMARY (General settlement metrics, timing delays, batch count)
+        elif intent == CopilotIntent.SETTLEMENT_SUMMARY:
+            if set_ids:
+                target_set_id = set_ids[0]
+                set_res = self.tool_registry.execute_tool("get_settlement", session=session, settlement_id=target_set_id)
+                tools_used.append("get_settlement")
+                if set_res.get("status") == "success" and set_res.get("data", {}).get("found"):
+                    retrieved_data["settlement_lookup"] = set_res["data"]
+                    evidence_refs.append(target_set_id)
+            else:
+                st_res = self.tool_registry.execute_tool("get_settlements_summary", session=session)
+                tools_used.append("get_settlements_summary")
+                if st_res.get("status") == "success":
+                    retrieved_data["settlements_summary"] = st_res["data"]
+                    evidence_refs.append("BANK_SETTLEMENT_BATCHES")
+
+        # 5. SALES_SUMMARY
+        elif intent == CopilotIntent.SALES_SUMMARY:
             merchant_param = merch_ids[0] if merch_ids else None
             sales_res = self.tool_registry.execute_tool("get_sales_summary", session=session, merchant_id=merchant_param)
             tools_used.append("get_sales_summary")
@@ -162,7 +224,7 @@ class AskSentinelService:
                 retrieved_data["sales_summary"] = sales_res["data"]
                 evidence_refs.append("GATEWAY_TRANSACTIONS_SALES")
 
-        # 2. NET_SALES_SUMMARY
+        # 6. NET_SALES_SUMMARY
         elif intent == CopilotIntent.NET_SALES_SUMMARY:
             merchant_param = merch_ids[0] if merch_ids else None
             sales_res = self.tool_registry.execute_tool("get_sales_summary", session=session, merchant_id=merchant_param)
@@ -176,7 +238,7 @@ class AskSentinelService:
                 }
                 evidence_refs.extend(["GATEWAY_TRANSACTIONS_SALES", "DISPUTE_REFUND_EVENTS"])
 
-        # 3. REFUND_SUMMARY
+        # 7. REFUND_SUMMARY
         elif intent == CopilotIntent.REFUND_SUMMARY:
             merchant_param = merch_ids[0] if merch_ids else None
             refunds_res = self.tool_registry.execute_tool("get_refunds_summary", session=session, merchant_id=merchant_param)
@@ -185,7 +247,7 @@ class AskSentinelService:
                 retrieved_data["refunds_summary"] = refunds_res["data"]
                 evidence_refs.append("DISPUTE_REFUND_EVENTS")
 
-        # 4. VERIFICATION_STATUS
+        # 8. VERIFICATION_STATUS
         elif intent == CopilotIntent.VERIFICATION_STATUS:
             if exc_ids:
                 target_exc_id = exc_ids[0]
@@ -243,10 +305,15 @@ class AskSentinelService:
                     "target_type": "payment",
                 }
             else:
+                # Aggregate verification query: search closed and pending verifications
+                search_res = self.tool_registry.execute_tool("search_exceptions", session=session, limit=20)
+                tools_used.append("search_exceptions")
                 agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
                 tools_used.append("get_aggregate_summary")
-                if agg_res.get("status") == "success":
-                    retrieved_data["aggregate"] = agg_res["data"]
+                retrieved_data["general_verification_query"] = {
+                    "search": search_res.get("data", {}),
+                    "aggregate": agg_res.get("data", {}),
+                }
 
         # 5. Exception investigation question
         elif exc_ids:
@@ -451,13 +518,54 @@ class AskSentinelService:
             if agg_res.get("status") == "success":
                 retrieved_data["aggregate"] = agg_res["data"]
 
-        # Universal fallback ONLY for general operational or unclassified overview queries
-        if not retrieved_data and intent in (CopilotIntent.EXCEPTION_SUMMARY, CopilotIntent.GENERAL_OPERATIONAL_QUERY):
-            agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
-            tools_used.append("get_aggregate_summary")
-            if agg_res.get("status") == "success":
-                retrieved_data["aggregate"] = agg_res["data"]
+        # Fallback handling:
+        # Do NOT blindly route unclassified queries to get_aggregate_summary.
+        # Check semantic query intent:
+        if not retrieved_data:
+            q_norm_check = re.sub(r"[^\w\s-]", " ", question.lower())
+            q_norm_check = re.sub(r"\s+", " ", q_norm_check).strip()
+            volume_words = ["process", "processed", "processing", "volume", "sales", "sold", "gmv", "flowed", "payments"]
+            exception_words = ["exception", "exceptions", "exposure", "unresolved", "anomaly", "anomalies", "stuck", "lost"]
 
+            has_volume_keyword = any(w in q_norm_check for w in volume_words)
+            has_exception_keyword = any(w in q_norm_check for w in exception_words)
+
+            if intent == CopilotIntent.EXCEPTION_SUMMARY or (has_exception_keyword and not has_volume_keyword):
+                agg_res = self.tool_registry.execute_tool("get_aggregate_summary", session=session)
+                tools_used.append("get_aggregate_summary")
+                if agg_res.get("status") == "success":
+                    retrieved_data["aggregate"] = agg_res["data"]
+            elif has_volume_keyword and not has_exception_keyword:
+                merchant_param = merch_ids[0] if merch_ids else None
+                sales_res = self.tool_registry.execute_tool("get_sales_summary", session=session, merchant_id=merchant_param)
+                tools_used.append("get_sales_summary")
+                if sales_res.get("status") == "success":
+                    retrieved_data["sales_summary"] = sales_res["data"]
+                    evidence_refs.append("GATEWAY_TRANSACTIONS_SALES")
+
+        # Consistency Validation:
+        # The selected tool and answer must be semantically relevant to the question.
+        # A question asking about volume/processed money must NEVER return exception data or exposure.
+        q_norm_str = re.sub(r"[^\w\s-]", " ", question.lower())
+        q_norm_str = re.sub(r"\s+", " ", q_norm_str).strip()
+        is_volume_query = any(w in q_norm_str for w in [
+            "process", "processed", "processing", "volume", "sales", "sell", "sold", "gmv", "flowed", "transaction value"
+        ]) and not any(w in q_norm_str for w in [
+            "exception", "exceptions", "exposure", "unresolved", "anomaly", "anomalies", "stuck", "tied up"
+        ])
+        if is_volume_query:
+            # If aggregate exception data was inadvertently retrieved, purge it and reroute to get_sales_summary
+            if "aggregate" in retrieved_data:
+                del retrieved_data["aggregate"]
+                tools_used = [t for t in tools_used if t != "get_aggregate_summary"]
+            if "sales_summary" not in retrieved_data and "net_sales_summary" not in retrieved_data:
+                merchant_param = merch_ids[0] if merch_ids else None
+                sales_res = self.tool_registry.execute_tool("get_sales_summary", session=session, merchant_id=merchant_param)
+                if "get_sales_summary" not in tools_used:
+                    tools_used.append("get_sales_summary")
+                if sales_res.get("status") == "success":
+                    retrieved_data["sales_summary"] = sales_res["data"]
+                    evidence_refs.append("GATEWAY_TRANSACTIONS_SALES")
 
         # 3. Formulate Answer & Check Abstention
         if not retrieved_data:
@@ -483,6 +591,24 @@ class AskSentinelService:
         # Synthesize Grounded Answer
         answer, reasoning, confidence, limitations = self._synthesize_answer(question, retrieved_data)
 
+        # Final sanity check: answer must not contain exception data if it is a volume query
+        if is_volume_query:
+            invalid_terms = ["unresolved exceptions", "open exposure", "exception family breakdown", "unresolved open exceptions"]
+            for term in invalid_terms:
+                if term in answer.lower():
+                    # Fallback to pure sales summary formatting
+                    if "sales_summary" in retrieved_data:
+                        sales = retrieved_data["sales_summary"]
+                        inr = sales["total_sales_inr"]
+                        paise = sales["total_sales_paise"]
+                        count = sales["transaction_count"]
+                        answer = (
+                            f"Total processed payment volume: **₹{inr:,.2f}** ({paise:,} paise) across **{count}** captured transactions.\n\n"
+                            f"Source: Gateway transactions (`{sales['source']}`).\n"
+                            f"Definition: {sales['definition']}."
+                        )
+                        break
+
         # Deduplicate evidence refs
         evidence_refs = list(dict.fromkeys(evidence_refs))
 
@@ -504,7 +630,223 @@ class AskSentinelService:
 
     def _synthesize_answer(self, question: str, data: Dict[str, Any]) -> Tuple[str, str, str, Optional[str]]:
         """Synthesizes factual grounded response from structured tool results."""
-        if "sales_summary" in data:
+        # 1. Transaction Metrics (counts, averages, min/max, threshold filters)
+        if "transaction_metrics" in data:
+            tm = data["transaction_metrics"]
+            tot_cnt = tm["total_count"]
+            tot_inr = tm["total_inr"]
+            avg_inr = tm["average_inr"]
+            breakdown = tm.get("status_breakdown", {})
+            largest = tm.get("largest_transaction")
+            smallest = tm.get("smallest_transaction")
+            filtered = tm.get("filtered_criteria", {})
+
+            q_lower = question.lower()
+            lines = []
+
+            if "average" in q_lower:
+                lines.append(f"Average transaction amount: **₹{avg_inr:,.2f}** ({tm['average_paise']:,} paise) across **{tot_cnt}** transactions.")
+            elif any(w in q_lower for w in ["largest", "biggest", "highest", "max"]):
+                if largest:
+                    lines.append(
+                        f"Largest transaction: **₹{largest['amount_inr']:,.2f}** ({largest['payment_id']}) "
+                        f"for merchant `{largest['merchant_id']}` (status: {largest['status']})."
+                    )
+                else:
+                    lines.append("No transactions found.")
+            elif any(w in q_lower for w in ["smallest", "minimum", "lowest"]):
+                if smallest:
+                    lines.append(
+                        f"Smallest transaction: **₹{smallest['amount_inr']:,.2f}** ({smallest['payment_id']}) "
+                        f"for merchant `{smallest['merchant_id']}` (status: {smallest['status']})."
+                    )
+                else:
+                    lines.append("No transactions found.")
+            elif filtered.get("min_amount_paise") is not None:
+                min_inr = round(filtered["min_amount_paise"] / 100.0, 2)
+                lines.append(f"There are **{tot_cnt}** transactions above **₹{min_inr:,.2f}** totaling **₹{tot_inr:,.2f}**.")
+                if tm.get("sample_transactions"):
+                    lines.append("\n**Matching Transactions (Top 5)**:")
+                    for t in tm["sample_transactions"][:5]:
+                        lines.append(f"- `{t['payment_id']}`: ₹{t['amount_inr']:,.2f} (Merchant: `{t['merchant_id']}`, Status: {t['status']})")
+            elif "failed" in q_lower:
+                failed_info = breakdown.get("FAILED", {"count": 0, "total_inr": 0.0})
+                lines.append(f"There are **{failed_info['count']}** failed transaction(s) totaling **₹{failed_info['total_inr']:,.2f}**.")
+                if tm.get("sample_transactions"):
+                    failed_samples = [t for t in tm["sample_transactions"] if t["status"] == "FAILED"]
+                    if failed_samples:
+                        lines.append("\n**Failed Transactions**:")
+                        for t in failed_samples[:5]:
+                            lines.append(f"- `{t['payment_id']}`: ₹{t['amount_inr']:,.2f} (Merchant: `{t['merchant_id']}`)")
+            else:
+                lines.append(f"Total transactions in dataset: **{tot_cnt}** totaling **₹{tot_inr:,.2f}** (Average: **₹{avg_inr:,.2f}**).")
+                if breakdown:
+                    lines.append("\n**Status Breakdown**:")
+                    for st, b in breakdown.items():
+                        lines.append(f"- **{st}**: {b['count']} transactions (₹{b['total_inr']:,.2f})")
+
+            lines.append("\nSource: Gateway transactions (`gateway_transactions`).")
+            answer = "\n".join(lines)
+            reasoning = f"Calculated transaction distribution metrics across {tot_cnt} records."
+            return answer, reasoning, "HIGH", None
+
+        # 2. Cross-Source Reconciliation (Gateway vs Settlements, SLA, Ledger)
+        elif "cross_source_reconciliation" in data:
+            csr = data["cross_source_reconciliation"]
+            unsettled_cnt = csr["unsettled_captured_count"]
+            partial_cnt = csr["partially_settled_count"]
+            mismatch_cnt = csr["amount_mismatches_count"]
+            sla_cnt = csr["sla_breach_count"]
+            ledger_rec = csr["nodal_ledger_reconciliation"]
+
+            q_lower = question.lower()
+            lines = []
+
+            if any(w in q_lower for w in ["unsettled", "not settled", "has not settled", "no settlement", "without settlement"]):
+                lines.append(f"There are **{unsettled_cnt}** captured payment(s) that have zero settlement records linked.")
+                if csr.get("unsettled_captured_payments"):
+                    lines.append("\n**Unsettled Captured Payments**:")
+                    for p in csr["unsettled_captured_payments"][:5]:
+                        lines.append(f"- `{p['payment_id']}`: ₹{p['amount_inr']:,.2f} (Merchant: `{p['merchant_id']}`)")
+            elif "partial" in q_lower:
+                lines.append(f"There are **{partial_cnt}** partially settled payment(s) where cleared settlement is less than gateway amount.")
+                if csr.get("partially_settled_payments"):
+                    lines.append("\n**Partially Settled Payments**:")
+                    for p in csr["partially_settled_payments"][:5]:
+                        lines.append(f"- `{p['payment_id']}`: Gateway ₹{p['payment_amount_inr']:,.2f} vs Settled ₹{p['settled_amount_inr']:,.2f} (Difference: ₹{p['difference_inr']:,.2f})")
+            elif any(w in q_lower for w in ["sla", "late"]):
+                lines.append(f"There are **{sla_cnt}** payment(s) that breached the bank settlement clearing SLA window.")
+                if csr.get("sla_breach_payments"):
+                    lines.append("\n**SLA Breached Payments**:")
+                    for p in csr["sla_breach_payments"][:5]:
+                        lines.append(f"- `{p['payment_id']}`: ₹{p['amount_inr']:,.2f} (Delay: {p['delay_hours']}h)")
+            elif "ledger" in q_lower:
+                lines.append(
+                    f"Nodal Ledger Escrow Reconciliation: Expected **₹{ledger_rec['expected_balance_inr']:,.2f}** vs "
+                    f"Actual Ledger **₹{ledger_rec['actual_balance_inr']:,.2f}** (Variance: **₹{ledger_rec['variance_inr']:,.2f}**, Status: **{ledger_rec['overall_status']}**)."
+                )
+            else:
+                lines.append(
+                    f"Cross-Source Reconciliation Overview across **{csr['total_captured_payments']}** captured payments:\n"
+                    f"- **Unsettled Payments**: {unsettled_cnt}\n"
+                    f"- **Partially Settled**: {partial_cnt}\n"
+                    f"- **Amount Mismatches**: {mismatch_cnt}\n"
+                    f"- **Settlement SLA Breaches**: {sla_cnt}\n"
+                    f"- **Ledger Variance**: ₹{ledger_rec['variance_inr']:,.2f} (Status: {ledger_rec['overall_status']})"
+                )
+
+            lines.append("\nSource: Cross-reconciliation of gateway payments, bank settlement batches, and nodal ledger.")
+            answer = "\n".join(lines)
+            reasoning = "Multi-source reconciliation join across gateway_transactions, bank_settlement_batches, and nodal_ledger."
+            return answer, reasoning, "HIGH", None
+
+        # 3. Merchant Analytics Overview
+        elif "merchants_overview" in data:
+            mo = data["merchants_overview"]
+            tot_merch = mo["total_merchants_count"]
+            top_sales = mo.get("top_merchant_by_sales")
+            top_exp = mo.get("top_merchant_by_exposure")
+            top_exc = mo.get("top_merchant_by_exceptions")
+            refund_exceeds = mo.get("merchants_refund_exceeds_sales", [])
+
+            q_lower = question.lower()
+            lines = []
+
+            if "how many merchants" in q_lower:
+                lines.append(f"There are **{tot_merch}** distinct merchants operating in the Nodexa network.")
+            elif any(w in q_lower for w in ["most refunds", "refunds greater", "refund greater", "refund volume"]):
+                if refund_exceeds:
+                    lines.append(f"Found **{len(refund_exceeds)}** merchant(s) where refund volume exceeds gross sales:")
+                    for m in refund_exceeds:
+                        lines.append(f"- Merchant `{m['merchant_id']}`: Refunds ₹{m['refunds_inr']:,.2f} vs Sales ₹{m['sales_inr']:,.2f}")
+                else:
+                    lines.append("No merchants currently have refund volume exceeding gross sales.")
+            elif any(w in q_lower for w in ["highest exposure", "most exposure"]):
+                if top_exp:
+                    lines.append(f"Merchant with highest exposure: **`{top_exp['merchant_id']}`** with **₹{top_exp['exposure_inr']:,.2f}** open exposure ({top_exp['exception_count']} exceptions, Band: {top_exp['score_band']}).")
+                else:
+                    lines.append("No merchant exception exposure found.")
+            elif any(w in q_lower for w in ["most exceptions", "highest exceptions"]):
+                if top_exc:
+                    lines.append(f"Merchant with most exceptions: **`{top_exc['merchant_id']}`** with **{top_exc['exception_count']}** exceptions (Exposure: ₹{top_exc['exposure_inr']:,.2f}).")
+                else:
+                    lines.append("No exceptions found.")
+            elif any(w in q_lower for w in ["top merchant", "processed the most", "highest sales", "most sales", "merchant-wise"]):
+                if top_sales:
+                    lines.append(f"Top merchant by processed sales: **`{top_sales['merchant_id']}`** with **₹{top_sales['sales_inr']:,.2f}** across {top_sales['sales_count']} transactions.")
+                    if mo.get("merchants_ranked_by_sales"):
+                        lines.append("\n**Top Merchants by Sales**:")
+                        for i, m in enumerate(mo["merchants_ranked_by_sales"][:5], 1):
+                            lines.append(f"{i}. `{m['merchant_id']}`: ₹{m['sales_inr']:,.2f} ({m['sales_count']} txs)")
+                else:
+                    lines.append("No merchant sales recorded.")
+            else:
+                lines.append(f"Merchant Overview across **{tot_merch}** merchants:\n")
+                if top_sales:
+                    lines.append(f"- **Top by Sales**: `{top_sales['merchant_id']}` (₹{top_sales['sales_inr']:,.2f})")
+                if top_exp:
+                    lines.append(f"- **Highest Exposure**: `{top_exp['merchant_id']}` (₹{top_exp['exposure_inr']:,.2f})")
+
+            lines.append("\nSource: Merchant Trust Scores and Gateway Transactions.")
+            answer = "\n".join(lines)
+            reasoning = f"Aggregated merchant intelligence across {tot_merch} merchants."
+            return answer, reasoning, "HIGH", None
+
+        # 4. Settlements Summary
+        elif "settlements_summary" in data:
+            ss = data["settlements_summary"]
+            tot_batches = ss["total_settlement_batches"]
+            tot_inr = ss["total_net_amount_inr"]
+            avg_delay = ss.get("average_settlement_delay_hours")
+            unallocated = ss.get("unallocated_batches_count", 0)
+            largest = ss.get("largest_settlement")
+
+            q_lower = question.lower()
+            lines = []
+
+            if any(w in q_lower for w in ["average settlement time", "settlement delay", "how long"]):
+                if avg_delay is not None:
+                    lines.append(f"Average settlement clearing time: **{avg_delay} hours** from gateway transaction creation to bank clearing.")
+                else:
+                    lines.append("Settlement clearing timestamps are not sufficient to compute average settlement delay.")
+            elif any(w in q_lower for w in ["largest", "biggest"]):
+                if largest:
+                    lines.append(f"Largest settlement batch: **`{largest['settlement_id']}`** with net cleared amount of **₹{largest['net_amount_inr']:,.2f}**.")
+                else:
+                    lines.append("No settlement batches found.")
+            elif any(w in q_lower for w in ["late", "unallocated", "missing"]):
+                lines.append(f"There are **{unallocated}** unallocated settlement batch(es) lacking a matching gateway payment reference.")
+            else:
+                lines.append(f"Total bank settlements: **₹{tot_inr:,.2f}** across **{tot_batches}** clearing batches.")
+                if avg_delay is not None:
+                    lines.append(f"Average clearing time: **{avg_delay} hours**.")
+                lines.append(f"Total interchange fees deducted: ₹{ss.get('total_fees_inr', 0):,.2f}.")
+
+            lines.append("\nSource: Bank settlement batches (`bank_settlement_batches`).")
+            answer = "\n".join(lines)
+            reasoning = f"Deterministic aggregation of {tot_batches} bank settlement batches."
+            return answer, reasoning, "HIGH", None
+
+        # 5. General Verification Query
+        elif "general_verification_query" in data:
+            gv = data["general_verification_query"]
+            agg = gv.get("aggregate", {})
+            search = gv.get("search", {})
+            tot = agg.get("total_exceptions", 0)
+            open_cnt = agg.get("open_exceptions_count", 0)
+            closed_cnt = tot - open_cnt
+
+            lines = [
+                f"Verification Overview:\n"
+                f"- **Verified Closed Cases**: {closed_cnt}\n"
+                f"- **Unresolved / Pending Verification**: {open_cnt} (Exposure: {self._format_minor_units(agg.get('open_exposure_minor_units', 0))})\n"
+                f"- **Total Lifetime Cases**: {tot}"
+            ]
+            answer = "\n".join(lines)
+            reasoning = f"Aggregated verification status across {tot} lifetime cases."
+            return answer, reasoning, "HIGH", None
+
+        elif "sales_summary" in data:
             sales = data["sales_summary"]
             inr = sales["total_sales_inr"]
             paise = sales["total_sales_paise"]
@@ -512,11 +854,19 @@ class AskSentinelService:
             m_id = sales.get("merchant_id")
 
             merchant_clause = f" for merchant `{m_id}`" if m_id else ""
+            q_lower = question.lower()
+            is_volume_focused = any(w in q_lower for w in ["process", "processed", "processing", "volume", "flow", "gmv", "amount did we process"])
+            
+            if is_volume_focused:
+                header = f"Total processed payment volume{merchant_clause}"
+            else:
+                header = f"Total sales{merchant_clause}"
+
             answer = (
-                f"Total sales{merchant_clause}: **₹{inr:,.2f}** ({paise:,} paise) across **{count}** successful transactions.\n\n"
+                f"{header}: **₹{inr:,.2f}** ({paise:,} paise) across **{count}** captured transactions.\n\n"
                 f"Source: Gateway transactions (`{sales['source']}`).\n"
                 f"Definition: {sales['definition']}.\n"
-                f"Calculated from the current Nodexa dataset."
+                f"Calculated dynamically from current Nodexa operational records."
             )
             reasoning = f"Deterministic aggregation of captured payment transactions (status = CAPTURED) across {count} records."
             return answer, reasoning, "HIGH", None
