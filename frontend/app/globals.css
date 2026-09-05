@@ -5,15 +5,43 @@
 @tailwind utilities;
 
 :root {
-  --background: #080b11;
-  --foreground: #f8fafc;
-  --panel-bg: #0d121d;
-  --panel-border: rgba(255, 255, 255, 0.07);
+  --background: #FFFBE6;
+  --foreground: #111827;
+  --panel-bg: #FFFFFF;
+  --panel-border: #E2E8F0;
+  --primary-accent: #4F46E5;
+  --yellow-primary: #F4D35E;
+  --yellow-light: #FFF3B0;
+  --yellow-subtle: #FFFBE6;
+  --cta-bg: #F4D35E;
+  --cta-hover: #E8C84A;
+  --cta-active: #DDBA35;
+}
+
+/* ── Primary CTA Button - Light/Medium Warm Yellow (#F4D35E) ── */
+.btn-primary-cta,
+button[data-variant="primary"] {
+  background-color: #F4D35E !important;
+  color: #0F172A !important;
+  border-color: #E8C84A !important;
+}
+
+.btn-primary-cta:hover,
+button[data-variant="primary"]:hover {
+  background-color: #E8C84A !important;
+  border-color: #DDBA35 !important;
+}
+
+.btn-primary-cta:active,
+button[data-variant="primary"]:active {
+  background-color: #DDBA35 !important;
 }
 
 body {
-  color: var(--foreground);
-  background-color: #080b11;
+  color: #111827;
+  background-color: #FFFBE6;
+  background-image: linear-gradient(180deg, #FFFBE6 0%, #FFFDF0 45%, #FFFFFF 100%);
+  background-attachment: fixed;
   font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   min-height: 100vh;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
@@ -22,11 +50,11 @@ body {
   letter-spacing: -0.011em;
 }
 
-/* Enterprise panel styling - sleek, minimal, high-contrast readability */
+/* ── Light Fintech Panel Styling (Mercury/Ramp/Stripe Aesthetic) ── */
 .glass-panel {
-  background-color: #0d121d;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
 }
 
 .glass-panel-hover {
@@ -34,57 +62,57 @@ body {
 }
 
 .glass-panel-hover:hover {
-  background-color: #111827;
-  border-color: rgba(56, 189, 248, 0.25);
+  background-color: #FFFFFF;
+  border-color: #CBD5E1;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(56, 189, 248, 0.1);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(79, 70, 229, 0.08);
 }
 
-/* Subtle financial grid pattern for backgrounds and login hero */
+/* Subtle financial grid pattern for light backgrounds */
 .bg-grid-pattern {
   background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(to right, rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
 }
 
-/* Restrained fintech accent glow */
+/* Restrained fintech accent shadow */
 .sentinel-glow {
-  box-shadow: 0 0 20px -3px rgba(14, 165, 233, 0.18);
+  box-shadow: 0 0 20px -3px rgba(79, 70, 229, 0.12);
 }
 
-/* Dark Scrollbar - Standard CSS & Webkit */
+/* Light Scrollbar - Standard CSS & Webkit */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1e293b #080b11;
+  scrollbar-color: #CBD5E1 #F8FAFC;
 }
 
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #080b11;
+  background: #F8FAFC;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #CBD5E1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #94A3B8;
 }
 
 ::-webkit-scrollbar-corner {
-  background: #080b11;
+  background: #F8FAFC;
 }
 
-/* Sleek Sidebar Dark Scrollbar */
+/* Sidebar Light Scrollbar */
 .sidebar-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #1e293b transparent;
+  scrollbar-color: #E2E8F0 transparent;
 }
 
 .sidebar-scrollbar::-webkit-scrollbar {
@@ -96,12 +124,12 @@ body {
 }
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #E2E8F0;
   border-radius: 4px;
 }
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #0ea5e9;
+  background: #CBD5E1;
 }
 
 /* Table and financial number alignment utilities */
@@ -122,6 +150,7 @@ body {
   line-height: 2rem;
   font-weight: 700;
   letter-spacing: -0.025em;
+  color: #0F172A;
 }
 
 .text-section-title {
@@ -129,6 +158,7 @@ body {
   line-height: 1.375rem;
   font-weight: 600;
   letter-spacing: -0.015em;
+  color: #0F172A;
 }
 
 /* Subtle financial network SVG animation with reduced-motion protection */
@@ -156,12 +186,12 @@ body {
     transform: scale(0.96);
   }
   100% {
-    opacity: 0.9;
-    transform: scale(1.06);
+    opacity: 0.85;
+    transform: scale(1.05);
   }
 }
 
-/* ── Premium Neon Ambient Glow for Login Screen ── */
+/* ── Restrained Ambient Glow for Light Fintech UI ── */
 @media (prefers-reduced-motion: no-preference) {
   .ambient-glow-primary {
     animation: ambientFloatPrimary 18s ease-in-out infinite alternate;
@@ -174,30 +204,29 @@ body {
 @keyframes ambientFloatPrimary {
   0% {
     transform: translate(-50%, -50%) scale(1) translate(0px, 0px);
-    opacity: 0.16;
+    opacity: 0.35;
   }
   50% {
     transform: translate(-50%, -50%) scale(1.08) translate(12px, -8px);
-    opacity: 0.22;
+    opacity: 0.5;
   }
   100% {
     transform: translate(-50%, -50%) scale(0.96) translate(-10px, 10px);
-    opacity: 0.15;
+    opacity: 0.35;
   }
 }
 
 @keyframes ambientFloatSecondary {
   0% {
     transform: scale(1) translate(0px, 0px);
-    opacity: 0.08;
+    opacity: 0.25;
   }
   50% {
     transform: scale(1.12) translate(-15px, 12px);
-    opacity: 0.13;
+    opacity: 0.35;
   }
   100% {
     transform: scale(0.92) translate(10px, -15px);
-    opacity: 0.07;
+    opacity: 0.2;
   }
 }
-

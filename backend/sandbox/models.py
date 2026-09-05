@@ -23,6 +23,7 @@ class SandboxValidationResult(BaseModel):
     errors: List[SandboxValidationIssue] = Field(default_factory=list, description="List of row-level validation issues (capped at 50)")
     preview_rows: List[Dict[str, Any]] = Field(default_factory=list, description="Preview of the first 10 rows")
     message: str = Field(..., description="Human-readable validation summary")
+    validation_time_ms: Optional[float] = Field(default=None, description="Validation duration in milliseconds")
 
 
 class SandboxExceptionItem(BaseModel):
@@ -86,6 +87,12 @@ class SandboxAnalysisReport(BaseModel):
     # Detailed findings
     exceptions: List[SandboxExceptionItem] = Field(default_factory=list)
     patterns: List[SandboxPatternItem] = Field(default_factory=list)
+
+    # Timing instrumentation
+    timing_ms: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Detailed execution timing breakdown in milliseconds",
+    )
 
     # Disclaimers
     disclaimer: str = (

@@ -91,14 +91,14 @@ export function EscalationWebhookPanel() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "DELIVERED":
-        return "bg-emerald-500/15 border-emerald-500/40 text-emerald-300";
+        return "bg-emerald-50 border-emerald-200 text-emerald-700";
       case "FAILED":
-        return "bg-rose-500/15 border-rose-500/40 text-rose-300";
+        return "bg-rose-50 border-rose-200 text-rose-700";
       case "DISABLED":
-        return "bg-slate-800 border-slate-700 text-slate-400";
+        return "bg-slate-100 border-slate-200 text-slate-600";
       case "PENDING":
       default:
-        return "bg-amber-500/15 border-amber-500/40 text-amber-300";
+        return "bg-amber-50 border-amber-200 text-amber-700";
     }
   };
 
@@ -108,18 +108,18 @@ export function EscalationWebhookPanel() {
 
   return (
     <section id="escalations" className="w-full">
-      <div className="glass-panel rounded-xl p-5 sm:p-6 border border-slate-800/80 shadow-2xl relative overflow-hidden">
+      <div className="rounded-xl p-5 sm:p-6 border border-slate-200 bg-white shadow-xs relative overflow-hidden">
         {/* Subtle Brand Accent Line */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-sky-500/80 via-cyan-400/60 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500/80 via-cyan-400/60 to-transparent" />
 
         {/* Section Header */}
         <SectionHeading
-          icon={<Send className="w-5 h-5 text-sky-400" />}
+          icon={<Send className="w-5 h-5 text-indigo-600" />}
           title="Escalation Webhook Dispatcher"
           badge={{
             text: "Tier-3 Incident Delivery (HMAC Signed)",
-            icon: <Bell className="w-3.5 h-3.5 text-sky-400" />,
-            color: "bg-sky-500/10 border-sky-500/30 text-sky-300",
+            icon: <Bell className="w-3.5 h-3.5 text-indigo-600" />,
+            color: "bg-indigo-50 border-indigo-200 text-indigo-700",
           }}
           description="Outbound notification service dispatching signed incident payloads to downstream operations centers when high-consequence exceptions require escalation."
           action={
@@ -129,7 +129,7 @@ export function EscalationWebhookPanel() {
               disabled={loading}
               title="Refresh webhook status"
               aria-label="Refresh webhook status"
-              icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-sky-400" : ""}`} />}
+              icon={<RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-indigo-600" : ""}`} />}
             />
           }
         />
@@ -146,8 +146,8 @@ export function EscalationWebhookPanel() {
               compact
             />
           ) : error ? (
-            <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-3">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-3">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
           ) : null}
@@ -155,17 +155,17 @@ export function EscalationWebhookPanel() {
           {/* Configuration & Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             {/* Dispatcher State */}
-            <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between shadow-2xs">
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-medium">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-bold">
                   Dispatcher State
                 </div>
                 <div className="mt-2 flex items-center gap-2">
                   <span
                     className={`inline-block px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${
                       config?.enabled
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                        : "bg-slate-900 border-slate-700 text-slate-400"
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                        : "bg-slate-100 border-slate-200 text-slate-600"
                     }`}
                   >
                     {config?.enabled ? "ACTIVE (ENABLED)" : "DISABLED"}
@@ -173,55 +173,55 @@ export function EscalationWebhookPanel() {
                 </div>
               </div>
 
-              <div className="text-[11px] font-mono text-slate-400 mt-4 pt-3 border-t border-slate-800/80 space-y-1">
-                <div className="truncate">Destination: <strong className="text-slate-200">{config?.destination_url || "NOT CONFIGURED"}</strong></div>
-                <div>Auth: <strong className="text-slate-200">{config?.authentication_method || "NONE"}</strong></div>
+              <div className="text-[11px] font-mono text-slate-600 mt-4 pt-3 border-t border-slate-200 space-y-1">
+                <div className="truncate">Destination: <strong className="text-slate-900">{config?.destination_url || "NOT CONFIGURED"}</strong></div>
+                <div>Auth: <strong className="text-slate-900">{config?.authentication_method || "NONE"}</strong></div>
               </div>
             </div>
 
             {/* Delivery Stats */}
-            <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between shadow-2xs">
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-medium">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-bold">
                   Deliveries Logged
                 </div>
                 <div className="flex items-baseline gap-2 mt-1.5">
-                  <span className="text-2xl sm:text-3xl font-bold text-white font-mono num-tabular">
+                  <span className="text-2xl sm:text-3xl font-bold text-slate-900 font-mono num-tabular">
                     {deliveries.length}
                   </span>
                   <span className="text-slate-400 font-mono text-xs">recent</span>
                 </div>
               </div>
 
-              <div className="text-[11px] font-mono text-slate-400 mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap gap-x-3.5 gap-y-1">
-                <span className="text-emerald-400 font-semibold num-tabular">{deliveredCount} delivered</span>
-                <span className="text-rose-400 font-semibold num-tabular">{failedCount} failed</span>
-                <span className="text-slate-400 num-tabular">{disabledCount} disabled</span>
+              <div className="text-[11px] font-mono text-slate-600 mt-4 pt-3 border-t border-slate-200 flex flex-wrap gap-x-3.5 gap-y-1">
+                <span className="text-emerald-700 font-bold num-tabular">{deliveredCount} delivered</span>
+                <span className="text-rose-600 font-bold num-tabular">{failedCount} failed</span>
+                <span className="text-slate-500 num-tabular">{disabledCount} disabled</span>
               </div>
             </div>
 
             {/* Invariant Guarantee Box */}
-            <div className="p-4 rounded-lg bg-sky-950/20 border border-sky-500/20 flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-200 flex flex-col justify-between shadow-2xs">
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-sky-400 font-semibold flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                <div className="text-[10px] font-mono uppercase tracking-wider text-indigo-700 font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Mandatory Safety Invariant</span>
                 </div>
-                <div className="text-xs font-bold text-white mt-1.5 font-mono">
+                <div className="text-xs font-bold text-slate-900 mt-1.5 font-mono">
                   WEBHOOK FAILURE != POLICY FAILURE
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-300 mt-3 pt-2.5 border-t border-sky-500/20 leading-relaxed">
+              <div className="text-[11px] text-slate-600 mt-3 pt-2.5 border-t border-indigo-200 leading-relaxed">
                 Restrictive policies remain fully enforced even if downstream delivery fails.
               </div>
             </div>
           </div>
 
           {/* Manual Operator Webhook Trigger Tool */}
-          <div className="p-4 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-3">
-            <h3 className="text-xs font-bold font-mono text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Play className="w-3.5 h-3.5 text-sky-400" />
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-2xs">
+            <h3 className="text-xs font-bold font-mono text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <Play className="w-3.5 h-3.5 text-indigo-600" />
               <span>Manual Escalation Dispatch Tester (Operator Tool)</span>
             </h3>
             <form onSubmit={handleManualTrigger} className="flex flex-col sm:flex-row gap-2.5">
@@ -230,7 +230,7 @@ export function EscalationWebhookPanel() {
                 placeholder="Enter exception ID (e.g. EXC-GHOST_SETTLEMENT-PAY-...)"
                 value={testExceptionId}
                 onChange={(e) => setTestExceptionId(e.target.value)}
-                className="flex-1 px-3.5 py-2 rounded-lg border border-slate-800 bg-[#070b13] text-slate-200 text-xs font-mono focus:outline-none focus:border-sky-500/60 transition"
+                className="flex-1 px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-xs font-mono focus:outline-none focus:border-indigo-500 shadow-2xs transition"
               />
               <Button
                 type="submit"
@@ -248,32 +248,32 @@ export function EscalationWebhookPanel() {
               <div
                 className={`p-3 rounded-lg border text-xs font-mono space-y-1 ${
                   triggerResult.success
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                    : "bg-slate-900 border-slate-800 text-slate-300"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    : "bg-white border-slate-200 text-slate-800 shadow-2xs"
                 }`}
               >
                 <div className="font-bold">Result: {triggerResult.status}</div>
                 <div>{triggerResult.message}</div>
                 {triggerResult.event_id && (
-                  <div className="text-slate-400 text-xs">Event ID: {triggerResult.event_id}</div>
+                  <div className="text-slate-500 text-xs">Event ID: {triggerResult.event_id}</div>
                 )}
               </div>
             )}
           </div>
 
           {/* Recent Deliveries Table */}
-          <div className="rounded-lg bg-slate-950/60 border border-slate-800/80 overflow-hidden">
-            <div className="p-3.5 sm:p-4 border-b border-slate-800/80 flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-2">
-                <Radio className="w-3.5 h-3.5 text-sky-400" />
+          <div className="rounded-xl bg-white border border-slate-200 overflow-hidden shadow-2xs">
+            <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
+                <Radio className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Recent Escalation Dispatch Audit Trail</span>
               </h3>
-              <span className="text-[11px] text-slate-400 font-mono">Immutable delivery state</span>
+              <span className="text-[11px] text-slate-500 font-mono">Immutable delivery state</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-[#070b13] text-slate-400 uppercase text-[11px] font-sans font-semibold tracking-wider border-b border-slate-800/80">
+                <thead className="bg-slate-50 text-slate-600 uppercase text-[11px] font-sans font-semibold tracking-wider border-b border-slate-200">
                   <tr>
                     <th className="py-2.5 px-3.5">Event ID</th>
                     <th className="py-2.5 px-3.5">Exception ID</th>
@@ -283,12 +283,12 @@ export function EscalationWebhookPanel() {
                     <th className="py-2.5 px-3.5 text-right">Timestamp</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-sans">
+                <tbody className="divide-y divide-slate-100 font-sans">
                   {deliveries.length > 0 ? (
                     deliveries.map((del) => (
-                      <tr key={del.delivery_id} className="hover:bg-slate-900/40 transition">
-                        <td className="py-2.5 px-3.5 text-sky-300 font-semibold font-mono text-xs">{del.event_id}</td>
-                        <td className="py-2.5 px-3.5 text-slate-300 font-mono text-xs">{del.exception_id}</td>
+                      <tr key={del.delivery_id} className="hover:bg-slate-50 transition">
+                        <td className="py-2.5 px-3.5 text-indigo-600 font-semibold font-mono text-xs">{del.event_id}</td>
+                        <td className="py-2.5 px-3.5 text-slate-800 font-mono text-xs">{del.exception_id}</td>
                         <td className="py-2.5 px-3.5">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${getStatusBadge(
@@ -298,11 +298,11 @@ export function EscalationWebhookPanel() {
                             {del.delivery_status}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3.5 text-slate-300 text-right num-tabular">{del.attempt_count}</td>
+                        <td className="py-2.5 px-3.5 text-slate-700 text-right num-tabular">{del.attempt_count}</td>
                         <td className="py-2.5 px-3.5">
-                          <span className="text-cyan-400 font-mono text-xs">{del.source_flag}</span>
+                          <span className="text-indigo-600 font-mono text-xs">{del.source_flag}</span>
                         </td>
-                        <td className="py-2.5 px-3.5 text-slate-400 text-right num-tabular">
+                        <td className="py-2.5 px-3.5 text-slate-500 text-right num-tabular">
                           {new Date(del.created_at).toLocaleTimeString()}
                         </td>
                       </tr>

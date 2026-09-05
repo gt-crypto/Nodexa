@@ -125,3 +125,71 @@ def test_sandbox_analyze_json_endpoint():
     report = response.json()
     assert report["dataset_summary"]["total_records"] >= 10
     assert report["ground_truth_available"] is False
+
+
+def test_sandbox_performance_and_timing_instrumentation():
+    """Asserts sandbox sub-second execution speed, detailed timing instrumentation, and database immutability."""
+    import time
+    csv_data = get_sample_sandbox_csv()
+
+    # 0. Capture DB counts before sandbox run
+    db_before = next(get_db())
+    try:
+        pre_gw = db_before.query(GatewayTransaction).count()
+        pre_mo = db_before.query(MerchantOrder).count()
+        pre_sb = db_before.query(BankSettlementBatch).count()
+        pre_nl = db_before.query(NodalLedgerEntry).count()
+        pre_dr = db_before.query(DisputeRefundEvent).count()
+        pre_exc = db_before.query(ExceptionRecord).count()
+    finally:
+        db_before.close()
+
+    # 1. Validation timing check
+    val_res, valid_rows = SandboxValidationService.validate_csv(csv_data)
+    assert val_res.is_valid is True
+    assert val_res.validation_time_ms is not None
+    assert val_res.validation_time_ms >= 0
+
+    # 2. Performance benchmark: must complete in under 1.5 seconds (warm execution is typically < 150ms)
+    t0 = time.perf_counter()
+    report = SandboxAnalysisService.analyze_dataset(valid_rows, dataset_name="perf_bench.csv")
+    duration_sec = time.perf_counter() - t0
+
+    assert duration_sec < 1.5, f"Sandbox analysis was too slow: {duration_sec:.2f}s (expected < 1.5s)"
+
+    # 3. Timing instrumentation checks
+    assert "timing_ms" in report.__dict__
+    timing = report.timing_ms
+    assert "sqlite_initialization" in timing
+    assert "data_insertion" in timing
+    assert "deterministic_controls" in timing
+    assert "exception_detection" in timing
+    assert "pattern_mining" in timing
+    assert "report_construction" in timing
+    assert "total_analysis_time" in timing
+    assert timing["total_analysis_time"] > 0
+
+    # 4. Accuracy & Detection integrity checks
+    assert report.exceptions_detected >= 1
+    assert any(e.exception_type == "GHOST_SETTLEMENT" for e in report.exceptions)
+    assert report.total_exposure_minor_units == 750000
+    assert report.production_database_modified is False
+    assert report.ground_truth_status == "Not provided"
+
+    # 5. Database immutability check
+    db_after = next(get_db())
+    try:
+        post_gw = db_after.query(GatewayTransaction).count()
+        post_mo = db_after.query(MerchantOrder).count()
+        post_sb = db_after.query(BankSettlementBatch).count()
+        post_nl = db_after.query(NodalLedgerEntry).count()
+        post_dr = db_after.query(DisputeRefundEvent).count()
+        post_exc = db_after.query(ExceptionRecord).count()
+        assert post_gw == pre_gw, "GatewayTransaction table mutated!"
+        assert post_mo == pre_mo, "MerchantOrder table mutated!"
+        assert post_sb == pre_sb, "BankSettlementBatch table mutated!"
+        assert post_nl == pre_nl, "NodalLedgerEntry table mutated!"
+        assert post_dr == pre_dr, "DisputeRefundEvent table mutated!"
+        assert post_exc == pre_exc, "ExceptionRecord table mutated!"
+    finally:
+        db_after.close()

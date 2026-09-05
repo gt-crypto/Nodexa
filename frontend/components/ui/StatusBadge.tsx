@@ -32,14 +32,14 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const resolvedTone = tone || getStatusTone(status);
 
-  // Semantic enterprise risk tones - restrained, high-contrast, no loud glare
+  // Subtle tinted semantic backgrounds with strong readable text
   const toneMap: Record<BadgeTone, string> = {
-    success: "bg-emerald-950/30 border-emerald-800/40 text-emerald-300",
-    warning: "bg-amber-950/30 border-amber-800/40 text-amber-300",
-    orange: "bg-orange-950/30 border-orange-800/40 text-orange-300",
-    danger: "bg-rose-950/30 border-rose-800/40 text-rose-300 font-medium",
-    info: "bg-sky-950/30 border-sky-800/40 text-sky-300",
-    neutral: "bg-slate-900/90 border-slate-800 text-slate-300",
+    success: "bg-emerald-100 border border-emerald-700 text-emerald-950 shadow-2xs font-bold",
+    warning: "bg-[#FFFBEB] border-amber-200 text-[#B45309]",
+    orange: "bg-orange-50 border-orange-200 text-orange-800",
+    danger: "bg-[#FEF2F2] border-rose-200 text-[#DC2626] font-medium",
+    info: "bg-[#EEF2FF] border-indigo-200 text-[#4F46E5]",
+    neutral: "bg-slate-100 border-slate-200 text-slate-700",
   };
 
   const sizeMap = {
@@ -51,7 +51,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded font-mono border ${toneMap[resolvedTone]} ${sizeMap[size]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-md font-mono font-medium border ${toneMap[resolvedTone]} ${sizeMap[size]} ${className}`}
     >
       {icon && <span className="shrink-0">{icon}</span>}
       <span>{content}</span>

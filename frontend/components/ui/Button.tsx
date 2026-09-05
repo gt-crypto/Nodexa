@@ -26,18 +26,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    // Enterprise fintech button styles - sharp, high contrast, subtle borders
+    // Premium fintech button styles (Mercury/Ramp inspired)
     const variantStyles: Record<ButtonVariant, string> = {
       primary:
-        "bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-medium border border-sky-500/60 shadow-sm transition-colors",
+        "btn-primary-cta bg-[#F4D35E] hover:bg-[#E8C84A] active:bg-[#DDBA35] text-slate-950 font-semibold border border-[#E8C84A] shadow-xs transition-colors focus:ring-2 focus:ring-[#F4D35E]/40",
       secondary:
-        "bg-[#111726] hover:bg-[#161f33] active:bg-[#0e1422] border border-slate-800 hover:border-slate-700 text-slate-200 font-medium hover:text-white shadow-sm transition-colors",
+        "bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 font-medium shadow-xs transition-colors focus:ring-2 focus:ring-slate-200",
       ghost:
-        "bg-transparent hover:bg-slate-800/60 active:bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-transparent transition-colors",
+        "bg-transparent hover:bg-slate-100 active:bg-slate-200 text-slate-600 hover:text-slate-900 border border-transparent transition-colors",
       danger:
-        "bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/50 text-rose-300 font-medium hover:border-rose-700 transition-colors",
+        "bg-rose-50 hover:bg-rose-100 active:bg-rose-200 border border-rose-200 text-rose-700 font-medium transition-colors focus:ring-2 focus:ring-rose-500/20",
       icon:
-        "p-1.5 rounded-lg bg-[#111726] hover:bg-[#161f33] border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-colors",
+        "p-1.5 rounded-lg bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-900 shadow-xs transition-colors",
     };
 
     const sizeStyles: Record<ButtonSize, string> = {
@@ -51,8 +51,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        data-variant={variant}
         disabled={disabled || loading}
-        className={`inline-flex items-center justify-center font-sans select-none focus:outline-none focus:ring-1 focus:ring-sky-500/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+        className={`inline-flex items-center justify-center font-sans select-none focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
           variantStyles[variant]
         } ${isIconOnly ? "p-2 rounded-lg" : sizeStyles[size]} ${className}`}
         {...props}

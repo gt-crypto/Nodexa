@@ -23,8 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${inter.variable}`}>
-      <body className={`${inter.className} font-sans antialiased bg-[#080b11] text-slate-100 min-h-screen selection:bg-sky-500/20 selection:text-sky-200`}>
+    <html lang="en" className={inter.variable}>
+      <body className={`${inter.className} font-sans antialiased bg-[#FFFBE6] text-slate-900 min-h-screen selection:bg-indigo-500/20 selection:text-indigo-900`}>
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>

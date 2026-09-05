@@ -24,6 +24,19 @@ const config: Config = {
           900: "#134e4a",
           950: "#042f2e",
         },
+        fintech: {
+          bg: "#F8FAFC",
+          card: "#FFFFFF",
+          border: "#E2E8F0",
+          subtle: "#F1F5F9",
+          primary: "#4F46E5",
+          primaryHover: "#4338CA",
+          primaryLight: "#EEF2FF",
+          text: "#111827",
+          heading: "#0F172A",
+          secondary: "#475569",
+          muted: "#94A3B8",
+        },
       },
       fontFamily: {
         sans: [

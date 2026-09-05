@@ -37,24 +37,24 @@ export const NodexaBackground: React.FC<NodexaBackgroundProps> = ({
       className={`fixed inset-0 pointer-events-none overflow-hidden z-0 select-none ${className}`}
       style={{ isolation: "isolate" }}
     >
-      {/* ── Base Atmospheric Layer: Near-Black Fintech Canvas ───────────────────────── */}
-      <div className="absolute inset-0 bg-[#080b11]" />
+      {/* ── Base Atmospheric Layer: Sophisticated Warm Yellow + White Canvas (#FFFBE6 -> #FFFDF0 -> #FFFFFF) ────── */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FFFBE6] via-[#FFFDF0] to-[#FFFFFF]" />
 
-      {/* ── Layer 1: Ambient Financial Vignettes (Extremely restrained) ─────────────── */}
+      {/* ── Layer 1: Ambient Warm Yellow Vignettes (Subtle, 20-30% fintech energy) ─────────────── */}
       <div
-        className="absolute inset-0 opacity-40 transition-opacity duration-700"
+        className="absolute inset-0 opacity-50 transition-opacity duration-700"
         style={{
           backgroundImage: `
-            radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.04) 0%, transparent 45%),
-            radial-gradient(circle at 85% 25%, rgba(2, 132, 199, 0.03) 0%, transparent 50%),
-            radial-gradient(circle at 50% 85%, rgba(30, 41, 59, 0.2) 0%, transparent 60%)
+            radial-gradient(circle at 15% 15%, rgba(244, 211, 94, 0.22) 0%, transparent 55%),
+            radial-gradient(circle at 85% 25%, rgba(255, 243, 176, 0.35) 0%, transparent 60%),
+            radial-gradient(circle at 50% 85%, rgba(244, 211, 94, 0.12) 0%, transparent 65%)
           `,
         }}
       />
 
-      {/* ── Layer 2: Subtle Financial Grid Texture (32px * 32px) ────────────────────── */}
+      {/* ── Layer 2: Subtle Financial Grid Texture (48px * 48px) ────────────────────── */}
       <svg
-        className="absolute inset-0 w-full h-full opacity-[0.025]"
+        className="absolute inset-0 w-full h-full opacity-[0.02]"
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
@@ -67,10 +67,10 @@ export const NodexaBackground: React.FC<NodexaBackgroundProps> = ({
             <path
               d="M 48 0 L 0 0 0 48"
               fill="none"
-              stroke="#ffffff"
+              stroke="#0F172A"
               strokeWidth="0.75"
             />
-            <circle cx="48" cy="48" r="0.75" fill="#ffffff" opacity="0.3" />
+            <circle cx="48" cy="48" r="0.75" fill="#0F172A" opacity="0.3" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#nodexa-base-grid)" />
@@ -78,7 +78,7 @@ export const NodexaBackground: React.FC<NodexaBackgroundProps> = ({
 
       {/* ── Layer 3: Contextual Financial Topology Network (Dynamic by Route) ────────── */}
       <svg
-        className="absolute inset-0 w-full h-full opacity-[0.22] transition-all duration-700 nodexa-network-svg"
+        className="absolute inset-0 w-full h-full opacity-[0.06] transition-all duration-700 nodexa-network-svg"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 1600 900"
         preserveAspectRatio="xMidYMid slice"
@@ -292,18 +292,12 @@ export const NodexaBackground: React.FC<NodexaBackgroundProps> = ({
         )}
       </svg>
 
-      {/* ── Layer 4: Vignette & Readability Gradient Overlay ───────────────────────── */}
-      {/* 
-        This layer guarantees that content text and numbers retain pristine contrast.
-        The center remains calm and unobstructed, with network elements subtly visible 
-        toward the margins and behind transparent panel backdrops.
-      */}
+      {/* ── Layer 4: Soft Luminance Balancing Overlay (Crisp White / Light Ambient) ───────────── */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 70% 60% at 50% 50%, rgba(8, 11, 17, 0.75) 0%, rgba(8, 11, 17, 0.95) 100%),
-            linear-gradient(to bottom, rgba(8, 11, 17, 0.4) 0%, rgba(8, 11, 17, 0.8) 100%)
+            radial-gradient(ellipse 85% 75% at 50% 20%, rgba(255, 251, 230, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%)
           `,
         }}
       />

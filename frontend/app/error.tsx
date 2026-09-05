@@ -18,22 +18,22 @@ export default function GlobalError({ error, reset }: ErrorProps) {
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-4">
-      <div className="max-w-md w-full rounded-xl bg-[#090d16] border border-slate-800/80 p-6 sm:p-8 shadow-lg text-center space-y-5">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-rose-950/40 border border-rose-800/50 text-rose-400 mx-auto">
+      <div className="max-w-md w-full rounded-xl bg-white border border-slate-200 p-6 sm:p-8 shadow-xs text-center space-y-5">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 mx-auto">
           <AlertTriangle className="w-6 h-6" />
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-white font-sans tracking-tight">
+          <h2 className="text-lg font-bold text-slate-900 font-sans tracking-tight">
             Something went wrong
           </h2>
-          <p className="text-xs text-slate-400 font-sans leading-relaxed">
+          <p className="text-xs text-slate-500 font-sans leading-relaxed">
             We couldn&apos;t complete that request. Please try again or return to the main dashboard.
           </p>
         </div>
 
         {error?.digest && (
-          <div className="px-3 py-1.5 rounded bg-[#0d121d] border border-slate-800 text-[11px] font-mono text-slate-500">
+          <div className="px-3 py-1.5 rounded bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-500">
             Error Ref: {error.digest}
           </div>
         )}

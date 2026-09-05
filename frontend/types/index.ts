@@ -364,4 +364,9 @@ export interface ClustersResponse {
   retrieved_at: string;
 }
 
+export type AskSentinelResponse = CopilotAskResponse;
+export type PatternClustersResponse = ClustersResponse;
+export type PatternCluster = ExceptionCluster;
+
+
 

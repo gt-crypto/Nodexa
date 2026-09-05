@@ -10,10 +10,10 @@ export default function PatternsPage() {
   return (
     <div className="space-y-6">
       <div className="pb-1">
-        <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
           Pattern Miner
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-slate-500 mt-1">
           AI-driven anomaly family and pattern analysis for nodal reconciliation
         </p>
       </div>

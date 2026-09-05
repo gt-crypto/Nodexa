@@ -32,6 +32,7 @@ import {
   injectAnomaly,
   fetchInjectedCases,
   fetchExceptions,
+  createInjectionStream,
   BACKEND_URL,
 } from "../lib/api";
 import { executeWithColdStartRetry } from "../lib/resilience";
@@ -48,77 +49,77 @@ const STAGE_META: Record<
   INJECTION_ACCEPTED: {
     label: "Accepted",
     icon: <Radio className="w-3.5 h-3.5" />,
-    color: "text-sky-400",
+    color: "text-indigo-600",
   },
   RECORDS_GENERATED: {
     label: "Operational Records Generated",
     icon: <Database className="w-3.5 h-3.5" />,
-    color: "text-cyan-400",
+    color: "text-cyan-600",
   },
   CONTROLS_RUNNING: {
     label: "Deterministic Controls Executing",
     icon: <Cpu className="w-3.5 h-3.5" />,
-    color: "text-sky-300",
+    color: "text-indigo-600",
   },
   DETECTION_RUNNING: {
     label: "Exception Detection Running",
     icon: <Search className="w-3.5 h-3.5" />,
-    color: "text-indigo-400",
+    color: "text-indigo-600",
   },
   EXCEPTION_DETECTED: {
     label: "Exception Detected",
     icon: <AlertTriangle className="w-3.5 h-3.5" />,
-    color: "text-amber-400",
+    color: "text-amber-600",
   },
   NO_EXCEPTION_REQUIRED: {
     label: "Verified Clean (Legitimate Case)",
     icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-    color: "text-emerald-400",
+    color: "text-emerald-600",
   },
   INVESTIGATION_RUNNING: {
     label: "AI Investigation Running",
     icon: <Activity className="w-3.5 h-3.5" />,
-    color: "text-cyan-400",
+    color: "text-cyan-600",
   },
   INVESTIGATION_COMPLETED: {
     label: "Investigation Completed",
     icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-    color: "text-emerald-400",
+    color: "text-emerald-600",
   },
   RISK_EVALUATION_RUNNING: {
     label: "Risk Assessment Running",
     icon: <Layers className="w-3.5 h-3.5" />,
-    color: "text-orange-400",
+    color: "text-amber-600",
   },
   RISK_EVALUATED: {
     label: "Risk Evaluated",
     icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-    color: "text-emerald-400",
+    color: "text-emerald-600",
   },
   POLICY_EVALUATION_RUNNING: {
     label: "Policy Evaluation Running",
     icon: <Shield className="w-3.5 h-3.5" />,
-    color: "text-rose-400",
+    color: "text-rose-600",
   },
   POLICY_DECIDED: {
     label: "Policy Decision Issued",
     icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-    color: "text-emerald-400",
+    color: "text-emerald-600",
   },
   AUDIT_RECORDED: {
     label: "Audit Record Persisted",
     icon: <Terminal className="w-3.5 h-3.5" />,
-    color: "text-slate-400",
+    color: "text-slate-500",
   },
   INJECTION_COMPLETE: {
     label: "Injection Complete",
     icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-    color: "text-emerald-400",
+    color: "text-emerald-600",
   },
   ERROR: {
     label: "Error",
     icon: <XCircle className="w-3.5 h-3.5" />,
-    color: "text-rose-400",
+    color: "text-rose-600",
   },
 };
 
@@ -126,10 +127,10 @@ const STAGE_META: Record<
 
 function SeverityBadge({ severity }: { severity: string }) {
   const map: Record<string, string> = {
-    CRITICAL: "bg-rose-500/10 border-rose-500/30 text-rose-300",
-    HIGH: "bg-orange-500/10 border-orange-500/30 text-orange-300",
-    MEDIUM: "bg-amber-500/10 border-amber-500/30 text-amber-300",
-    LOW: "bg-slate-800 border-slate-700 text-slate-400",
+    CRITICAL: "bg-rose-50 border-rose-200 text-rose-700",
+    HIGH: "bg-amber-50 border-amber-200 text-amber-700",
+    MEDIUM: "bg-cyan-50 border-cyan-200 text-cyan-700",
+    LOW: "bg-slate-100 border-slate-200 text-slate-600",
   };
   return (
     <span
@@ -157,37 +158,37 @@ function FamilyCard({
     <button
       id={`family-card-${family.family}`}
       onClick={onClick}
-      className={`w-full text-left p-3.5 rounded-lg border transition-all duration-150 cursor-pointer flex flex-col justify-between focus:outline-none focus:ring-1 focus:ring-sky-500/40 ${
+      className={`w-full text-left p-3.5 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${
         selected
-          ? "bg-sky-950/30 border-sky-500/60 ring-1 ring-sky-500/30"
-          : "bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/50"
+          ? "bg-indigo-50/70 border-indigo-500 ring-1 ring-indigo-500/30 shadow-xs"
+          : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 shadow-2xs"
       }`}
     >
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-bold font-mono text-white tracking-tight">
+          <span className="text-xs font-bold font-mono text-slate-900 tracking-tight">
             {family.family.replace(/_/g, " ")}
           </span>
           <SeverityBadge severity={family.severity} />
         </div>
-        <p className="text-[11px] text-slate-400 leading-relaxed mb-2.5">
+        <p className="text-[11px] text-slate-500 leading-relaxed mb-2.5">
           {family.description}
         </p>
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 min-h-[30px]">
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100 min-h-[30px]">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span
             className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium ${
               family.category === "ANOMALY"
-                ? "bg-rose-950/40 text-rose-300 border border-rose-800/40"
-                : "bg-emerald-950/40 text-emerald-300 border border-emerald-800/40"
+                ? "bg-rose-50 text-rose-700 border border-rose-200"
+                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
             }`}
           >
             {family.category}
           </span>
           {family.is_legitimate && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-600 bg-slate-100 border border-slate-200">
               Edge case
             </span>
           )}
@@ -195,12 +196,12 @@ function FamilyCard({
 
         {/* Explicit Affordance */}
         {selected ? (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30 font-mono shrink-0">
-            <CheckCircle2 className="w-3 h-3 text-sky-400" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 border border-indigo-200 font-mono shrink-0">
+            <CheckCircle2 className="w-3 h-3 text-indigo-600" />
             Selected
           </span>
         ) : (
-          <span className="inline-flex items-center text-[11px] font-medium px-1.5 py-0.5 text-slate-400 hover:text-sky-300 font-mono shrink-0">
+          <span className="inline-flex items-center text-[11px] font-medium px-1.5 py-0.5 text-slate-400 hover:text-indigo-600 font-mono shrink-0">
             Select →
           </span>
         )}
@@ -218,16 +219,16 @@ function ProgressLog({ stages }: { stages: InjectionStageEvent[] }) {
   }, [stages.length]);
 
   return (
-    <div className="mt-4 rounded-lg border border-slate-800 bg-[#060910] p-3 max-h-48 overflow-y-auto font-mono text-xs space-y-1.5">
+    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3.5 max-h-48 overflow-y-auto font-mono text-xs space-y-1.5">
       {stages.map((st, i) => {
         const meta = STAGE_META[st.stage] || {
           label: st.stage,
           icon: <Activity className="w-3 h-3" />,
-          color: "text-slate-400",
+          color: "text-slate-500",
         };
         return (
           <div key={i} className="flex items-start gap-2 leading-relaxed">
-            <span className="text-slate-500 shrink-0 num-tabular">
+            <span className="text-slate-400 shrink-0 num-tabular">
               {new Date(st.timestamp).toLocaleTimeString()}
             </span>
             <span className={`shrink-0 mt-0.5 ${meta.color}`}>{meta.icon}</span>
@@ -235,7 +236,7 @@ function ProgressLog({ stages }: { stages: InjectionStageEvent[] }) {
               {meta.label}
             </span>
             {st.message && (
-              <span className="text-slate-400 truncate">{st.message}</span>
+              <span className="text-slate-600 truncate">{st.message}</span>
             )}
           </div>
         );
@@ -256,59 +257,59 @@ function InjectionResultCard({
 }) {
   const exposure = result.exposure ?? 0;
   return (
-    <div className="mt-4 p-4 rounded-lg bg-slate-950/80 border border-sky-500/30 space-y-3">
+    <div className="mt-4 p-4 rounded-xl bg-white border border-indigo-200 shadow-xs space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-        <h3 className="text-sm font-bold text-white">
+        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <h3 className="text-sm font-bold text-slate-900">
           Live Injection Complete
         </h3>
-        <span className="ml-auto inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/10 border border-sky-400/30 text-sky-300 font-mono">
+        <span className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 border border-indigo-200 text-indigo-700 font-mono">
           <Radio className="w-2.5 h-2.5" /> LIVE-INJECTED
         </span>
       </div>
 
       {/* ID Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono">
-        <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800">
-          <p className="text-slate-400 mb-0.5 text-[10px] font-medium">Injection ID</p>
-          <p className="text-sky-300 truncate font-semibold" title={result.injection_id}>{result.injection_id}</p>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+          <p className="text-slate-500 mb-0.5 text-[10px] font-medium">Injection ID</p>
+          <p className="text-indigo-600 truncate font-semibold" title={result.injection_id}>{result.injection_id}</p>
         </div>
-        <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800">
-          <p className="text-slate-400 mb-0.5 text-[10px] font-medium">Exception ID</p>
-          <p className="text-amber-300 font-mono text-xs select-all truncate tracking-tight font-semibold" title={result.linked_exception_id ?? "—"}>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+          <p className="text-slate-500 mb-0.5 text-[10px] font-medium">Exception ID</p>
+          <p className="text-amber-700 font-mono text-xs select-all truncate tracking-tight font-semibold" title={result.linked_exception_id ?? "—"}>
             {result.linked_exception_id ?? "—"}
           </p>
         </div>
-        <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800">
-          <p className="text-slate-400 mb-0.5 text-[10px] font-medium">Family</p>
-          <p className="text-white truncate">{result.exception_family}</p>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+          <p className="text-slate-500 mb-0.5 text-[10px] font-medium">Family</p>
+          <p className="text-slate-900 truncate font-medium">{result.exception_family}</p>
         </div>
-        <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800">
-          <p className="text-slate-400 mb-0.5 text-[10px] font-medium">Exposure</p>
-          <p className="text-rose-300 font-bold num-tabular">
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+          <p className="text-slate-500 mb-0.5 text-[10px] font-medium">Exposure</p>
+          <p className="text-rose-600 font-bold num-tabular">
             ₹{((exposure) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800">
-          <p className="text-slate-400 mb-0.5 text-[10px] font-medium">State</p>
-          <p className="text-slate-200">{result.exception_state ?? "—"}</p>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+          <p className="text-slate-500 mb-0.5 text-[10px] font-medium">State</p>
+          <p className="text-slate-700">{result.exception_state ?? "—"}</p>
         </div>
-        <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800">
-          <p className="text-slate-400 mb-0.5 text-[10px] font-medium">Source Flag</p>
-          <p className="text-sky-400 font-semibold">{result.source_flag}</p>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+          <p className="text-slate-500 mb-0.5 text-[10px] font-medium">Source Flag</p>
+          <p className="text-indigo-600 font-semibold">{result.source_flag}</p>
         </div>
       </div>
 
       {/* Generated IDs */}
       <div className="text-xs font-mono">
-        <p className="text-slate-400 mb-1.5 text-[10px] font-medium">Generated identifiers:</p>
+        <p className="text-slate-500 mb-1.5 text-[10px] font-medium">Generated identifiers:</p>
         <div className="flex flex-wrap gap-1.5">
           {Object.entries(result.generated_record_identifiers).flatMap(
             ([, ids]) =>
               (ids as string[]).map((id) => (
                 <span
                   key={id}
-                  className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 text-[11px]"
+                  className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 text-[11px]"
                 >
                   {id}
                 </span>
@@ -345,14 +346,14 @@ function HistoryTable({
   if (cases.length === 0) return null;
   return (
     <div className="mt-5">
-      <h3 className="text-xs font-semibold text-slate-300 mb-2.5 flex items-center gap-1.5 font-sans">
-        <Clock className="w-3.5 h-3.5 text-slate-400" />
+      <h3 className="text-xs font-bold text-slate-900 mb-2.5 flex items-center gap-1.5 font-sans">
+        <Clock className="w-3.5 h-3.5 text-slate-500" />
         <span>Injection History ({cases.length})</span>
       </h3>
-      <div className="overflow-x-auto rounded-lg border border-slate-800/80 bg-slate-950/60">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-slate-800/80 text-slate-400 text-[11px] uppercase tracking-wider bg-[#070b13] font-sans font-semibold">
+            <tr className="border-b border-slate-200 text-slate-600 text-[11px] uppercase tracking-wider bg-slate-50 font-sans font-semibold">
               <th className="py-2.5 px-3">Injection ID</th>
               <th className="py-2.5 px-3">Family</th>
               <th className="py-2.5 px-3">Exception ID</th>
@@ -361,29 +362,29 @@ function HistoryTable({
               <th className="py-2.5 px-3">Source Flag</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60">
+          <tbody className="divide-y divide-slate-100">
             {cases.map((c) => (
               <tr
                 key={c.injection_id}
-                className="hover:bg-slate-900/40 transition cursor-pointer"
+                className="hover:bg-slate-50 transition cursor-pointer"
                 onClick={() =>
                   c.linked_exception_id && onSelect(c.linked_exception_id)
                 }
               >
-                <td className="py-2.5 px-3 text-sky-300 font-semibold font-mono text-xs">{c.injection_id}</td>
-                <td className="py-2.5 px-3 text-slate-300 font-sans">{c.exception_family}</td>
-                <td className="py-2.5 px-3 text-amber-300 font-semibold font-mono text-xs">
+                <td className="py-2.5 px-3 text-indigo-600 font-semibold font-mono text-xs">{c.injection_id}</td>
+                <td className="py-2.5 px-3 text-slate-900 font-sans font-medium">{c.exception_family}</td>
+                <td className="py-2.5 px-3 text-amber-700 font-semibold font-mono text-xs">
                   {c.linked_exception_id ?? "—"}
                 </td>
                 <td className="py-2.5 px-3">
-                  <span className="px-2 py-0.5 rounded text-[11px] font-sans font-medium bg-slate-900 text-slate-300 border border-slate-800">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-sans font-medium bg-slate-100 text-slate-700 border border-slate-200">
                     {c.status}
                   </span>
                 </td>
-                <td className="py-2.5 px-3 text-slate-400 text-right num-tabular font-sans text-xs">
+                <td className="py-2.5 px-3 text-slate-500 text-right num-tabular font-sans text-xs">
                   {c.triggered_at ? new Date(c.triggered_at).toLocaleTimeString() : "—"}
                 </td>
-                <td className="py-2.5 px-3 text-cyan-400 font-mono text-xs">{c.source_flag}</td>
+                <td className="py-2.5 px-3 text-indigo-600 font-mono text-xs">{c.source_flag}</td>
               </tr>
             ))}
           </tbody>
@@ -470,12 +471,39 @@ export const LiveInjectionConsole: React.FC = () => {
     setResult(null);
 
     const idempotencyKey = `web-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const url = `${BACKEND_URL}/demo/inject/stream?family=${encodeURIComponent(
-      selectedFamily
-    )}&operator=${encodeURIComponent(operatorId)}&key=${idempotencyKey}`;
+    const es = createInjectionStream(selectedFamily, operatorId, idempotencyKey);
+    let isCompleted = false;
 
-    const es = new EventSource(url);
+    // The backend streams SSE payloads via standard unnamed data messages
+    es.onmessage = (ev: MessageEvent) => {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data.stage === "ERROR") {
+          setError(data.message || data.error || "Injection failed");
+          es.close();
+          setLoading(false);
+          return;
+        }
 
+        if (data.stage === "INJECTION_COMPLETE") {
+          isCompleted = true;
+          setStages((prev) => [...prev, data]);
+          const resultData: InjectionResponse = data.data || data;
+          setResult(resultData);
+          loadHistory();
+          es.close();
+          setLoading(false);
+          return;
+        }
+
+        // Add intermediate pipeline execution stage
+        setStages((prev) => [...prev, data]);
+      } catch (err) {
+        console.error("Failed to parse SSE payload:", err);
+      }
+    };
+
+    // Support custom named events if emitted
     es.addEventListener("stage", (ev: MessageEvent) => {
       try {
         const data: InjectionStageEvent = JSON.parse(ev.data);
@@ -485,6 +513,7 @@ export const LiveInjectionConsole: React.FC = () => {
 
     es.addEventListener("complete", (ev: MessageEvent) => {
       try {
+        isCompleted = true;
         const data: InjectionResponse = JSON.parse(ev.data);
         setResult(data);
         loadHistory();
@@ -496,14 +525,17 @@ export const LiveInjectionConsole: React.FC = () => {
     es.addEventListener("error_event", (ev: MessageEvent) => {
       try {
         const data = JSON.parse(ev.data);
-        setError(data.error || "Injection failed");
+        setError(data.error || data.message || "Injection failed");
       } catch {}
       es.close();
       setLoading(false);
     });
 
     es.onerror = () => {
-      setError("Connection to injection stream lost");
+      // Normal close after completion triggers EOF in EventSource - ignore if completed
+      if (!isCompleted) {
+        setError("Connection to injection stream lost");
+      }
       es.close();
       setLoading(false);
     };
@@ -532,34 +564,34 @@ export const LiveInjectionConsole: React.FC = () => {
 
   return (
     <section className="py-6" id="injection">
-      <div className="glass-panel rounded-xl p-5 sm:p-6 border border-slate-800/80 relative overflow-hidden">
+      <div className="rounded-xl p-5 sm:p-6 border border-slate-200 bg-white shadow-xs relative overflow-hidden">
         {/* Brand Accent Bar */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-sky-500/80 via-cyan-400/60 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500/80 via-cyan-400/60 to-transparent" />
 
         {/* Section Header */}
         <SectionHeading
-          icon={<Zap className="w-5 h-5 text-sky-400" />}
+          icon={<Zap className="w-5 h-5 text-indigo-600" />}
           title="Digital-Twin Live Anomaly Injection"
           badge={{
             text: "Tier-1 Digital Twin Active",
-            icon: <Radio className="w-3.5 h-3.5 text-sky-400" />,
-            color: "bg-sky-500/10 border-sky-500/30 text-sky-300",
+            icon: <Radio className="w-3.5 h-3.5 text-indigo-600" />,
+            color: "bg-indigo-50 border-indigo-200 text-indigo-700",
           }}
           description="Inject a fresh synthetic anomaly at runtime. The case enters the exact same canonical pipeline as seeded data — deterministic controls → detection → AI investigation → risk → policy → audit. No shortcuts, zero benchmark contamination."
           action={
             <div
               role="radiogroup"
               aria-label="Injection execution mode"
-              className="flex items-center gap-1 text-xs font-mono bg-slate-950 p-1 rounded-lg border border-slate-800/80"
+              className="flex items-center gap-1 text-xs font-mono bg-slate-100 p-1 rounded-lg border border-slate-200"
             >
               <button
                 role="radio"
                 aria-checked={streamMode}
                 onClick={() => setStreamMode(true)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-sky-500/40 cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer ${
                   streamMode
-                    ? "bg-sky-600 text-white font-bold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    ? "bg-white text-slate-900 font-bold shadow-xs"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 SSE stream
@@ -568,10 +600,10 @@ export const LiveInjectionConsole: React.FC = () => {
                 role="radio"
                 aria-checked={!streamMode}
                 onClick={() => setStreamMode(false)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-sky-500/40 cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer ${
                   !streamMode
-                    ? "bg-sky-600 text-white font-bold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    ? "bg-white text-slate-900 font-bold shadow-xs"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 Synchronous
@@ -581,8 +613,8 @@ export const LiveInjectionConsole: React.FC = () => {
         />
 
         {/* Safety Notice */}
-        <div className="mt-3.5 flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed">
-          <BadgeAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+        <div className="mt-3.5 flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 leading-relaxed">
+          <BadgeAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
           <span>
             This creates a <strong>brand-new synthetic case</strong> with
             runtime-generated identifiers (prefixed <code>INJ…</code>). It is
@@ -594,7 +626,7 @@ export const LiveInjectionConsole: React.FC = () => {
 
         {/* Family Selector */}
         <div className="mt-5">
-          <h3 className="text-xs font-semibold text-slate-300 mb-2.5 font-mono uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-slate-700 mb-2.5 font-mono uppercase tracking-wider">
             Select Anomaly Family
           </h3>
           {wakingState ? (
@@ -628,7 +660,7 @@ export const LiveInjectionConsole: React.FC = () => {
         {/* Operator ID + Inject Button */}
         <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <div className="relative w-full sm:w-64">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono font-medium">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-mono font-medium">
               Operator:
             </span>
             <input
@@ -637,7 +669,7 @@ export const LiveInjectionConsole: React.FC = () => {
               value={operatorId}
               onChange={(e) => setOperatorId(e.target.value)}
               placeholder="demo-operator"
-              className="w-full bg-[#070b13] border border-slate-800 rounded-lg pl-20 pr-3 py-1.5 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/30"
+              className="w-full bg-white border border-slate-300 rounded-lg pl-20 pr-3 py-1.5 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-2xs"
             />
           </div>
 
@@ -655,8 +687,8 @@ export const LiveInjectionConsole: React.FC = () => {
 
         {/* Error State */}
         {error && (
-          <div className="mt-3.5 flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs">
-            <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="mt-3.5 flex items-start gap-2 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+            <XCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
@@ -674,11 +706,11 @@ export const LiveInjectionConsole: React.FC = () => {
 
         {/* Highlighted Exception Notice */}
         {highlightedExceptionId && (
-          <div className="mt-3.5 flex items-center gap-2.5 p-3 rounded-lg bg-sky-950/30 border border-sky-500/30 text-sky-300 text-xs font-mono">
-            <ArrowRight className="w-3.5 h-3.5 shrink-0 text-sky-400" />
+          <div className="mt-3.5 flex items-center gap-2.5 p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-mono">
+            <ArrowRight className="w-3.5 h-3.5 shrink-0 text-indigo-600" />
             <span>
               Exception{" "}
-              <strong className="text-white">{highlightedExceptionId}</strong>{" "}
+              <strong className="text-slate-900 font-bold">{highlightedExceptionId}</strong>{" "}
               → Enter this ID in the verification engine below to inspect the
               full lifecycle.
             </span>

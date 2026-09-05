@@ -762,6 +762,7 @@ export interface SandboxValidationResult {
   errors: SandboxValidationIssue[];
   preview_rows: Record<string, any>[];
   message: string;
+  validation_time_ms?: number;
 }
 
 export interface SandboxExceptionItem {
@@ -815,6 +816,7 @@ export interface SandboxAnalysisReport {
   accuracy_metrics_message: string;
   exceptions: SandboxExceptionItem[];
   patterns: SandboxPatternItem[];
+  timing_ms?: Record<string, number>;
   disclaimer: string;
 }
 
@@ -892,5 +894,11 @@ export async function fetchSampleSandboxCsv(): Promise<string> {
   }
   return await response.text();
 }
+
+// ─── Exported Function Aliases ──────────────────────────────────────────────
+export const askSentinelCopilot = askCopilot;
+export const fetchPatternClusters = fetchClusters;
+export const triggerPatternMining = refreshClusters;
+
 
 

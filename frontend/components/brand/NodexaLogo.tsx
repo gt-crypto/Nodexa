@@ -91,23 +91,23 @@ export const NodexaMark: React.FC<{ size?: number; className?: string }> = ({
 
       {/* Key Network Vertices / Data Nodes */}
       {/* Top Left Vertex */}
-      <circle cx="7" cy="7" r="2.75" fill="#080e1a" stroke="#38bdf8" strokeWidth="1.75" />
-      <circle cx="7" cy="7" r="1.2" fill="#e0f2fe" />
+      <circle cx="7" cy="7" r="2.75" fill="#FFFFFF" stroke="#38bdf8" strokeWidth="1.75" />
+      <circle cx="7" cy="7" r="1.2" fill="#0284c7" />
 
       {/* Bottom Left Vertex */}
-      <circle cx="7" cy="25" r="2.5" fill="#080e1a" stroke="#0284c7" strokeWidth="1.5" />
+      <circle cx="7" cy="25" r="2.5" fill="#FFFFFF" stroke="#0284c7" strokeWidth="1.5" />
       <circle cx="7" cy="25" r="1" fill="#38bdf8" />
 
       {/* Central Nexus Intersection Node */}
-      <circle cx="16" cy="16" r="2.75" fill="#080e1a" stroke="#22d3ee" strokeWidth="1.75" />
-      <circle cx="16" cy="16" r="1.25" fill="#ffffff" />
+      <circle cx="16" cy="16" r="2.75" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="1.75" />
+      <circle cx="16" cy="16" r="1.25" fill="#4F46E5" />
 
       {/* Bottom Right Vertex */}
-      <circle cx="25" cy="25" r="2.75" fill="#080e1a" stroke="#0ea5e9" strokeWidth="1.75" />
-      <circle cx="25" cy="25" r="1.2" fill="#e0f2fe" />
+      <circle cx="25" cy="25" r="2.75" fill="#FFFFFF" stroke="#0ea5e9" strokeWidth="1.75" />
+      <circle cx="25" cy="25" r="1.2" fill="#0284c7" />
 
       {/* Top Right Vertex */}
-      <circle cx="25" cy="7" r="2.5" fill="#080e1a" stroke="#06b6d4" strokeWidth="1.5" />
+      <circle cx="25" cy="7" r="2.5" fill="#FFFFFF" stroke="#06b6d4" strokeWidth="1.5" />
       <circle cx="25" cy="7" r="1" fill="#22d3ee" />
     </svg>
   );
@@ -133,17 +133,17 @@ export const NodexaLogo: React.FC<NodexaLogoProps> = ({
 
   return (
     <div className={`inline-flex items-center gap-2.5 ${className}`}>
-      <div className="p-1.5 rounded-lg bg-slate-900/90 border border-slate-800 shadow-sm flex items-center justify-center">
+      <div className="p-1.5 rounded-lg bg-indigo-50/80 border border-indigo-100/90 shadow-xs flex items-center justify-center">
         <NodexaMark size={size} />
       </div>
       <div className="flex flex-col">
         <div className="flex items-center leading-none">
-          <span className="font-bold tracking-tight text-white font-sans text-base">
+          <span className="font-bold tracking-tight text-slate-900 font-sans text-base">
             NODEXA
           </span>
         </div>
         {showSubtitle && (
-          <span className="text-xs font-mono tracking-wider text-slate-400 mt-1 uppercase font-medium">
+          <span className="text-[10px] font-mono tracking-wider text-slate-500 mt-1 uppercase font-medium">
             {subtitle}
           </span>
         )}

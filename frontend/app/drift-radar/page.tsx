@@ -9,12 +9,11 @@ export const metadata = {
 export default function DriftRadarPage() {
   return (
     <div className="space-y-6">
-      {/* Page H1 Header (Issue 23) */}
       <div className="pb-1">
-        <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
           Predictive Drift Radar
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-slate-500 mt-1">
           Continuous anomaly drift detection and predictive stability monitoring
         </p>
       </div>
