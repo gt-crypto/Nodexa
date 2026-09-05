@@ -87,13 +87,19 @@ const AUTH_STORAGE_KEY = "nodal_sentinel_demo_session_v1";
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24-hour session expiration
 
 /**
- * Reads the current demo user from localStorage (safe in SSR).
+ * Reads the current demo user from sessionStorage (safe in SSR).
  * Validates session expiration against 24-hour TTL.
+ * Each browser tab has its own independent session.
  */
 export function getCurrentUser(): DemoUser | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    // Purge legacy cross-tab localStorage key if it exists
+    if (localStorage.getItem(AUTH_STORAGE_KEY)) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
 
@@ -101,7 +107,7 @@ export function getCurrentUser(): DemoUser | null {
     if (parsed && parsed.authenticatedAt) {
       const authTime = new Date(parsed.authenticatedAt).getTime();
       if (!isNaN(authTime) && Date.now() - authTime > SESSION_TTL_MS) {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+        sessionStorage.removeItem(AUTH_STORAGE_KEY);
         return null;
       }
     }
@@ -116,7 +122,7 @@ export function getCurrentUser(): DemoUser | null {
 }
 
 /**
- * Returns true if an authenticated demo session is currently active.
+ * Returns true if an authenticated demo session is currently active in this tab.
  */
 export function isAuthenticated(): boolean {
   return getCurrentUser() !== null;
@@ -129,7 +135,7 @@ export interface AuthResult {
 }
 
 /**
- * Validates demo credentials and persists the session if valid.
+ * Validates demo credentials and persists the session to sessionStorage for this tab.
  */
 export function login(email: string, password: string): AuthResult {
   const cleanEmail = email.trim().toLowerCase();
@@ -151,7 +157,7 @@ export function login(email: string, password: string): AuthResult {
   }
 
   if (typeof window !== "undefined") {
-    localStorage.setItem(
+    sessionStorage.setItem(
       AUTH_STORAGE_KEY,
       JSON.stringify({
         email: demoUser.email,
@@ -169,11 +175,11 @@ export function login(email: string, password: string): AuthResult {
 }
 
 /**
- * Clears the demo session.
+ * Clears the demo session for this tab.
  */
 export function logout(): void {
   if (typeof window !== "undefined") {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
     window.dispatchEvent(new Event("auth-change"));
   }
 }
