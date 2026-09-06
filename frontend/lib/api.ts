@@ -745,6 +745,62 @@ export async function askCopilot(payload: {
 /**
  * Sandbox Models & API Clients
  */
+export interface FieldMappingItem {
+  canonical_field: string;
+  source_column: string;
+  confidence: number;
+  mapping_type: "EXACT" | "SYNONYM" | "HEURISTIC" | "FALLBACK";
+}
+
+export interface CapabilityItem {
+  capability_id: string;
+  name: string;
+  description: string;
+  available: boolean;
+  required_fields: string[];
+  missing_fields: string[];
+  disclaimer?: string | null;
+}
+
+export interface MerchantVolumeItem {
+  merchant_id: string;
+  volume_minor_units: number;
+  volume_inr_formatted: string;
+  transaction_count: number;
+}
+
+export interface FinancialAnalytics {
+  gross_volume_paise?: number;
+  total_volume_minor_units: number;
+  total_volume_inr_formatted: string;
+  average_amount_minor_units?: number | null;
+  average_amount_inr_formatted?: string | null;
+  largest_amount_minor_units?: number | null;
+  largest_amount_inr_formatted?: string | null;
+  smallest_amount_minor_units?: number | null;
+  smallest_amount_inr_formatted?: string | null;
+  status_breakdown: Record<string, number>;
+  settlement_discrepancy_count: number;
+  settlement_total_deficit_minor_units: number;
+  settlement_total_deficit_inr_formatted: string;
+  refund_total_minor_units: number;
+  refund_total_inr_formatted: string;
+  top_merchants_by_volume: MerchantVolumeItem[];
+  sample_size_notice?: string | null;
+  unavailable_capabilities: string[];
+}
+
+export interface DatasetProfile {
+  file_format: string;
+  delimiter?: string | null;
+  row_count: number;
+  raw_columns: string[];
+  mapped_fields: FieldMappingItem[];
+  unmapped_columns: string[];
+  capabilities: CapabilityItem[];
+  profiling_notes: string[];
+}
+
 export interface SandboxValidationIssue {
   row_number: number;
   field: string;
@@ -763,6 +819,8 @@ export interface SandboxValidationResult {
   preview_rows: Record<string, any>[];
   message: string;
   validation_time_ms?: number;
+  profile?: DatasetProfile;
+  capabilities?: CapabilityItem[];
 }
 
 export interface SandboxExceptionItem {
@@ -816,14 +874,33 @@ export interface SandboxAnalysisReport {
   accuracy_metrics_message: string;
   exceptions: SandboxExceptionItem[];
   patterns: SandboxPatternItem[];
+  profile?: DatasetProfile;
+  capabilities?: CapabilityItem[];
+  analytics?: FinancialAnalytics;
   timing_ms?: Record<string, number>;
   disclaimer: string;
 }
 
+export interface SandboxQueryRequest {
+  query: string;
+  dataset_name?: string;
+  raw_content?: string;
+  report?: SandboxAnalysisReport;
+}
+
+export interface SandboxQueryResponse {
+  query: string;
+  answer: string;
+  grounded_data: Record<string, any>;
+  confidence: string;
+  capabilities_used: string[];
+  disclaimer: string;
+}
+
 /**
- * Validates a candidate CSV file or text before sandbox analysis.
+ * Validates and profiles a candidate financial dataset (CSV, XLSX, JSON).
  */
-export async function validateSandboxCsv(
+export async function validateSandboxDataset(
   file?: File,
   csvContent?: string
 ): Promise<SandboxValidationResult> {
@@ -849,10 +926,13 @@ export async function validateSandboxCsv(
   return await response.json();
 }
 
+/** Backward compatible alias for validateSandboxDataset */
+export const validateSandboxCsv = validateSandboxDataset;
+
 /**
  * Runs isolated, in-memory finance control analysis on the uploaded dataset.
  */
-export async function analyzeSandboxCsv(
+export async function analyzeSandboxDataset(
   file?: File,
   csvContent?: string,
   datasetName: string = "uploaded_dataset.csv"
@@ -881,6 +961,39 @@ export async function analyzeSandboxCsv(
   return await response.json();
 }
 
+/** Backward compatible alias for analyzeSandboxDataset */
+export const analyzeSandboxCsv = analyzeSandboxDataset;
+
+/**
+ * Answers natural language questions strictly grounded on the ephemeral uploaded dataset.
+ */
+export async function querySandboxDataset(
+  query: string,
+  report?: SandboxAnalysisReport,
+  rawContent?: string,
+  datasetName?: string
+): Promise<SandboxQueryResponse> {
+  const url = `${BACKEND_URL}/sandbox/query`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query,
+      report,
+      raw_content: rawContent,
+      dataset_name: datasetName,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Query failed" }));
+    throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
 /**
  * Fetches the canonical anomaly sample CSV text.
  */
@@ -899,6 +1012,7 @@ export async function fetchSampleSandboxCsv(): Promise<string> {
 export const askSentinelCopilot = askCopilot;
 export const fetchPatternClusters = fetchClusters;
 export const triggerPatternMining = refreshClusters;
+
 
 
 

@@ -20,14 +20,23 @@ import {
   Sparkles,
   Database,
   Lock,
+  MessageSquare,
+  Send,
+  HelpCircle,
+  BarChart3,
+  FileCode,
+  Tag,
+  Check,
 } from "lucide-react";
 import {
-  validateSandboxCsv,
-  analyzeSandboxCsv,
+  validateSandboxDataset,
+  analyzeSandboxDataset,
+  querySandboxDataset,
   fetchSampleSandboxCsv,
   SandboxValidationResult,
   SandboxAnalysisReport,
   SandboxExceptionItem,
+  SandboxQueryResponse,
 } from "../lib/api";
 
 type Step = "upload" | "validating" | "preview" | "analyzing" | "results";
@@ -52,6 +61,12 @@ export default function SandboxPanel() {
   // Drawer / Inspection State
   const [selectedException, setSelectedException] = useState<SandboxExceptionItem | null>(null);
   const [filterSeverity, setFilterSeverity] = useState<string>("ALL");
+
+  // Q&A State
+  const [qaQuery, setQaQuery] = useState<string>("");
+  const [isAsking, setIsAsking] = useState<boolean>(false);
+  const [qaHistory, setQaHistory] = useState<SandboxQueryResponse[]>([]);
+  const [qaError, setQaError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,8 +97,9 @@ export default function SandboxPanel() {
   };
 
   const processFile = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      setErrorMsg("Please upload a valid CSV file (.csv).");
+    const ext = file.name.toLowerCase();
+    if (!ext.endsWith(".csv") && !ext.endsWith(".xlsx") && !ext.endsWith(".xls") && !ext.endsWith(".json")) {
+      setErrorMsg("Please upload a supported financial dataset file (.csv, .xlsx, .json).");
       return;
     }
     setErrorMsg(null);
@@ -93,11 +109,11 @@ export default function SandboxPanel() {
     setStep("validating");
 
     try {
-      const res = await validateSandboxCsv(file);
+      const res = await validateSandboxDataset(file);
       setValidation(res);
       setStep("preview");
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to validate CSV file.");
+      setErrorMsg(err.message || "Failed to validate dataset file.");
       setStep("upload");
     } finally {
       setIsValidating(false);
@@ -114,7 +130,7 @@ export default function SandboxPanel() {
       setSelectedFile(null);
       setFileName("nodexa_sample_anomaly_dataset.csv");
 
-      const res = await validateSandboxCsv(undefined, sampleText);
+      const res = await validateSandboxDataset(undefined, sampleText);
       setValidation(res);
       setStep("preview");
     } catch (err: any) {
@@ -131,40 +147,32 @@ export default function SandboxPanel() {
     setStep("analyzing");
     setErrorMsg(null);
 
-    // Dynamic real-time stage progress without artificial blocking delays
-    setAnalysisStage("Building isolated sandbox & mounting in-memory engine...");
+    setAnalysisStage("Profiling schema & compiling canonical mappings...");
 
     const stageTimers: NodeJS.Timeout[] = [];
     stageTimers.push(
       setTimeout(() => {
-        setAnalysisStage("Running deterministic controls & validating invariants...");
-      }, 250)
+        setAnalysisStage("Initializing isolated ephemeral SQLite memory database...");
+      }, 150)
     );
     stageTimers.push(
       setTimeout(() => {
-        setAnalysisStage("Detecting exceptions & analyzing settlement exposures...");
-      }, 500)
+        setAnalysisStage("Running deterministic finance controls & verifying reconciliation invariants...");
+      }, 350)
     );
     stageTimers.push(
       setTimeout(() => {
-        setAnalysisStage("Mining recurring patterns & preparing audit report...");
-      }, 750)
-    );
-    stageTimers.push(
-      setTimeout(() => {
-        setAnalysisStage("Waking the finance controller... (Render backend cold start)");
-      }, 3000)
+        setAnalysisStage("Mining recurring patterns & preparing financial intelligence audit...");
+      }, 600)
     );
 
     try {
-      // Execute the real API analysis immediately without pre-delays
-      const report = await analyzeSandboxCsv(
+      const report = await analyzeSandboxDataset(
         selectedFile || undefined,
         !selectedFile ? csvRawText : undefined,
         fileName || "sandbox_dataset.csv"
       );
 
-      // Transition to results immediately upon real response arrival
       stageTimers.forEach(clearTimeout);
       setAnalysis(report);
       setStep("results");
@@ -186,6 +194,9 @@ export default function SandboxPanel() {
     setAnalysis(null);
     setSelectedException(null);
     setErrorMsg(null);
+    setQaQuery("");
+    setQaHistory([]);
+    setQaError(null);
   };
 
   const exportReportJson = () => {
@@ -199,10 +210,36 @@ export default function SandboxPanel() {
     downloadAnchor.remove();
   };
 
+  const handleAskDataset = async (queryText?: string) => {
+    const q = (queryText || qaQuery).trim();
+    if (!q || !analysis) return;
+    setIsAsking(true);
+    setQaError(null);
+
+    try {
+      const resp = await querySandboxDataset(q, analysis);
+      setQaHistory((prev) => [resp, ...prev]);
+      setQaQuery("");
+    } catch (err: any) {
+      setQaError(err.message || "Failed to answer query about this dataset.");
+    } finally {
+      setIsAsking(false);
+    }
+  };
+
   const filteredExceptions = (analysis?.exceptions || []).filter((exc) => {
     if (filterSeverity === "ALL") return true;
     return exc.severity.toUpperCase() === filterSeverity;
   });
+
+  const quickQuestions = [
+    "What is the total volume?",
+    "What is the average transaction?",
+    "Who is the top merchant?",
+    "Are there any ghost settlements?",
+    "What is the failure rate?",
+    "Summarize all exceptions",
+  ];
 
   return (
     <div className="space-y-6">
@@ -215,14 +252,14 @@ export default function SandboxPanel() {
                 <FileSpreadsheet className="h-5 w-5" />
               </div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                Test New Dataset
+                Financial Dataset Intelligence Engine
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
                   Ephemeral Sandbox
                 </span>
               </h1>
             </div>
             <p className="text-sm text-slate-500 max-w-3xl">
-              Upload custom operational finance batches or evaluate unseen CSV data against Nodexa&apos;s deterministic reconciliation, double-entry audit, and pattern-mining pipeline.
+              Upload any operational financial dataset (CSV, XLSX, JSON) with arbitrary column names. Nodexa automatically profiles headers, maps semantic fields, executes deterministic reconciliation controls, and answers natural-language queries.
             </p>
           </div>
 
@@ -272,10 +309,10 @@ export default function SandboxPanel() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls,.json"
               onChange={handleFileInput}
               className="hidden"
-              id="csv-file-input"
+              id="dataset-file-input"
             />
 
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 mb-4 shadow-xs">
@@ -283,15 +320,10 @@ export default function SandboxPanel() {
             </div>
 
             <h3 className="text-base font-semibold text-slate-900 mb-1">
-              Upload Operational CSV Dataset
+              Upload Operational Financial Dataset
             </h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto mb-5 leading-relaxed">
-              Drag and drop your operational CSV file here, or click browse. Requires columns:{" "}
-              <code className="text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100">transaction_id</code>,{" "}
-              <code className="text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100">merchant_id</code>,{" "}
-              <code className="text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100">amount</code>,{" "}
-              <code className="text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100">status</code>,{" "}
-              <code className="text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100">transaction_date</code>.
+            <p className="text-xs text-slate-500 max-w-lg mx-auto mb-5 leading-relaxed">
+              Drag and drop any financial file (<strong>CSV</strong>, <strong>Excel XLSX</strong>, or <strong>JSON</strong>). Nodexa dynamically infers column schemas, currency units, date patterns, and available audit capabilities.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -302,7 +334,7 @@ export default function SandboxPanel() {
                 className="btn-primary-cta inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#F4D35E] hover:bg-[#E8C84A] active:bg-[#DDBA35] text-sm font-semibold text-slate-950 border border-[#E8C84A] shadow-xs transition"
               >
                 <FileSpreadsheet className="h-4 w-4" />
-                Browse File (.csv)
+                Browse File (.csv, .xlsx, .json)
               </button>
 
               <button
@@ -311,14 +343,16 @@ export default function SandboxPanel() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 shadow-xs transition"
               >
                 <Sparkles className="h-4 w-4 text-amber-500" />
-                Load Sample Anomaly Dataset
+                Load Canonical Anomaly Dataset
               </button>
             </div>
 
-            <div className="mt-6 flex items-center justify-center gap-6 text-xs text-slate-400">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+              <span>Formats: CSV, XLSX, JSON</span>
+              <span>&bull;</span>
               <span>Max file size: 5 MB</span>
               <span>&bull;</span>
-              <span>Encodings: UTF-8 / ASCII</span>
+              <span>Any column order or naming</span>
               <span>&bull;</span>
               <span>Non-destructive validation</span>
             </div>
@@ -329,30 +363,30 @@ export default function SandboxPanel() {
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 shadow-xs">
               <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs">
                 <Database className="h-4 w-4 text-cyan-600" />
-                1. Ephemeral Sandbox
+                1. Dynamic Semantic Profiler
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Uploaded rows are parsed and loaded into a temporary in-memory database. PostgreSQL production tables are completely bypassed and preserved.
+                Automatically identifies transaction IDs, amounts, dates, merchants, and statuses from diverse column variations (e.g. <code>txn_id</code>, <code>gross_amt</code>, <code>vendor</code>).
               </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 shadow-xs">
               <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs">
                 <Cpu className="h-4 w-4 text-indigo-600" />
-                2. Autonomous Controls
+                2. Ephemeral In-Memory Sandbox
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Executes the exact same 5 financial reconciliation checks: Ghost Settlement, Double Dip, Settlement SLA Breach, Partial Deficit, and Missing Allocation.
+                Loads and analyzes data in an isolated in-memory SQLite sandbox. Zero records are inserted, modified, or deleted in production PostgreSQL tables.
               </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 shadow-xs">
               <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs">
                 <ShieldCheck className="h-4 w-4 text-amber-600" />
-                3. Honest Benchmarking
+                3. Honest Capability Matrix
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Because third-party datasets lack verified ground truth labels, accuracy metrics (Precision/Recall/F1) are transparently marked as unavailable.
+                Clearly discloses which financial checks can be performed. If settlement columns are missing, Nodexa transparently notes it rather than faking zero anomalies.
               </p>
             </div>
           </div>
@@ -363,14 +397,14 @@ export default function SandboxPanel() {
       {step === "validating" && (
         <div className="rounded-xl border border-slate-200 bg-white p-12 text-center space-y-4 shadow-xs">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent mb-2" />
-          <h3 className="text-base font-semibold text-slate-900">Validating CSV Structure</h3>
+          <h3 className="text-base font-semibold text-slate-900">Profiling &amp; Validating Dataset</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Checking header columns, parsing date formats, and validating numeric monetary fields...
+            Analyzing headers, detecting delimiters, inferring canonical field mappings, and evaluating financial capabilities...
           </p>
         </div>
       )}
 
-      {/* STEP 3: PREVIEW & CONFIRMATION */}
+      {/* STEP 3: PREVIEW & SEMANTIC MAPPING REVIEW */}
       {step === "preview" && validation && (
         <div className="space-y-6">
           {/* Validation Status Card */}
@@ -396,8 +430,13 @@ export default function SandboxPanel() {
                           : "bg-rose-50 text-rose-700 border border-rose-200"
                       }`}
                     >
-                      {validation.is_valid ? "Schema Valid" : "Validation Issues"}
+                      {validation.is_valid ? "Profile Valid" : "Validation Issues"}
                     </span>
+                    {validation.profile && (
+                      <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold border border-slate-200">
+                        {validation.profile.file_format}
+                      </span>
+                    )}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {validation.message}
@@ -426,7 +465,7 @@ export default function SandboxPanel() {
                     className="btn-primary-cta inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#F4D35E] hover:bg-[#E8C84A] active:bg-[#DDBA35] text-xs font-semibold text-slate-950 border border-[#E8C84A] shadow-xs transition"
                   >
                     <Cpu className="h-4 w-4" />
-                    Run Isolated Finance Analysis
+                    Run Isolated Sandbox Analysis
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 )}
@@ -458,37 +497,88 @@ export default function SandboxPanel() {
                 </div>
               </div>
               <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                <div className="text-slate-500 text-xs">Columns Detected</div>
+                <div className="text-slate-500 text-xs">Mapped Fields</div>
                 <div className="text-lg font-bold text-indigo-600 mt-0.5 font-mono">
-                  {validation.columns_detected.length}
+                  {validation.profile?.mapped_fields.length ?? validation.columns_detected.length}
                 </div>
               </div>
             </div>
 
-            {/* Detected Columns Chips */}
-            <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-slate-600">Header Columns:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {validation.columns_detected.map((col) => (
-                  <span
-                    key={col}
-                    className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono border border-slate-200"
-                  >
-                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                    {col}
+            {/* Semantic Field Mapping Card */}
+            {validation.profile && validation.profile.mapped_fields.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5 text-indigo-600" />
+                    Inferred Semantic Field Mappings:
                   </span>
-                ))}
-                {validation.missing_required_columns.map((col) => (
-                  <span
-                    key={col}
-                    className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-md bg-rose-50 text-rose-700 font-mono border border-rose-200"
-                  >
-                    <XCircle className="h-3 w-3 text-rose-600" />
-                    Missing: {col}
+                  <span className="text-[11px] text-slate-400">
+                    Canonical field &larr; Source column
                   </span>
-                ))}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {validation.profile.mapped_fields.map((mapping, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs"
+                    >
+                      <div className="flex items-center gap-1.5 font-mono truncate">
+                        <span className="text-indigo-700 font-bold">{mapping.canonical_field}</span>
+                        <span className="text-slate-400">&larr;</span>
+                        <span className="text-slate-600 truncate">{mapping.source_column}</span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          mapping.confidence >= 0.95
+                            ? "bg-emerald-100 text-emerald-800"
+                            : mapping.confidence >= 0.85
+                            ? "bg-indigo-100 text-indigo-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {Math.round(mapping.confidence * 100)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {validation.profile.unmapped_columns.length > 0 && (
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5 pt-1">
+                    <span className="font-semibold text-slate-600">Preserved Custom Columns:</span>
+                    <span>{validation.profile.unmapped_columns.join(", ")}</span>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Capability Matrix Badges */}
+            {validation.capabilities && validation.capabilities.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <BarChart3 className="h-3.5 w-3.5 text-emerald-600" />
+                  Available Analytical Capabilities:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {validation.capabilities.map((cap) => (
+                    <span
+                      key={cap.capability_id}
+                      title={cap.disclaimer || cap.description}
+                      className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md font-medium border ${
+                        cap.available
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-slate-100 text-slate-400 border-slate-200 line-through"
+                      }`}
+                    >
+                      {cap.available ? (
+                        <Check className="h-3 w-3 text-emerald-600" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-slate-400" />
+                      )}
+                      {cap.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Validation Errors List if any */}
             {validation.errors.length > 0 && (
@@ -517,18 +607,18 @@ export default function SandboxPanel() {
             )}
           </div>
 
-          {/* 10-Row Preview Table */}
+          {/* Preview Table */}
           {validation.preview_rows.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4 text-indigo-600" />
                   <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Dataset Preview (First {validation.preview_rows.length} Rows)
+                    Normalized Preview (First {validation.preview_rows.length} Rows)
                   </h4>
                 </div>
                 <span className="text-[11px] text-slate-500">
-                  Ready for in-memory reconciliation
+                  Ready for ephemeral SQLite reconciliation
                 </span>
               </div>
 
@@ -539,18 +629,15 @@ export default function SandboxPanel() {
                       <th className="py-2.5 px-3">#</th>
                       <th className="py-2.5 px-3">Transaction ID</th>
                       <th className="py-2.5 px-3">Merchant ID</th>
-                      <th className="py-2.5 px-3 text-right">Amount (₹)</th>
+                      <th className="py-2.5 px-3 text-right">Amount</th>
                       <th className="py-2.5 px-3">Status</th>
                       <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Settlement (UTR)</th>
+                      <th className="py-2.5 px-3">Settlement</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono text-slate-700">
                     {validation.preview_rows.map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-slate-50 transition-colors"
-                      >
+                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
                         <td className="py-2.5 px-3 text-slate-400">{idx + 1}</td>
                         <td className="py-2.5 px-3 font-semibold text-slate-900">
                           {row.transaction_id || "-"}
@@ -559,14 +646,16 @@ export default function SandboxPanel() {
                           {row.merchant_id || "-"}
                         </td>
                         <td className="py-2.5 px-3 text-right font-semibold text-emerald-700">
-                          ₹{Number(row.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                          {row.amount || "-"}
                         </td>
                         <td className="py-2.5 px-3">
                           <span
                             className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
                               row.status === "SUCCESS"
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-rose-50 text-rose-700 border border-rose-200"
+                                : row.status === "FAILED"
+                                ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                : "bg-slate-100 text-slate-700 border border-slate-200"
                             }`}
                           >
                             {row.status || "UNKNOWN"}
@@ -576,7 +665,7 @@ export default function SandboxPanel() {
                           {row.transaction_date?.slice(0, 10) || "-"}
                         </td>
                         <td className="py-2.5 px-3 text-slate-500">
-                          {row.utr_number || (row.settlement_amount ? "UTR_PENDING" : "-")}
+                          {row.settlement_amount || row.settlement_id || "-"}
                         </td>
                       </tr>
                     ))}
@@ -600,7 +689,7 @@ export default function SandboxPanel() {
 
           <div className="space-y-2">
             <h3 className="text-base font-bold text-slate-900">
-              Autonomous Financial Reconciliation in Progress
+              Ephemeral Financial Intelligence Engine Running
             </h3>
             <p className="text-xs text-indigo-600 font-mono font-medium">{analysisStage}</p>
           </div>
@@ -678,19 +767,129 @@ export default function SandboxPanel() {
               <div className="pt-2.5 border-t border-amber-200/60 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 font-mono">
                 <div className="flex items-center gap-2">
                   <Clock className="h-3.5 w-3.5 text-indigo-600" />
-                  <span className="text-slate-600">Analysis Latency:</span>
+                  <span className="text-slate-600">Total Latency:</span>
                   <span className="text-indigo-600 font-bold">{analysis.timing_ms.total_analysis_time} ms</span>
                   <span className="text-slate-300 hidden md:inline">&bull;</span>
                   <span className="text-slate-500 hidden md:inline">
-                    SQLite: {analysis.timing_ms.sqlite_initialization ?? 0}ms | Insert: {analysis.timing_ms.data_insertion ?? 0}ms | Controls: {analysis.timing_ms.deterministic_controls ?? 0}ms | Mining: {analysis.timing_ms.pattern_mining ?? 0}ms
+                    Profile: {analysis.timing_ms.dataset_profiling ?? 0}ms | Analytics: {analysis.timing_ms.financial_analytics ?? 0}ms | Controls: {analysis.timing_ms.deterministic_controls ?? 0}ms | Mining: {analysis.timing_ms.pattern_mining ?? 0}ms
                   </span>
                 </div>
                 <div className="text-emerald-700 text-[10px] font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  Sub-100ms Ephemeral Sandbox
+                  Ephemeral Isolated SQLite
                 </div>
               </div>
             )}
           </div>
+
+          {/* FINANCIAL ANALYTICS OVERVIEW CARD */}
+          {analysis.analytics && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-emerald-600" />
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Financial Analytics Overview
+                  </h4>
+                </div>
+                {analysis.analytics.sample_size_notice && (
+                  <span className="text-[11px] px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+                    {analysis.analytics.sample_size_notice}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="text-xs text-slate-500 font-medium">Gross Transaction Volume</div>
+                  <div className="text-lg font-bold text-emerald-700 font-mono mt-1">
+                    {analysis.analytics.total_volume_inr_formatted}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="text-xs text-slate-500 font-medium">Average Transaction</div>
+                  <div className="text-lg font-bold text-slate-900 font-mono mt-1">
+                    {analysis.analytics.average_amount_inr_formatted || "—"}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="text-xs text-slate-500 font-medium">Max / Min Transaction</div>
+                  <div className="text-sm font-bold text-slate-800 font-mono mt-1 truncate">
+                    {analysis.analytics.largest_amount_inr_formatted || "—"} / {analysis.analytics.smallest_amount_inr_formatted || "—"}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="text-xs text-slate-500 font-medium">Settlement Deficit</div>
+                  <div className="text-lg font-bold text-amber-700 font-mono mt-1">
+                    {analysis.analytics.settlement_total_deficit_inr_formatted || "₹0.00"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Breakdown & Top Merchants Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                {/* Status Breakdown */}
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-slate-600">Status Breakdown:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(analysis.analytics.status_breakdown || {}).map(([st, cnt]) => (
+                      <div
+                        key={st}
+                        className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono flex items-center gap-2"
+                      >
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full ${
+                            st === "SUCCESS"
+                              ? "bg-emerald-500"
+                              : st === "FAILED"
+                              ? "bg-rose-500"
+                              : "bg-amber-500"
+                          }`}
+                        />
+                        <span className="font-semibold text-slate-700">{st}:</span>
+                        <span className="font-bold text-slate-900">{cnt}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top Merchants */}
+                {analysis.analytics.top_merchants_by_volume && analysis.analytics.top_merchants_by_volume.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-xs font-semibold text-slate-600">Top Merchants by Volume:</span>
+                    <div className="space-y-1">
+                      {analysis.analytics.top_merchants_by_volume.slice(0, 3).map((m, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between text-xs font-mono p-1.5 rounded bg-slate-50 border border-slate-100"
+                        >
+                          <span className="font-semibold text-slate-800">{m.merchant_id}</span>
+                          <span className="text-emerald-700 font-bold">{m.volume_inr_formatted} ({m.transaction_count} tx)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Unavailable Capabilities Disclaimers */}
+              {analysis.analytics.unavailable_capabilities && analysis.analytics.unavailable_capabilities.length > 0 && (
+                <div className="p-3 rounded-lg bg-amber-50/60 border border-amber-200/80 text-xs text-amber-900 space-y-1">
+                  <div className="font-semibold flex items-center gap-1.5">
+                    <Info className="h-3.5 w-3.5 text-amber-700" />
+                    Transparent Capability Disclosures:
+                  </div>
+                  <ul className="list-disc pl-5 space-y-0.5 text-[11px] text-amber-800">
+                    {analysis.analytics.unavailable_capabilities.map((disc, idx) => (
+                      <li key={idx}>{disc}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Operational Metrics Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -715,7 +914,7 @@ export default function SandboxPanel() {
             </div>
 
             <div className="rounded-xl border border-amber-200 bg-white p-4 space-y-1 shadow-xs">
-              <div className="text-xs font-semibold text-amber-600">Potential Exposure</div>
+              <div className="text-xs font-semibold text-amber-600">Discrepancy Exposure</div>
               <div className="text-2xl font-bold font-mono text-amber-600">
                 {analysis.total_exposure_inr_formatted}
               </div>
@@ -735,29 +934,97 @@ export default function SandboxPanel() {
             </div>
           </div>
 
-          {/* Dataset Breakdown Badges */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="text-slate-600 font-semibold">Dataset Breakdown:</span>
-            <div className="flex flex-wrap items-center gap-2 font-mono text-slate-700">
-              <span className="px-2.5 py-1 rounded-md bg-white border border-slate-200 shadow-2xs">
-                Gateway TX: <b className="text-slate-900">{analysis.dataset_summary.gateway_transactions}</b>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-white border border-slate-200 shadow-2xs">
-                Orders: <b className="text-slate-900">{analysis.dataset_summary.merchant_orders}</b>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-white border border-slate-200 shadow-2xs">
-                Settlements: <b className="text-slate-900">{analysis.dataset_summary.settlement_batches}</b>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-white border border-slate-200 shadow-2xs">
-                Ledger Entries: <b className="text-slate-900">{analysis.dataset_summary.ledger_entries}</b>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-white border border-slate-200 shadow-2xs">
-                Disputes: <b className="text-slate-900">{analysis.dataset_summary.dispute_events}</b>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-white border border-slate-200 shadow-2xs">
-                Merchants: <b className="text-slate-900">{analysis.dataset_summary.merchants_impacted}</b>
+          {/* INTERACTIVE DATASET Q&A SECTION */}
+          <div className="rounded-xl border border-indigo-200 bg-white p-5 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-indigo-600" />
+                <h4 className="text-sm font-bold text-slate-900">
+                  Ask Nodexa About This Dataset
+                </h4>
+              </div>
+              <span className="text-[11px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 font-medium">
+                Grounded 100% on Ephemeral Data
               </span>
             </div>
+
+            {/* Quick Questions Chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {quickQuestions.map((q, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleAskDataset(q)}
+                  disabled={isAsking}
+                  className="text-xs px-2.5 py-1 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 text-slate-700 transition"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+
+            {/* Question Input Box */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAskDataset();
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                value={qaQuery}
+                onChange={(e) => setQaQuery(e.target.value)}
+                placeholder="Ask anything about volume, top merchants, failure rates, settlements, or exceptions..."
+                className="flex-1 text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
+              />
+              <button
+                type="submit"
+                disabled={isAsking || !qaQuery.trim()}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold shadow-xs transition"
+              >
+                {isAsking ? (
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                Ask
+              </button>
+            </form>
+
+            {qaError && (
+              <div className="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
+                {qaError}
+              </div>
+            )}
+
+            {/* Q&A Answers Stream */}
+            {qaHistory.length > 0 && (
+              <div className="space-y-3 pt-3 border-t border-slate-100 max-h-72 overflow-y-auto">
+                {qaHistory.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-lg bg-indigo-50/40 border border-indigo-100 space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-800 font-mono">Q: {item.query}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-semibold font-mono">
+                        {item.confidence} Confidence
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {item.answer}
+                    </p>
+                    {item.capabilities_used && item.capabilities_used.length > 0 && (
+                      <div className="text-[10px] text-slate-400 font-mono pt-1 flex items-center gap-1">
+                        <span>Capabilities:</span>
+                        <span>{item.capabilities_used.join(", ")}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Pattern Clusters Card if any */}
@@ -840,7 +1107,7 @@ export default function SandboxPanel() {
                       <th className="py-2.5 px-3">Exception ID</th>
                       <th className="py-2.5 px-3">Type</th>
                       <th className="py-2.5 px-3">Severity</th>
-                      <th className="py-2.5 px-3 text-right">Exposure (₹)</th>
+                      <th className="py-2.5 px-3 text-right">Exposure</th>
                       <th className="py-2.5 px-3">Primary Ref</th>
                       <th className="py-2.5 px-3">Recommended Action</th>
                       <th className="py-2.5 px-3 text-right">Details</th>

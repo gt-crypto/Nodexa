@@ -4,13 +4,19 @@ from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile, 
 from pydantic import BaseModel
 from fastapi.responses import PlainTextResponse
 
-from backend.sandbox.models import SandboxValidationResult, SandboxAnalysisReport
+from backend.sandbox.models import (
+    SandboxValidationResult,
+    SandboxAnalysisReport,
+    SandboxQueryRequest,
+    SandboxQueryResponse,
+)
 from backend.sandbox.service import (
     SandboxValidationService,
     SandboxAnalysisService,
     get_sample_sandbox_csv,
     MAX_UPLOAD_BYTES,
 )
+from backend.sandbox.qa_engine import SandboxDatasetQAEngine
 from backend.logging import logger
 
 router = APIRouter(prefix="/sandbox", tags=["Sandbox Analysis"])
@@ -26,38 +32,31 @@ async def validate_sandbox_dataset(
     file: Optional[UploadFile] = File(None),
     csv_content: Optional[str] = Form(None),
 ) -> SandboxValidationResult:
-    """Validates an uploaded CSV dataset against the standard Nodexa operational schema.
+    """Validates and semantically profiles an uploaded financial dataset (CSV, XLSX, JSON).
     
     Accepts multipart/form-data with a file or raw form string.
     Does NOT mutate any database records.
     """
-    raw_text = ""
+    content_bytes = b""
+    filename = "sandbox_dataset.csv"
+
     if file:
+        filename = file.filename or filename
         content_bytes = await file.read()
         if len(content_bytes) > MAX_UPLOAD_BYTES:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail=f"File exceeds maximum allowed size of 5 MB ({round(len(content_bytes) / (1024 * 1024), 2)} MB)",
             )
-        try:
-            raw_text = content_bytes.decode("utf-8")
-        except UnicodeDecodeError:
-            try:
-                raw_text = content_bytes.decode("latin-1")
-            except Exception:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid file encoding. CSV must be UTF-8 or ASCII encoded.",
-                )
     elif csv_content:
-        raw_text = csv_content
+        content_bytes = csv_content.encode("utf-8")
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No CSV file or csv_content provided for validation.",
+            detail="No dataset file or csv_content provided for validation.",
         )
 
-    result, _ = SandboxValidationService.validate_csv(raw_text)
+    result, _, _, _ = SandboxValidationService.validate_dataset(content_bytes, filename=filename)
     logger.info(
         operation="SANDBOX_VALIDATION",
         message=f"Sandbox dataset validated: valid={result.is_valid}, rows={result.total_rows}, valid_rows={result.valid_rows}",
@@ -82,7 +81,7 @@ async def analyze_sandbox_dataset(
     Operates 100% inside an isolated in-memory SQLite sandbox database.
     Does NOT mutate, insert, or delete any records in production PostgreSQL or SQLite.
     """
-    raw_text = ""
+    content_bytes = b""
     actual_name = dataset_name or "sandbox_dataset.csv"
 
     if file:
@@ -93,26 +92,18 @@ async def analyze_sandbox_dataset(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail=f"File exceeds maximum allowed size of 5 MB ({round(len(content_bytes) / (1024 * 1024), 2)} MB)",
             )
-        try:
-            raw_text = content_bytes.decode("utf-8")
-        except UnicodeDecodeError:
-            try:
-                raw_text = content_bytes.decode("latin-1")
-            except Exception:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid file encoding. CSV must be UTF-8 or ASCII encoded.",
-                )
     elif csv_content:
-        raw_text = csv_content
+        content_bytes = csv_content.encode("utf-8")
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No CSV file or csv_content provided for analysis.",
+            detail="No dataset file or csv_content provided for analysis.",
         )
 
-    # 1. Validate
-    val_result, valid_rows = SandboxValidationService.validate_csv(raw_text)
+    # 1. Validate and profile
+    val_result, valid_rows, profile, canonical_rows = SandboxValidationService.validate_dataset(
+        content_bytes, filename=actual_name
+    )
     if not val_result.is_valid or not valid_rows:
         error_sample = "; ".join([e.error for e in val_result.errors[:3]])
         raise HTTPException(
@@ -121,7 +112,12 @@ async def analyze_sandbox_dataset(
         )
 
     # 2. Run isolated sandbox analysis
-    report = SandboxAnalysisService.analyze_dataset(valid_rows=valid_rows, dataset_name=actual_name)
+    report = SandboxAnalysisService.analyze_dataset(
+        valid_rows=valid_rows,
+        dataset_name=actual_name,
+        profile=profile,
+        canonical_rows=canonical_rows,
+    )
     logger.info(
         operation="SANDBOX_ANALYSIS_COMPLETE",
         message=f"Sandbox analysis complete: {report.exceptions_detected} exceptions, exposure={report.total_exposure_minor_units}",
@@ -139,14 +135,55 @@ async def analyze_sandbox_dataset(
 @router.post("/analyze-json", response_model=SandboxAnalysisReport)
 async def analyze_sandbox_dataset_json(payload: AnalyzeJsonRequest) -> SandboxAnalysisReport:
     """Alternative JSON endpoint for analyzing CSV text content."""
-    val_result, valid_rows = SandboxValidationService.validate_csv(payload.csv_content)
+    content_bytes = payload.csv_content.encode("utf-8")
+    actual_name = payload.dataset_name or "sandbox_dataset.csv"
+    val_result, valid_rows, profile, canonical_rows = SandboxValidationService.validate_dataset(
+        content_bytes, filename=actual_name
+    )
     if not val_result.is_valid or not valid_rows:
         error_sample = "; ".join([e.error for e in val_result.errors[:3]])
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Dataset validation failed: {error_sample or val_result.message}",
         )
-    return SandboxAnalysisService.analyze_dataset(valid_rows=valid_rows, dataset_name=payload.dataset_name or "sandbox_dataset.csv")
+    return SandboxAnalysisService.analyze_dataset(
+        valid_rows=valid_rows,
+        dataset_name=actual_name,
+        profile=profile,
+        canonical_rows=canonical_rows,
+    )
+
+
+@router.post("/query", response_model=SandboxQueryResponse)
+async def query_sandbox_dataset(payload: SandboxQueryRequest) -> SandboxQueryResponse:
+    """Answers natural language questions grounded strictly on the uploaded sandbox dataset.
+    
+    Guarantees zero access to production databases.
+    """
+    report = payload.report
+    if not report:
+        if not payload.raw_content:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Either pre-computed report or raw_content must be provided to query dataset.",
+            )
+        val_result, valid_rows, profile, canonical_rows = SandboxValidationService.validate_dataset(
+            payload.raw_content.encode("utf-8"),
+            filename=payload.dataset_name or "sandbox_dataset.csv",
+        )
+        if not val_result.is_valid or not valid_rows:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Cannot query invalid dataset: {val_result.message}",
+            )
+        report = SandboxAnalysisService.analyze_dataset(
+            valid_rows=valid_rows,
+            dataset_name=payload.dataset_name or "sandbox_dataset.csv",
+            profile=profile,
+            canonical_rows=canonical_rows,
+        )
+
+    return SandboxDatasetQAEngine.answer_query(payload.query, report)
 
 
 @router.get("/sample-csv", response_class=PlainTextResponse)
@@ -158,3 +195,4 @@ def get_sample_csv():
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=nodexa_sample_anomaly_dataset.csv"},
     )
+
