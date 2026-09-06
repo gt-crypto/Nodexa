@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -13,13 +13,22 @@ import {
   Layers,
   Database,
   Search,
+  ChevronDown,
+  Info,
+  Check,
 } from "lucide-react";
 import {
   VerificationRecord,
   VerificationDryRunResponse,
   VerificationEvidenceItem,
+  EligibleRemediationItem,
 } from "../types";
-import { verifyRemediation, retryVerification } from "../lib/api";
+import {
+  verifyRemediation,
+  retryVerification,
+  getLatestVerification,
+  fetchEligibleRemediations,
+} from "../lib/api";
 import { Button } from "./ui/Button";
 
 interface VerificationPanelProps {
@@ -28,7 +37,7 @@ interface VerificationPanelProps {
 }
 
 export const VerificationPanel: React.FC<VerificationPanelProps> = ({
-  remediationId = "act_demo_01",
+  remediationId = "",
   initialRecord = null,
 }) => {
   const [activeRemId, setActiveRemId] = useState<string>(remediationId);
@@ -38,16 +47,95 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<"ALL" | "FAIL" | "PASS">("ALL");
 
+  // Real remediation discovery state
+  const [eligibleList, setEligibleList] = useState<EligibleRemediationItem[]>([]);
+  const [loadingList, setLoadingList] = useState<boolean>(true);
+  const [showManualInput, setShowManualInput] = useState<boolean>(false);
+
+  // Load real eligible remediation executions from the backend on mount
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadRemediations() {
+      setLoadingList(true);
+      try {
+        const items = await fetchEligibleRemediations();
+        if (!isMounted) return;
+        setEligibleList(items);
+
+        // Determine which remediation ID to select
+        const targetId = remediationId || (items.length > 0 ? items[0].id : "");
+        if (targetId) {
+          setActiveRemId(targetId);
+          // If the target item has already been verified, auto-load its latest verification record
+          const targetItem = items.find((i) => i.id === targetId);
+          if (targetItem && targetItem.already_verified) {
+            try {
+              const latest = await getLatestVerification(targetId);
+              if (isMounted && latest) {
+                setRecord(latest);
+              }
+            } catch {
+              // Silently ignore prefetch errors
+            }
+          }
+        }
+      } catch {
+        if (!isMounted) return;
+        setEligibleList([]);
+      } finally {
+        if (isMounted) setLoadingList(false);
+      }
+    }
+
+    loadRemediations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [remediationId]);
+
+  const handleSelectRemediation = async (selectedId: string) => {
+    setActiveRemId(selectedId);
+    setError(null);
+    setDryRunResult(null);
+
+    const selectedItem = eligibleList.find((i) => i.id === selectedId);
+    if (selectedItem && selectedItem.already_verified) {
+      setLoading(true);
+      try {
+        const latest = await getLatestVerification(selectedId);
+        setRecord(latest);
+      } catch {
+        setRecord(null);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setRecord(null);
+    }
+  };
+
   const handleRunVerification = async (dryRun: boolean = false) => {
+    const trimmedId = activeRemId.trim();
+    if (!trimmedId) {
+      setError("Please select or enter a remediation plan ID to verify.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const res = await verifyRemediation(activeRemId, dryRun);
+      const res = await verifyRemediation(trimmedId, dryRun);
       if (dryRun) {
         setDryRunResult(res as VerificationDryRunResponse);
       } else {
         setRecord(res as VerificationRecord);
         setDryRunResult(null);
+        // Refresh eligible list to update verification statuses
+        fetchEligibleRemediations()
+          .then((items) => setEligibleList(items))
+          .catch(() => {});
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification execution failed.");
@@ -73,6 +161,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case "VERIFIED_CLOSED":
+      case "VERIFIED":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-semibold bg-[#ECFDF3] border border-emerald-200 text-[#15803D]">
             <CheckCircle2 className="w-3.5 h-3.5" /> VERIFIED CLOSED
@@ -105,6 +194,14 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
     }
   };
 
+  const selectedItem = eligibleList.find((i) => i.id === activeRemId);
+  const isAlreadyVerified = Boolean(
+    selectedItem?.already_verified ||
+    record?.verification_status === "VERIFIED" ||
+    (record?.verification_status as string) === "VERIFIED_CLOSED" ||
+    record?.final_exception_state === "VERIFIED_CLOSED"
+  );
+
   const evidenceItems: VerificationEvidenceItem[] =
     record?.evidence_summary || dryRunResult?.evidence_summary || [];
 
@@ -136,55 +233,149 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
           </div>
         </div>
 
-        {/* Control Bar */}
-        <div className="mt-4 flex flex-col sm:flex-row items-center gap-2.5">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={activeRemId}
-              onChange={(e) => setActiveRemId(e.target.value)}
-              placeholder="Remediation Plan ID (e.g. act_01)"
-              className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 h-8 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => handleRunVerification(true)}
-              disabled={loading || !activeRemId}
-              icon={<Play className="w-3 h-3 text-indigo-600" />}
-            >
-              Dry Run Verify
-            </Button>
-
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={() => handleRunVerification(false)}
-              disabled={loading || !activeRemId}
-              loading={loading}
-              icon={<CheckCircle2 className="w-3 h-3" />}
-            >
-              Verify &amp; Close
-            </Button>
-
-            {record && record.verification_status === "FAILED" && (
-              <Button
-                size="sm"
-                variant="danger"
-                onClick={handleRetry}
-                disabled={loading}
-                icon={<RefreshCw className="w-3 h-3" />}
+        {/* Empty State when no remediations exist in database */}
+        {!loadingList && eligibleList.length === 0 && !showManualInput && (
+          <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-start gap-3">
+            <Info className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="font-semibold text-slate-800 font-sans">
+                No remediation executions are currently awaiting verification.
+              </p>
+              <p className="text-slate-500 font-sans">
+                Execute an approved remediation first, then return here for independent verification.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowManualInput(true)}
+                className="text-[11px] text-indigo-600 hover:text-indigo-800 font-mono underline block mt-2 cursor-pointer"
               >
-                Retry ({record.attempt_number}/3)
-              </Button>
+                Or enter a manual remediation ID for testing &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Control Bar */}
+        {(eligibleList.length > 0 || showManualInput) && (
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
+              {/* Dropdown Selector for Real Remediations */}
+              {!showManualInput && eligibleList.length > 0 ? (
+                <div className="relative flex-1 min-w-[280px]">
+                  <select
+                    id="remediation-select"
+                    value={activeRemId}
+                    onChange={(e) => handleSelectRemediation(e.target.value)}
+                    disabled={loading}
+                    className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-8 h-9 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors cursor-pointer appearance-none truncate"
+                  >
+                    {eligibleList.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.already_verified ? "✓ [VERIFIED CLOSED]" : `[${item.status}]`} {item.id} — {item.action_type} (₹{item.amount_inr.toLocaleString("en-IN", { minimumFractionDigits: 2 })})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              ) : (
+                /* Manual Text Input Fallback */
+                <div className="relative flex-1 min-w-[280px]">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={activeRemId}
+                    onChange={(e) => setActiveRemId(e.target.value)}
+                    placeholder="Enter Remediation ID (e.g. REM-...)"
+                    className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 h-9 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleRunVerification(true)}
+                  disabled={loading || !activeRemId.trim()}
+                  icon={<Play className="w-3 h-3 text-indigo-600" />}
+                >
+                  Dry Run Verify
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => handleRunVerification(false)}
+                  disabled={loading || !activeRemId.trim()}
+                  loading={loading}
+                  icon={isAlreadyVerified ? <Check className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                >
+                  {isAlreadyVerified ? "Re-Verify (Idempotent)" : "Verify & Close"}
+                </Button>
+
+                {record && record.verification_status === "FAILED" && (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={handleRetry}
+                    disabled={loading}
+                    icon={<RefreshCw className="w-3 h-3" />}
+                  >
+                    Retry ({record.attempt_number}/3)
+                  </Button>
+                )}
+
+                {/* Toggle Manual / Dropdown Mode */}
+                {eligibleList.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowManualInput(!showManualInput)}
+                    className="text-[11px] text-slate-500 hover:text-slate-800 font-mono underline ml-1 cursor-pointer"
+                  >
+                    {showManualInput ? "Use Selector" : "Manual ID"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Selected Remediation Metadata Strip */}
+            {selectedItem && !showManualInput && (
+              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-slate-700">
+                  <span>
+                    <strong className="text-slate-900">Exception:</strong> {selectedItem.exception_id}
+                  </span>
+                  {selectedItem.payment_id && (
+                    <span>
+                      <strong className="text-slate-900">Payment:</strong> {selectedItem.payment_id}
+                    </span>
+                  )}
+                  <span>
+                    <strong className="text-slate-900">Action:</strong> {selectedItem.action_type}
+                  </span>
+                  <span>
+                    <strong className="text-slate-900">Amount:</strong> ₹{selectedItem.amount_inr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {isAlreadyVerified ? (
+                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> VERIFIED IN DATABASE
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" /> AWAITING VERIFICATION
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
           </div>
-        </div>
+        )}
 
+        {/* Error Alert */}
         {error && (
           <div className="mt-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-mono">
             <XCircle className="w-4 h-4 shrink-0" />

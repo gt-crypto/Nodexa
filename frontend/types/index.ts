@@ -82,6 +82,24 @@ export interface VerificationDryRunResponse {
   failure_reasons: string[];
 }
 
+export interface EligibleRemediationItem {
+  id: string;
+  remediation_id: string;
+  exception_id: string;
+  payment_id?: string | null;
+  action_type: string;
+  status: string;
+  amount_minor_units: number;
+  amount_inr: number;
+  created_at: string;
+  executed_at?: string | null;
+  eligible_for_verification: boolean;
+  already_verified: boolean;
+  verification_status?: string | null;
+  verification_id?: string | null;
+  description?: string | null;
+}
+
 export interface ComponentScores {
   detection: number;
   investigation: number;

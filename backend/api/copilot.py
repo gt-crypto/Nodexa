@@ -34,6 +34,11 @@ class CopilotAskResponse(BaseModel):
     limitations: Optional[str] = None
     tools_used: List[str] = []
     request_id: Optional[str] = None
+    intent: Optional[str] = None
+    filters: Optional[Dict[str, Any]] = None
+    data: Optional[Dict[str, Any]] = None
+    calculations: Optional[Dict[str, Any]] = None
+    grounded: Optional[bool] = None
 
 
 @router.post("/ask", response_model=CopilotAskResponse)
@@ -65,6 +70,11 @@ def post_ask_sentinel(
             limitations=res.get("limitations"),
             tools_used=res.get("tools_used", []),
             request_id=res.get("request_id"),
+            intent=res.get("intent"),
+            filters=res.get("filters"),
+            data=res.get("data"),
+            calculations=res.get("calculations"),
+            grounded=res.get("grounded"),
         )
     except Exception as e:
         db.rollback()

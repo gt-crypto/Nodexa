@@ -7,6 +7,8 @@ from sqlalchemy import select
 
 from backend.models.database import get_db
 from backend.models.exceptions import ExceptionRecord
+from backend.models.remediation import RemediationAction
+from backend.models.verification import VerificationRecord
 from backend.remediation.models import (
     RemediationPlanCreateRequest,
     RemediationApprovalRequest,
@@ -14,6 +16,7 @@ from backend.remediation.models import (
     RemediationPlanResponse,
     RemediationExecutionResponse,
     RemediationDryRunResponse,
+    EligibleRemediationItem,
 )
 from backend.remediation.service import RemediationService
 
@@ -86,6 +89,75 @@ def get_exception_remediations(
     service = RemediationService()
     plans = service.list_remediations_for_exception(session=db, exception_id=exception_id)
     return [_to_plan_response(p) for p in plans]
+
+
+@router.get("/remediations/eligible-for-verification", response_model=List[EligibleRemediationItem])
+@router.get("/remediation/eligible-for-verification", response_model=List[EligibleRemediationItem])
+def get_eligible_remediations(
+    status: Optional[str] = Query(None, description="Optional status filter"),
+    db: Session = Depends(get_db),
+) -> List[EligibleRemediationItem]:
+    """Retrieves real remediation plans/actions eligible for post-remediation verification."""
+    stmt = select(RemediationAction).order_by(RemediationAction.created_at.desc())
+    actions = db.scalars(stmt).all()
+
+    results: List[EligibleRemediationItem] = []
+    for action in actions:
+        payload = {}
+        try:
+            payload = json.loads(action.action_payload or "{}")
+        except Exception:
+            pass
+
+        # Linked verification records
+        ver_stmt = (
+            select(VerificationRecord)
+            .where(VerificationRecord.remediation_id == action.action_id)
+            .order_by(VerificationRecord.created_at.desc())
+        )
+        latest_ver = db.scalars(ver_stmt).first()
+
+        already_verified = latest_ver is not None and latest_ver.verification_status == "VERIFIED"
+        eligible = action.status in ("EXECUTED", "AWAITING_VERIFICATION")
+
+        if status:
+            if status.upper() == "ELIGIBLE" and not eligible:
+                continue
+            elif status.upper() == "VERIFIED" and not already_verified:
+                continue
+            elif status.upper() not in ("ELIGIBLE", "VERIFIED") and action.status != status:
+                continue
+
+        amt_minor = payload.get("amount_minor_units") or action.deterministic_exposure or 0
+        amt_inr = round(amt_minor / 100.0, 2)
+        payment_id = payload.get("payment_id")
+
+        desc = f"{action.action_type} for {action.exception_id}"
+        if payment_id:
+            desc += f" (Payment: {payment_id})"
+        desc += f" — ₹{amt_inr:,.2f}"
+
+        results.append(
+            EligibleRemediationItem(
+                id=action.action_id,
+                remediation_id=action.action_id,
+                exception_id=action.exception_id,
+                payment_id=payment_id,
+                action_type=action.action_type,
+                status=action.status,
+                amount_minor_units=amt_minor,
+                amount_inr=amt_inr,
+                created_at=action.created_at.isoformat() if action.created_at else "",
+                executed_at=action.executed_at.isoformat() if action.executed_at else None,
+                eligible_for_verification=eligible,
+                already_verified=already_verified,
+                verification_status=latest_ver.verification_status if latest_ver else None,
+                verification_id=latest_ver.verification_id if latest_ver else None,
+                description=desc,
+            )
+        )
+
+    return results
 
 
 @router.get("/remediations/{remediation_id}", response_model=RemediationPlanResponse)

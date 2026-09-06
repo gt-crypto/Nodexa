@@ -5,6 +5,7 @@ import {
   VerifierOpinion,
   ClustersResponse,
   ExceptionCluster,
+  EligibleRemediationItem,
 } from "../types";
 
 /**
@@ -111,6 +112,25 @@ export async function retryVerification(
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: "Retry failed" }));
     throw new Error(err.detail || `HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+/**
+ * Fetches real remediation actions eligible for post-remediation verification.
+ */
+export async function fetchEligibleRemediations(
+  status?: string
+): Promise<EligibleRemediationItem[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  const url = `${BACKEND_URL}/remediations/eligible-for-verification${query}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
   return await response.json();
 }

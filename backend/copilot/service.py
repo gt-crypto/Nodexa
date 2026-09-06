@@ -39,6 +39,21 @@ UNSUPPORTED_OUT_OF_SCOPE_KEYWORDS = [
     "legal advice",
     "future prediction",
     "stock price",
+    "stock market",
+    "predict the stock",
+    "stocks",
+    "crypto",
+    "bitcoin",
+    "revenue be next year",
+    "next year",
+    "future revenue",
+    "predict revenue",
+    "future forecast",
+    "forecast",
+    "razorpay's internal",
+    "razorpay internal",
+    "competitor revenue",
+    "external revenue",
 ]
 
 
@@ -140,18 +155,21 @@ class AskSentinelService:
                     query_id=query_id,
                     question=question,
                     answer=(
-                        "I cannot answer questions regarding system credentials, external predictions, or legal/out-of-scope matters. "
-                        "I can only retrieve and explain live Nodexa operational facts."
+                        "I can't determine that from the available Nodexa data. Ask Sentinel is restricted to operational evidence "
+                        "recorded in the live Nodexa financial database and cannot provide speculative forecasts, stock predictions, "
+                        "competitor intelligence, or out-of-scope data."
                     ),
                     evidence_refs=[],
-                    reasoning="Query asks for information outside operational database scope.",
+                    reasoning="Query asks for speculative predictions or information outside operational database scope.",
                     confidence="LOW",
                     abstained=True,
-                    limitations="Out-of-scope query.",
+                    limitations="Unsupported query: outside live Nodexa database scope.",
                     tools_used=[],
                     request_id=request_id,
                     actor_id=actor_id,
                     status="ABSTAINED",
+                    intent="UNSUPPORTED",
+                    grounded=False,
                 )
 
         # 3. Extract identifiers from input & context
@@ -163,6 +181,14 @@ class AskSentinelService:
         context = {}
         if exception_id_context:
             context["exception_id"] = exception_id_context
+
+        filters = {
+            "merchant_ids": merch_ids,
+            "payment_ids": pay_ids,
+            "settlement_ids": set_ids,
+            "order_ids": ord_ids,
+            "exception_ids": exc_ids,
+        }
 
         # 4. LLM Tool-Calling Layer (Selects minimum necessary read-only tools)
         planned_tools, reasoning_plan, was_real_llm = self.agent.plan_tools(
@@ -182,7 +208,11 @@ class AskSentinelService:
         )
 
         # 6. Check for missing evidence abstention if specific payment or exception was not found
-        if "get_payment" in retrieved_data and not retrieved_data["get_payment"].get("found"):
+        missing_payment = (
+            ("get_payment" in retrieved_data and not retrieved_data["get_payment"].get("found")) or
+            ("get_payment_lifecycle" in retrieved_data and not retrieved_data["get_payment_lifecycle"].get("found"))
+        )
+        if missing_payment:
             if pay_ids and not any(k in q_lower for k in ("compare", "vs", "versus")):
                 target_pay = pay_ids[0]
                 return self._persist_and_respond(
@@ -199,6 +229,9 @@ class AskSentinelService:
                     request_id=request_id,
                     actor_id=actor_id,
                     status="ABSTAINED",
+                    intent="ENTITY_LOOKUP",
+                    filters=filters,
+                    grounded=False,
                 )
 
         if "get_exception" in retrieved_data and not retrieved_data["get_exception"].get("found"):
@@ -218,6 +251,9 @@ class AskSentinelService:
                     request_id=request_id,
                     actor_id=actor_id,
                     status="ABSTAINED",
+                    intent="EXCEPTION_LOOKUP",
+                    filters=filters,
+                    grounded=False,
                 )
 
         if not retrieved_data:
@@ -238,9 +274,44 @@ class AskSentinelService:
                 request_id=request_id,
                 actor_id=actor_id,
                 status="ABSTAINED",
+                intent="OPERATIONAL_QUERY",
+                filters=filters,
+                grounded=False,
             )
 
-        # 7. Grounded Answer Synthesis with Answer Relevance Guard
+        # 7. Calculate Deterministic Mathematical Combinations
+        calculations: Dict[str, Any] = {}
+        if "get_sales_summary" in retrieved_data and "get_cross_source_reconciliation" in retrieved_data:
+            s = retrieved_data["get_sales_summary"]
+            cr = retrieved_data["get_cross_source_reconciliation"]
+            unsettled = cr.get("unsettled_captured_payments", [])
+            tot_sales = s.get("total_sales_paise", 0)
+            unsettled_paise = sum(int(round(u.get("amount_inr", 0.0) * 100)) for u in unsettled)
+            pct = round((unsettled_paise / tot_sales) * 100, 2) if tot_sales > 0 else 0.0
+            calculations["unsettled_percentage"] = pct
+            calculations["unsettled_paise"] = unsettled_paise
+            calculations["unsettled_inr"] = round(unsettled_paise / 100.0, 2)
+
+        if "get_sales_summary" in retrieved_data and "get_refunds_summary" in retrieved_data:
+            s = retrieved_data["get_sales_summary"]
+            r = retrieved_data["get_refunds_summary"]
+            tot_sales = s.get("total_sales_paise", 0)
+            tot_ref = r.get("total_refunds_paise", 0)
+            net_sales = tot_sales - tot_ref
+            rate = round((tot_ref / tot_sales) * 100, 2) if tot_sales > 0 else 0.0
+            calculations["net_sales_paise"] = net_sales
+            calculations["net_sales_inr"] = round(net_sales / 100.0, 2)
+            calculations["refund_rate_percentage"] = rate
+
+        if "get_finance_health_summary" in retrieved_data:
+            fh = retrieved_data["get_finance_health_summary"]
+            calculations["gross_sales_inr"] = fh.get("gross_sales_inr")
+            calculations["net_sales_inr"] = fh.get("net_sales_inr")
+            calculations["refund_rate_percentage"] = fh.get("refund_rate_percentage")
+            calculations["unsettled_percentage"] = fh.get("unsettled_percentage")
+            calculations["open_exposure_inr"] = fh.get("open_exposure_inr")
+
+        # 8. Grounded Answer Synthesis with Answer Relevance Guard
         answer, reasoning, confidence, abstained, limitations = self.agent.synthesize_response(
             question=question,
             retrieved_data=retrieved_data,
@@ -254,6 +325,14 @@ class AskSentinelService:
             "model": provider_status["model"],
             "is_real_llm": was_real_llm,
         }
+
+        inferred_intent = "FINANCIAL_HEALTH" if "get_finance_health_summary" in tools_used else (
+            "SALES_ANALYTICS" if "get_sales_summary" in tools_used and "get_refunds_summary" not in tools_used else (
+                "NET_SALES" if "get_sales_summary" in tools_used and "get_refunds_summary" in tools_used else (
+                    "RECONCILIATION" if "get_cross_source_reconciliation" in tools_used else "FINANCIAL_INTELLIGENCE"
+                )
+            )
+        )
 
         return self._persist_and_respond(
             session=session,
@@ -270,6 +349,11 @@ class AskSentinelService:
             actor_id=actor_id,
             status="ABSTAINED" if abstained else "SUCCESS",
             provider_metadata=provider_meta,
+            intent=inferred_intent,
+            filters=filters,
+            data=retrieved_data,
+            calculations=calculations,
+            grounded=not abstained,
         )
 
     def _persist_and_respond(
@@ -288,6 +372,11 @@ class AskSentinelService:
         actor_id: str,
         status: str,
         provider_metadata: Optional[Dict[str, Any]] = None,
+        intent: Optional[str] = None,
+        filters: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        calculations: Optional[Dict[str, Any]] = None,
+        grounded: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """Persists copilot query audit record to database and logs COPILOT_QUERY_EXECUTED audit event."""
         if provider_metadata is None:
@@ -345,4 +434,9 @@ class AskSentinelService:
             "tools_used": tools_used,
             "request_id": request_id,
             "provider_metadata": provider_metadata,
+            "intent": intent or "FINANCIAL_INTELLIGENCE",
+            "filters": filters or {},
+            "data": data or {},
+            "calculations": calculations or {},
+            "grounded": grounded if grounded is not None else (not abstained),
         }

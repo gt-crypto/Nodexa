@@ -113,3 +113,21 @@ class RemediationDryRunResponse(BaseModel):
     projected_before_state: Dict[str, Any]
     projected_after_state: Dict[str, Any]
     approval_status: str
+
+
+class EligibleRemediationItem(BaseModel):
+    id: str  # Action ID, e.g. REM-GHOST_SETTLEMENT-PAY-000-REFUND-5ea3d6d3
+    remediation_id: str
+    exception_id: str
+    payment_id: Optional[str] = None
+    action_type: str
+    status: str
+    amount_minor_units: int
+    amount_inr: float
+    created_at: str
+    executed_at: Optional[str] = None
+    eligible_for_verification: bool
+    already_verified: bool
+    verification_status: Optional[str] = None
+    verification_id: Optional[str] = None
+    description: Optional[str] = None
